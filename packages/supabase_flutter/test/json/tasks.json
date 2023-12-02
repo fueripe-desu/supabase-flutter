@@ -1,0 +1,37 @@
+[
+    {
+        "id": 1,
+        "title": "Complete presentation slides",
+        "description": "This is the task description for task 1",
+        "status": "in-progress",
+        "deadline": "2024-01-15T08:00:00Z"
+    },
+    {
+        "id": 2,
+        "title": "Send report to manager",
+        "description": "This is the task description for task 2",
+        "status": "pending",
+        "deadline": "2024-01-20T08:00:00Z"
+    },
+    {
+        "id": 3,
+        "title": "Meeting with team at 10 AM",
+        "description": "This is the task description for task 3",
+        "status": "completed",
+        "deadline": "2024-01-12T08:00:00Z"
+    },
+    {
+        "id": 4,
+        "title": "Write proposal for new project",
+        "description": "This is the task description for task 4",
+        "status": "in-progress",
+        "deadline": "2024-01-18T08:00:00Z"
+    },
+    {
+        "id": 5,
+        "title": "Prepare for client demo",
+        "description": "This is the task description for task 5",
+        "status": "pending",
+        "deadline": "2024-01-14T08:00:00Z"
+    }
+]
