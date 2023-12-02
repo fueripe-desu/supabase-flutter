@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 const TEST_URL = "test_url";
 const TEST_ANON = "test_anon";
 
+typedef _ValidatorFunction = bool Function(dynamic value);
+
 class SupabaseTest {
   factory SupabaseTest.instance() => _shared;
   SupabaseTest._sharedInstance();
@@ -93,5 +95,106 @@ class MockSupabaseClient {
   Future<void> dispose() async {
     _supabaseClient.dispose();
     _httpClient.close();
+  }
+}
+
+_ValidatorFunction sType<T>() {
+  if (T is DateTime) {
+    return (dynamic value) {
+      final dtString = value as String;
+      final dt = DateTime.tryParse(dtString);
+
+      return dt != null;
+    };
+  }
+
+  if (T is DateTime?) {
+    return (dynamic value) {
+      final dtString = value as String?;
+
+      if (dtString == null) {
+        return true;
+      }
+
+      final dt = DateTime.tryParse(dtString);
+
+      return dt != null;
+    };
+  }
+
+  return (dynamic value) {
+    return value is T;
+  };
+}
+
+class _JsonValidator {
+  bool validate(
+    Map<String, _ValidatorFunction> schema,
+    Map<String, dynamic> jsonContent,
+  ) {
+    final isKeyValid = _validateKeys(schema, jsonContent);
+
+    if (!isKeyValid) {
+      return false;
+    }
+
+    final isValueValid = _validateValues(schema, jsonContent);
+
+    if (!isValueValid) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool _validateValues(
+    Map<String, _ValidatorFunction> schema,
+    Map<String, dynamic> jsonContent,
+  ) {
+    final keys = jsonContent.keys;
+
+    for (final key in keys) {
+      final value = jsonContent[key];
+      final validateFunc = schema[key];
+
+      if (validateFunc == null) {
+        throw Exception(
+          '''
+A valid validator function must be passed. 
+The error was caused by the schema field: $key''',
+        );
+      }
+
+      final result = validateFunc(value);
+
+      if (result == false) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  bool _validateKeys(
+    Map<String, _ValidatorFunction> schema,
+    Map<String, dynamic> jsonContent,
+  ) {
+    final keys = jsonContent.keys;
+
+    for (final key in keys) {
+      final result = _keyExists(key, schema);
+      if (result == false) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  bool _keyExists(
+    String key,
+    Map<String, _ValidatorFunction> schema,
+  ) {
+    return schema.containsKey(key);
   }
 }
