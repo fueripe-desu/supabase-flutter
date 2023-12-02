@@ -97,6 +97,15 @@ class SupabaseTest {
     }
   }
 
+  static void deleteTable(String tableName) {
+    if (tableExists(tableName)) {
+      _tables.remove(tableName);
+      _schemas.remove(tableName);
+    } else {
+      throw Exception('Table does not exist');
+    }
+  }
+
   static MockSupabaseClient getClient() {
     assert(
       _initialized == true,
