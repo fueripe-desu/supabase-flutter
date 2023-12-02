@@ -643,6 +643,35 @@ void main() {
     expect(deepEq(tableContents, expectedMap), true);
   });
 
+  test('should delete a table', () {
+    // arrange
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "example": sType<String>(),
+      },
+    );
+
+    // act
+    final tableExistsBefore = SupabaseTest.tableExists('todos');
+
+    SupabaseTest.deleteTable('todos');
+
+    final tableExistsAfter = SupabaseTest.tableExists('todos');
+
+    // assert
+    expect(tableExistsBefore, true);
+    expect(tableExistsAfter, false);
+  });
+
+  test('should throw an Exception when trying to delete an unexistent table',
+      () {
+    expect(
+      () => SupabaseTest.deleteTable('unknown'),
+      throwsException,
+    );
+  });
+
   test('should hit mock http client endpoint', () async {
     var response = await client.get(Uri.parse('https://www.example.com/'));
     expect(response.body, 'hello world!');
