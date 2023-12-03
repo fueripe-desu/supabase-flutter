@@ -1,12 +1,15 @@
 // ignore_for_file: constant_identifier_names
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:collection/collection.dart';
+import 'package:supabase_flutter/src/constants.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart' as http;
 
-const TEST_URL = "test_url";
+const TEST_URL = "";
 const TEST_ANON = "test_anon";
 
 typedef _ValidatorFunction = bool Function(dynamic value);
@@ -84,6 +87,14 @@ class SupabaseTest {
     _insertData(tableName, contents);
   }
 
+  static bool columnExists(String tableName, String columnName) {
+    if (tableExists(tableName)) {
+      return _schemas[tableName]!.containsKey(columnName);
+    } else {
+      throw Exception('Table does not exist.');
+    }
+  }
+
   static void clear() {
     _schemas.clear();
     _tables.clear();
@@ -106,14 +117,76 @@ class SupabaseTest {
     }
   }
 
-  static MockSupabaseClient getClient() {
+  static bool isTableEmpty(String tableName) {
+    if (tableExists(tableName)) {
+      return _tables[tableName]!.isEmpty;
+    } else {
+      throw Exception('Table does not exist');
+    }
+  }
+
+  static int getTableRowCount(String tableName) {
+    if (tableExists(tableName)) {
+      return _tables[tableName]!.length;
+    } else {
+      throw Exception('Table does not exist');
+    }
+  }
+
+  static MockSupabaseClient getClient({
+    Map<String, String>? customHeaders,
+  }) {
     assert(
       _initialized == true,
       'You must initialize SupabaseTest before calling any of its functions.',
     );
 
-    final supabaseClient = SupabaseClient(_urlString, _urlAnon);
-    final httpClient = http.Client();
+    final httpClient = http.MockClient(
+      (request) async {
+        final parser = _QueryParser(request.url);
+
+        if (parser.mode == 'rest') {
+          final select = parser.queryParams['select']!;
+          final tableName = parser.table;
+
+          if (!tableExists(tableName)) {
+            // TODO: Implement error handling
+          }
+
+          if (select == '*') {
+            final tableContents = _tables[tableName];
+            final jsonString = jsonEncode(tableContents);
+            final res = http.Response(
+              jsonString,
+              HttpStatus.ok,
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              request: request,
+            );
+
+            return res;
+          }
+        }
+        return http.Response('', HttpStatus.notFound);
+      },
+    );
+
+    // Set up headers
+    final headers = {
+      ...Constants.defaultHeaders,
+      if (customHeaders != null) ...customHeaders
+    };
+
+    final supabaseClient = SupabaseClient(
+      _urlString,
+      _urlAnon,
+      httpClient: httpClient,
+      headers: headers,
+      storageRetryAttempts: 0,
+      realtimeClientOptions: const RealtimeClientOptions(),
+      authFlowType: AuthFlowType.implicit,
+    );
 
     return MockSupabaseClient(supabaseClient, httpClient);
   }
@@ -276,5 +349,24 @@ The error was caused by the schema field: $key''',
     Map<String, _ValidatorFunction> schema,
   ) {
     return schema.containsKey(key);
+  }
+}
+
+class _QueryParser {
+  final Uri query;
+  late final String url;
+  late final String mode;
+  late final String version;
+  late final String table;
+  late final Map<String, String> queryParams;
+
+  _QueryParser(this.query) {
+    final splitPath = query.path.split('/');
+    url = splitPath[0];
+    mode = splitPath[1];
+    version = splitPath[2];
+    table = splitPath[3];
+
+    queryParams = query.queryParameters;
   }
 }
