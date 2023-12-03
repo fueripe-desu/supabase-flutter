@@ -672,6 +672,94 @@ void main() {
     );
   });
 
+  test('should return true when checking if column exists', () {
+    // arrange
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "column1": sType<String>(),
+      },
+    );
+
+    // act
+    final result = SupabaseTest.columnExists('todos', 'column1');
+
+    // assert
+    expect(result, true);
+  });
+
+  test('should return false when calling columnExists() on a unexistent column',
+      () {
+    // arrange
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "column1": sType<String>(),
+      },
+    );
+
+    // act
+    final result = SupabaseTest.columnExists('todos', 'uknown');
+
+    // assert
+    expect(result, false);
+  });
+
+  test(
+      'should throw an Exception when calling columnExists() with an unknown table',
+      () {
+    expect(
+      () => SupabaseTest.columnExists('unknown', 'column1'),
+      throwsException,
+    );
+  });
+
+  test('should request the database with from().select(\'*\')', () async {
+    // arrange
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(),
+        "title": sType<String>(),
+        "description": sType<String>(),
+        "status": sType<String>(),
+        "deadline": sType<DateTime>(),
+      },
+    );
+
+    final expectedMap = [
+      {
+        "id": 1,
+        "title": "Complete presentation slides",
+        "description": "This is the task description for task 1",
+        "status": "in-progress",
+        "deadline": "2024-01-15T08:00:00Z"
+      },
+      {
+        "id": 2,
+        "title": "Send report to manager",
+        "description": "This is the task description for task 2",
+        "status": "pending",
+        "deadline": "2024-01-20T08:00:00Z"
+      },
+    ];
+
+    SupabaseTest.insertData(
+      'todos',
+      expectedMap,
+    );
+
+    final deepEq = const DeepCollectionEquality.unordered().equals;
+
+    final client = SupabaseTest.getClient();
+
+    final data = await client.supabaseClient.from('todos').select('*');
+
+    expect(deepEq(data, expectedMap), true);
+
+    await client.dispose();
+  });
+
   test('should hit mock http client endpoint', () async {
     var response = await client.get(Uri.parse('https://www.example.com/'));
     expect(response.body, 'hello world!');
