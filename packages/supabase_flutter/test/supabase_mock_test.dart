@@ -714,6 +714,94 @@ void main() {
     );
   });
 
+  test('should get only the desired columns from the table', () async {
+    // arrange
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(),
+        "title": sType<String>(),
+        "description": sType<String>(),
+        "status": sType<String>(),
+        "deadline": sType<DateTime>(),
+      },
+    );
+
+    final dataMap = [
+      {
+        "id": 1,
+        "title": "Complete presentation slides",
+        "description": "This is the task description for task 1",
+        "status": "in-progress",
+        "deadline": "2024-01-15T08:00:00Z"
+      },
+      {
+        "id": 2,
+        "title": "Send report to manager",
+        "description": "This is the task description for task 2",
+        "status": "pending",
+        "deadline": "2024-01-20T08:00:00Z"
+      },
+    ];
+
+    final expectedMap = dataMap
+        .map((e) => {
+              "title": e['title'],
+              "description": e['description'],
+            })
+        .toList();
+
+    SupabaseTest.insertData(
+      'todos',
+      dataMap,
+    );
+
+    final deepEq = const DeepCollectionEquality.unordered().equals;
+
+    final data = SupabaseTest.getColumn('todos', ['title', 'description']);
+
+    expect(deepEq(data, expectedMap), true);
+  });
+
+  test(
+      'should throw an Exception when trying to get columns from an unknown table',
+      () async {
+    expect(
+      () => SupabaseTest.getColumn('unknown', ['name', 'age']),
+      throwsException,
+    );
+  });
+
+  test(
+      'should throw an Exception when calling getColumn() with an unknown column',
+      () async {
+    // arrange
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(),
+        "title": sType<String>(),
+      },
+    );
+
+    final dataMap = [
+      {
+        "id": 1,
+        "title": "Complete presentation slides",
+      },
+    ];
+
+    SupabaseTest.insertData(
+      'todos',
+      dataMap,
+    );
+
+    expect(
+      () => SupabaseTest.getColumn('todos', ['title', 'unkown']),
+      throwsException,
+    );
+  });
+
   test('should request the database with from().select(\'*\')', () async {
     // arrange
     SupabaseTest.createTable(
@@ -756,6 +844,76 @@ void main() {
     final data = await client.supabaseClient.from('todos').select('*');
 
     expect(deepEq(data, expectedMap), true);
+
+    await client.dispose();
+  });
+
+  test('should return only the desired columns with from().select()', () async {
+    // arrange
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(),
+        "title": sType<String>(),
+        "description": sType<String>(),
+        "status": sType<String>(),
+        "deadline": sType<DateTime>(),
+      },
+    );
+
+    final dataMap = [
+      {
+        "id": 1,
+        "title": "Complete presentation slides",
+        "description": "This is the task description for task 1",
+        "status": "in-progress",
+        "deadline": "2024-01-15T08:00:00Z"
+      },
+      {
+        "id": 2,
+        "title": "Send report to manager",
+        "description": "This is the task description for task 2",
+        "status": "pending",
+        "deadline": "2024-01-20T08:00:00Z"
+      },
+    ];
+
+    final expectedMap = dataMap
+        .map((e) => {
+              "title": e['title'],
+              "description": e['description'],
+            })
+        .toList();
+
+    SupabaseTest.insertData(
+      'todos',
+      dataMap,
+    );
+
+    final deepEq = const DeepCollectionEquality.unordered().equals;
+
+    // act
+    final client = SupabaseTest.getClient();
+
+    final data =
+        await client.supabaseClient.from('todos').select('title, description');
+
+    // assert
+    expect(deepEq(data, expectedMap), true);
+
+    await client.dispose();
+  });
+
+  test(
+      'should throw an Exception when calling from().select(\'*\') on a unknown table',
+      () async {
+    // act
+    final client = SupabaseTest.getClient();
+
+    expect(
+      () async => await client.supabaseClient.from('uknown').select('*'),
+      throwsException,
+    );
 
     await client.dispose();
   });
