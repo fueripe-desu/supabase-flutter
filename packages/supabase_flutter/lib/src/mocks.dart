@@ -70,6 +70,32 @@ class SupabaseTest {
     }
   }
 
+  static List<Map<String, dynamic>> getColumn(
+      String tableName, List<String> columns) {
+    if (!tableExists(tableName)) {
+      throw Exception('Table does not exist.');
+    }
+
+    final contents = getTable(tableName);
+    final filteredColumns = <Map<String, dynamic>>[];
+
+    for (final row in contents) {
+      final filteredRow = <String, dynamic>{};
+
+      for (final column in columns) {
+        if (!columnExists(tableName, column)) {
+          throw Exception('Column $tableName.$column does not exist.');
+        }
+
+        filteredRow[column] = row[column];
+      }
+
+      filteredColumns.add(filteredRow);
+    }
+
+    return filteredColumns;
+  }
+
   static void insertData(
     String tableName,
     List<Map<String, dynamic>> contents,
@@ -144,30 +170,60 @@ class SupabaseTest {
     final httpClient = http.MockClient(
       (request) async {
         final parser = _QueryParser(request.url);
+        http.Response res(Object data, int statusCode, String reasonPhrase) {
+          final jsonString = jsonEncode(data);
+          final res = http.Response(
+            jsonString,
+            statusCode,
+            reasonPhrase: reasonPhrase,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            request: request,
+          );
+
+          return res;
+        }
 
         if (parser.mode == 'rest') {
           final select = parser.queryParams['select']!;
           final tableName = parser.table;
 
           if (!tableExists(tableName)) {
-            // TODO: Implement error handling
+            final error = {
+              "code": "42P01",
+              "details": null,
+              "hint": null,
+              "message": "relation \"public.$tableName\" does not exist",
+            };
+
+            return res(error, HttpStatus.notFound, "Not Found");
           }
 
           if (select == '*') {
-            final tableContents = _tables[tableName];
-            final jsonString = jsonEncode(tableContents);
-            final res = http.Response(
-              jsonString,
-              HttpStatus.ok,
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              request: request,
-            );
+            final tableContents = _tables[tableName]!;
+            return res(tableContents, HttpStatus.ok, "Ok");
+          }
 
-            return res;
+          final columns = select.trim().split(",");
+          for (final column in columns) {
+            final result = columnExists(tableName, column);
+
+            if (result == false) {
+              final error = {
+                "code": "42703",
+                "details": null,
+                "hint": null,
+                "message": "column $tableName.$column does not exist",
+              };
+              return res(error, HttpStatus.badRequest, "Bad Request");
+            }
+
+            final columnData = getColumn(tableName, columns);
+            return res(columnData, HttpStatus.ok, "Ok");
           }
         }
+
         return http.Response('', HttpStatus.notFound);
       },
     );
