@@ -802,7 +802,86 @@ void main() {
     );
   });
 
-  test('should request the database with from().select(\'*\')', () async {
+  test('should update the identity field ID automatically', () async {
+    // arrange
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(isIdentity: true),
+        "title": sType<String>(),
+      },
+    );
+
+    final expectedMap = [
+      {
+        "id": 0,
+        "title": "Complete presentation slides",
+      },
+      {
+        "id": 1,
+        "title": "Send report to manager",
+      },
+      {
+        "id": 2,
+        "title": "Prepare for client demo",
+      },
+    ];
+
+    SupabaseTest.insertData('todos', [
+      {"title": "Complete presentation slides"},
+      {"title": "Send report to manager"},
+      {"title": "Prepare for client demo"}
+    ]);
+
+    final deepEq = const DeepCollectionEquality.unordered().equals;
+
+    final client = SupabaseTest.getClient();
+
+    final data = await client.supabaseClient.from('todos').select('*');
+
+    expect(deepEq(data, expectedMap), true);
+
+    await client.dispose();
+  });
+
+  test('should throw an Exception when trying to set identity field manually',
+      () async {
+    // arrange
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(isIdentity: true),
+        "title": sType<String>(),
+      },
+    );
+
+    expect(
+      () => SupabaseTest.insertData('todos', [
+        {
+          "id": 2,
+          "title": "Complete presentation slides",
+        },
+      ]),
+      throwsException,
+    );
+  });
+
+  test(
+      'should throw an Exception when creating an identity field with other type than int',
+      () async {
+    // arrange
+    expect(
+        () => SupabaseTest.createTable(
+              'todos',
+              {
+                "id": sType<String>(isIdentity: true),
+                "title": sType<String>(),
+              },
+            ),
+        throwsException);
+  });
+
+  test('should return only the desired columns with from().select()', () async {
     // arrange
     SupabaseTest.createTable(
       'todos',
@@ -815,7 +894,7 @@ void main() {
       },
     );
 
-    final expectedMap = [
+    final dataMap = [
       {
         "id": 1,
         "title": "Complete presentation slides",
@@ -832,17 +911,27 @@ void main() {
       },
     ];
 
+    final expectedMap = dataMap
+        .map((e) => {
+              "title": e['title'],
+              "description": e['description'],
+            })
+        .toList();
+
     SupabaseTest.insertData(
       'todos',
-      expectedMap,
+      dataMap,
     );
 
     final deepEq = const DeepCollectionEquality.unordered().equals;
 
+    // act
     final client = SupabaseTest.getClient();
 
-    final data = await client.supabaseClient.from('todos').select('*');
+    final data =
+        await client.supabaseClient.from('todos').select('title, description');
 
+    // assert
     expect(deepEq(data, expectedMap), true);
 
     await client.dispose();
@@ -916,6 +1005,26 @@ void main() {
     );
 
     await client.dispose();
+  });
+
+  test('should enforce uniqueness in a schema field marked with isUnique',
+      () async {
+    // arrange
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(isIdentity: true),
+        "title": sType<String>(isUnique: true),
+      },
+    );
+
+    expect(
+      () => SupabaseTest.insertData('todos', [
+        {"title": "Complete presentation slides"},
+        {"title": "Complete presentation slides"},
+      ]),
+      throwsException,
+    );
   });
 
   test('should hit mock http client endpoint', () async {
