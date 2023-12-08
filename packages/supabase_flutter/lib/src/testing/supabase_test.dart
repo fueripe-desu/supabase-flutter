@@ -3,8 +3,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:collection/collection.dart';
 import 'package:supabase_flutter/src/constants.dart';
+import 'package:supabase_flutter/src/testing/json_schema_validator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
@@ -14,6 +14,20 @@ const TEST_ANON = "test_anon";
 
 typedef _ValidatorFunction = bool Function(dynamic value);
 
+class SchemaMetadata {
+  final List<String> primaryKeys;
+  final List<String> identityFields;
+  final List<String> uniqueKeys;
+  final List<String> requiredFields;
+
+  const SchemaMetadata({
+    required this.primaryKeys,
+    required this.identityFields,
+    required this.uniqueKeys,
+    required this.requiredFields,
+  });
+}
+
 class SupabaseTest {
   factory SupabaseTest.instance() => _shared;
   SupabaseTest._sharedInstance();
@@ -21,9 +35,10 @@ class SupabaseTest {
 
   static late String _urlString;
   static late String _urlAnon;
-  static late Map<String, Map<String, _ValidatorFunction>> _schemas;
+  static late Map<String, Map<String, SchemaType>> _schemas;
+  static late Map<String, SchemaMetadata> _schemaMetadata;
   static late Map<String, List<Map<String, dynamic>>> _tables;
-  static late _JsonValidator _validator;
+  static late JsonValidator _validator;
   static bool _initialized = false;
 
   static Future<void> initialize() async {
@@ -31,7 +46,7 @@ class SupabaseTest {
     _urlAnon = TEST_ANON;
     _schemas = {};
     _tables = {};
-    _validator = _JsonValidator();
+    _validator = JsonValidator();
     _initialized = true;
   }
 
@@ -39,7 +54,7 @@ class SupabaseTest {
 
   static void createTable(
     String tableName,
-    Map<String, _ValidatorFunction> schema,
+    Map<String, SchemaType> schema,
   ) {
     if (tableExists(tableName)) {
       throw Exception('Table already exists.');
@@ -49,8 +64,30 @@ class SupabaseTest {
       throw Exception('Schema must not be empty.');
     }
 
+    final List<String> requiredFields = [];
+    final List<String> identityFields = [];
+
+    schema.forEach((key, value) {
+      if (value is ValueSchemaType) {
+        requiredFields.add(key);
+      }
+
+      if (value is IdentitySchemaType) {
+        identityFields.add(key);
+      }
+    });
+
+    final metadata = SchemaMetadata(
+      primaryKeys: [],
+      identityFields: identityFields,
+      uniqueKeys: [],
+      requiredFields: requiredFields,
+    );
+
     _schemas[tableName] = {};
+    _schemaMetadata = {};
     _schemas[tableName] = schema;
+    _schemaMetadata[tableName] = metadata;
     _tables[tableName] = [];
   }
 
@@ -256,13 +293,41 @@ class SupabaseTest {
     }
 
     final schema = _schemas[tableName]!;
-    final isValid = _validator.validateAll(schema, contents);
+    final metadata = _schemaMetadata[tableName]!;
+    final isValid = _validator.validateAll(schema, metadata, contents);
 
     if (!isValid) {
       throw Exception('Data does not match table schema');
     }
 
+    // Extract identity fields from the schema
+    final identityList = metadata.identityFields;
+    final identityFields = _extractFromSchema(identityList, schema);
+
+    // Update identity fields in all contents
+    for (final data in contents) {
+      identityFields.forEach((key, value) {
+        if (value is IdentitySchemaType) {
+          data[key] = value.initialNumber;
+          value.call();
+        }
+      });
+    }
+
     _tables[tableName]!.addAll(contents);
+  }
+
+  static Map<String, SchemaType> _extractFromSchema(
+    List<String> fields,
+    Map<String, SchemaType> schema,
+  ) {
+    final Map<String, SchemaType> extractMap = {};
+
+    for (final field in fields) {
+      extractMap[field] = schema[field]!;
+    }
+
+    return extractMap;
   }
 }
 
@@ -284,9 +349,66 @@ class MockSupabaseClient {
   }
 }
 
-_ValidatorFunction sType<T>({bool isNullable = false}) {
+abstract class SchemaType {}
+
+class IdentitySchemaType implements SchemaType {
+  IdentitySchemaType({this.initialNumber = 0});
+
+  int initialNumber;
+
+  void call() {
+    initialNumber = initialNumber + 1;
+  }
+}
+
+class PrimaryKeySchemaType implements SchemaType {}
+
+class UniqueKeySchemaType<T> implements SchemaType {
+  UniqueKeySchemaType(this.validatorFunction);
+
+  final List<T> valuePool = [];
+  bool Function(T value) validatorFunction;
+
+  bool addValue(T value) {
+    if (valuePool.contains(value)) {
+      return false;
+    }
+
+    valuePool.add(value);
+    return true;
+  }
+
+  bool call(T value) {
+    return validatorFunction(value);
+  }
+}
+
+class ValueSchemaType implements SchemaType {
+  ValueSchemaType(this.validatorFunction);
+
+  bool Function(dynamic value) validatorFunction;
+
+  bool call(dynamic value) {
+    return validatorFunction(value);
+  }
+}
+
+SchemaType sType<T>({
+  bool isNullable = false,
+  bool isIdentity = false,
+  bool isPrimaryKey = false,
+  bool isUnique = false,
+}) {
+  if (isIdentity) {
+    if (T == int) {
+      return IdentitySchemaType();
+    } else {
+      throw Exception('Identity schema fields can only be integers.');
+    }
+  }
+
   if (T == DateTime) {
-    return (dynamic value) {
+    dtFn(dynamic value) {
       if (T == Null) {
         if (isNullable) {
           return true;
@@ -297,10 +419,16 @@ _ValidatorFunction sType<T>({bool isNullable = false}) {
       final dt = DateTime.tryParse(dtString);
 
       return dt != null;
-    };
+    }
+
+    if (isUnique) {
+      return UniqueKeySchemaType<T>(dtFn);
+    }
+
+    return ValueSchemaType(dtFn);
   }
 
-  return (dynamic value) {
+  validateFn(dynamic value) {
     if (T == Null) {
       if (isNullable) {
         return true;
@@ -308,104 +436,13 @@ _ValidatorFunction sType<T>({bool isNullable = false}) {
     }
 
     return value is T;
-  };
-}
-
-class _JsonValidator {
-  bool validate(
-    Map<String, _ValidatorFunction> schema,
-    Map<String, dynamic> jsonContent,
-  ) {
-    final isKeyValid = _validateKeys(schema, jsonContent);
-
-    if (!isKeyValid) {
-      return false;
-    }
-
-    final isValueValid = _validateValues(schema, jsonContent);
-
-    if (!isValueValid) {
-      return false;
-    }
-
-    return true;
   }
 
-  bool validateAll(
-    Map<String, _ValidatorFunction> schema,
-    List<Map<String, dynamic>> jsonList,
-  ) {
-    for (final content in jsonList) {
-      final result = validate(schema, content);
-
-      if (result == false) {
-        return false;
-      }
-    }
-
-    return true;
+  if (isUnique) {
+    return UniqueKeySchemaType<T>(validateFn);
   }
 
-  bool _validateValues(
-    Map<String, _ValidatorFunction> schema,
-    Map<String, dynamic> jsonContent,
-  ) {
-    final keys = jsonContent.keys;
-
-    for (final key in keys) {
-      final value = jsonContent[key];
-      final validateFunc = schema[key];
-
-      if (validateFunc == null) {
-        throw Exception(
-          '''
-A valid validator function must be passed. 
-The error was caused by the schema field: $key''',
-        );
-      }
-
-      final result = validateFunc(value);
-
-      if (result == false) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  bool _validateKeys(
-    Map<String, _ValidatorFunction> schema,
-    Map<String, dynamic> jsonContent,
-  ) {
-    final keys = jsonContent.keys;
-
-    for (final key in keys) {
-      final result = _keyExists(key, schema);
-      if (result == false) {
-        return false;
-      }
-    }
-
-    final deepEq = const DeepCollectionEquality.unordered().equals;
-
-    final keysList = keys.toList();
-    final schemaKeys = schema.keys.toList();
-
-    final containAllKeys = deepEq(keysList, schemaKeys);
-    if (!containAllKeys) {
-      return false;
-    }
-
-    return true;
-  }
-
-  bool _keyExists(
-    String key,
-    Map<String, _ValidatorFunction> schema,
-  ) {
-    return schema.containsKey(key);
-  }
+  return ValueSchemaType(validateFn);
 }
 
 class _QueryParser {

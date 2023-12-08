@@ -10,4 +10,4 @@ export 'src/supabase_auth.dart';
 export 'package:url_launcher/url_launcher.dart' show LaunchMode;
 
 // For testing
-export 'src/mocks.dart';
+export 'src/testing/supabase_test.dart';
