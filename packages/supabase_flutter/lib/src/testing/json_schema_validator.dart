@@ -4,27 +4,30 @@ import 'package:collection/collection.dart';
 import 'package:supabase_flutter/src/testing/supabase_test.dart';
 
 class JsonValidator {
-  bool validate(
+  ValidatorResult validate(
     Map<String, SchemaType> schema,
     SchemaMetadata metadata,
     Map<String, dynamic> jsonContent,
   ) {
-    final isKeyValid = _validateKeys(schema, metadata, jsonContent);
+    final keyResult = _validateKeys(schema, metadata, jsonContent);
 
-    if (!isKeyValid) {
-      return false;
+    if (keyResult.isValid == false) {
+      return keyResult;
     }
 
-    final isValueValid = _validateValues(schema, jsonContent);
+    final valueResult = _validateValues(schema, jsonContent);
 
-    if (!isValueValid) {
-      return false;
+    if (valueResult.isValid == false) {
+      return valueResult;
     }
 
-    return true;
+    return ValidatorResult(
+      message: 'data is valid.',
+      isValid: true,
+    );
   }
 
-  bool validateAll(
+  ValidatorResult validateAll(
     Map<String, SchemaType> schema,
     SchemaMetadata metadata,
     List<Map<String, dynamic>> jsonList,
@@ -32,15 +35,18 @@ class JsonValidator {
     for (final content in jsonList) {
       final result = validate(schema, metadata, content);
 
-      if (result == false) {
-        return false;
+      if (result.isValid == false) {
+        return result;
       }
     }
 
-    return true;
+    return ValidatorResult(
+      message: 'validation successful. All data is valid.',
+      isValid: true,
+    );
   }
 
-  bool _validateValues(
+  ValidatorResult _validateValues(
     Map<String, SchemaType> schema,
     Map<String, dynamic> jsonContent,
   ) {
@@ -51,10 +57,11 @@ class JsonValidator {
       final validateFunc = schema[key];
 
       if (validateFunc == null) {
-        throw Exception(
-          '''
-A valid validator function must be passed. 
+        return ValidatorResult(
+          message: '''
+a valid validator function must be passed. 
 The error was caused by the schema field: $key''',
+          isValid: false,
         );
       }
 
@@ -62,33 +69,44 @@ The error was caused by the schema field: $key''',
         final result = validateFunc(value);
 
         if (result == false) {
-          return false;
+          return ValidatorResult(
+            message:
+                'the value \'$value\' is not a valid input for the field \'$key\'.',
+            isValid: false,
+          );
         }
-      }
-
-      if (validateFunc is IdentitySchemaType) {
-        return true;
       }
 
       if (validateFunc is UniqueKeySchemaType) {
         final result = validateFunc(value);
 
         if (result == false) {
-          return false;
+          ValidatorResult(
+            message:
+                'the value \'$value\' is not a valid input for the field \'$key\'.',
+            isValid: false,
+          );
         }
 
         final isUnique = validateFunc.addValue(value);
 
         if (isUnique == false) {
-          throw Exception('Values in the field $key must be unique.');
+          return ValidatorResult(
+            message:
+                'values in the field \'$key\' must be unique, but \'$value\' is not.',
+            isValid: false,
+          );
         }
       }
     }
 
-    return true;
+    return ValidatorResult(
+      message: 'all values are valid.',
+      isValid: true,
+    );
   }
 
-  bool _validateKeys(
+  ValidatorResult _validateKeys(
     Map<String, SchemaType> schema,
     SchemaMetadata metadata,
     Map<String, dynamic> jsonContent,
@@ -99,7 +117,10 @@ The error was caused by the schema field: $key''',
     for (final key in keys) {
       final result = _keyExists(key, schema);
       if (result == false) {
-        return false;
+        return ValidatorResult(
+          message: 'key \'$key\' does not exist in the schema',
+          isValid: false,
+        );
       }
     }
 
@@ -110,7 +131,10 @@ The error was caused by the schema field: $key''',
 
     for (final identity in identityFields) {
       if (keys.contains(identity)) {
-        throw Exception('Identity fields cannot be set manually.');
+        return ValidatorResult(
+          message: 'identity field \'$identity\' cannot be set manually.',
+          isValid: false,
+        );
       }
     }
 
@@ -119,10 +143,16 @@ The error was caused by the schema field: $key''',
 
     final containAllKeys = deepEq(keysList, schemaKeys);
     if (!containAllKeys) {
-      return false;
+      return ValidatorResult(
+        message: 'schema does not contain all required fields.',
+        isValid: false,
+      );
     }
 
-    return true;
+    return ValidatorResult(
+      message: 'all keys are valid.',
+      isValid: true,
+    );
   }
 
   bool _keyExists(
@@ -131,4 +161,14 @@ The error was caused by the schema field: $key''',
   ) {
     return schema.containsKey(key);
   }
+}
+
+class ValidatorResult {
+  final String message;
+  final bool isValid;
+
+  const ValidatorResult({
+    required this.message,
+    required this.isValid,
+  });
 }

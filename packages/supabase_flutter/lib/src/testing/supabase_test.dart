@@ -294,10 +294,10 @@ class SupabaseTest {
 
     final schema = _schemas[tableName]!;
     final metadata = _schemaMetadata[tableName]!;
-    final isValid = _validator.validateAll(schema, metadata, contents);
+    final validatorResult = _validator.validateAll(schema, metadata, contents);
 
-    if (!isValid) {
-      throw Exception('Data does not match table schema');
+    if (validatorResult.isValid == false) {
+      throw Exception(validatorResult.message);
     }
 
     // Extract identity fields from the schema
