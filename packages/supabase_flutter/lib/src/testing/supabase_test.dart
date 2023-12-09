@@ -66,6 +66,8 @@ class SupabaseTest {
 
     final List<String> requiredFields = [];
     final List<String> identityFields = [];
+    final List<String> uniqueKeys = [];
+    final List<String> primaryKeys = [];
 
     schema.forEach((key, value) {
       if (value is ValueSchemaType) {
@@ -73,14 +75,29 @@ class SupabaseTest {
       }
 
       if (value is IdentitySchemaType) {
+        if (value.isPrimary) {
+          primaryKeys.add(key);
+        }
         identityFields.add(key);
+      }
+
+      if (value is UniqueKeySchemaType) {
+        if (value.isPrimary) {
+          primaryKeys.add(key);
+        }
+        requiredFields.add(key);
+        uniqueKeys.add(key);
       }
     });
 
+    if (primaryKeys.isEmpty) {
+      throw Exception('schema must have at least one primary key.');
+    }
+
     final metadata = SchemaMetadata(
-      primaryKeys: [],
+      primaryKeys: primaryKeys,
       identityFields: identityFields,
-      uniqueKeys: [],
+      uniqueKeys: uniqueKeys,
       requiredFields: requiredFields,
     );
 
@@ -352,19 +369,20 @@ class MockSupabaseClient {
 abstract class SchemaType {}
 
 class IdentitySchemaType implements SchemaType {
-  IdentitySchemaType({this.initialNumber = 0});
+  IdentitySchemaType({this.initialNumber = 0, this.isPrimary = false});
 
   int initialNumber;
+  final bool isPrimary;
 
   void call() {
     initialNumber = initialNumber + 1;
   }
 }
 
-class PrimaryKeySchemaType implements SchemaType {}
-
 class UniqueKeySchemaType<T> implements SchemaType {
-  UniqueKeySchemaType(this.validatorFunction);
+  UniqueKeySchemaType(this.validatorFunction, {this.isPrimary = false});
+
+  final bool isPrimary;
 
   final List<T> valuePool = [];
   bool Function(T value) validatorFunction;
@@ -401,7 +419,7 @@ SchemaType sType<T>({
 }) {
   if (isIdentity) {
     if (T == int) {
-      return IdentitySchemaType();
+      return IdentitySchemaType(isPrimary: isPrimaryKey);
     } else {
       throw Exception('Identity schema fields can only be integers.');
     }
@@ -421,8 +439,8 @@ SchemaType sType<T>({
       return dt != null;
     }
 
-    if (isUnique) {
-      return UniqueKeySchemaType<T>(dtFn);
+    if (isUnique || isPrimaryKey) {
+      return UniqueKeySchemaType<String>(dtFn, isPrimary: isPrimaryKey);
     }
 
     return ValueSchemaType(dtFn);
@@ -438,8 +456,8 @@ SchemaType sType<T>({
     return value is T;
   }
 
-  if (isUnique) {
-    return UniqueKeySchemaType<T>(validateFn);
+  if (isUnique || isPrimaryKey) {
+    return UniqueKeySchemaType<T>(validateFn, isPrimary: isPrimaryKey);
   }
 
   return ValueSchemaType(validateFn);

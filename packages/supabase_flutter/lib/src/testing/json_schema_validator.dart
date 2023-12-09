@@ -139,7 +139,7 @@ The error was caused by the schema field: $key''',
     }
 
     final keysList = keys.toList();
-    final schemaKeys = [...metadata.requiredFields, ...metadata.uniqueKeys];
+    final schemaKeys = [...metadata.requiredFields];
 
     final containAllKeys = deepEq(keysList, schemaKeys);
     if (!containAllKeys) {
