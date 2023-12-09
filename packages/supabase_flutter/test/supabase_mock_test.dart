@@ -35,7 +35,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "deadline": sType<DateTime>(),
       },
@@ -55,7 +55,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "deadline": sType<DateTime>(),
       },
@@ -91,7 +91,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "deadline": sType<DateTime>(),
       },
@@ -100,7 +100,7 @@ void main() {
     SupabaseTest.createTable(
       'tasks',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "description": sType<String>(),
         "created_at": sType<DateTime>(),
       },
@@ -130,7 +130,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "deadline": sType<DateTime>(),
       },
@@ -159,7 +159,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "description": sType<String>(),
         "status": sType<String>(),
@@ -192,7 +192,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "description": sType<String>(),
         "status": sType<String>(),
@@ -212,7 +212,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "description": sType<String>(),
         "status": sType<String>(),
@@ -282,7 +282,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "description": sType<String>(),
         "status": sType<String>(),
@@ -311,7 +311,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "description": sType<String>(),
         "status": sType<String>(),
@@ -347,7 +347,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "description": sType<String>(),
         "status": sType<String>(),
@@ -380,7 +380,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "description": sType<String>(),
         "status": sType<String>(),
@@ -410,7 +410,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "example": sType<String>(),
+        "example": sType<String>(isPrimaryKey: true),
       },
     );
 
@@ -439,7 +439,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "example": sType<int>(),
+        "example": sType<int>(isPrimaryKey: true),
       },
     );
 
@@ -468,7 +468,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "example": sType<double>(),
+        "example": sType<double>(isPrimaryKey: true),
       },
     );
 
@@ -497,7 +497,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "example": sType<bool>(),
+        "example": sType<bool>(isPrimaryKey: true),
       },
     );
 
@@ -526,7 +526,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "example": sType<List<String>>(),
+        "example": sType<List<String>>(isPrimaryKey: true),
       },
     );
 
@@ -555,7 +555,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "example": sType<Map<String, dynamic>>(),
+        "example": sType<Map<String, dynamic>>(isPrimaryKey: true),
       },
     );
 
@@ -590,7 +590,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "example": sType<int?>(),
+        "example": sType<int?>(isPrimaryKey: true),
       },
     );
 
@@ -619,7 +619,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "example": sType<DateTime>(),
+        "example": sType<DateTime>(isPrimaryKey: true),
       },
     );
 
@@ -648,7 +648,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "example": sType<String>(),
+        "example": sType<String>(isPrimaryKey: true),
       },
     );
 
@@ -677,7 +677,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "column1": sType<String>(),
+        "column1": sType<String>(isPrimaryKey: true),
       },
     );
 
@@ -694,7 +694,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "column1": sType<String>(),
+        "column1": sType<String>(isPrimaryKey: true),
       },
     );
 
@@ -719,7 +719,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "description": sType<String>(),
         "status": sType<String>(),
@@ -779,7 +779,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
       },
     );
@@ -807,7 +807,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(isIdentity: true),
+        "id": sType<int>(isPrimaryKey: true, isIdentity: true),
         "title": sType<String>(),
       },
     );
@@ -850,7 +850,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(isIdentity: true),
+        "id": sType<int>(isPrimaryKey: true, isIdentity: true),
         "title": sType<String>(),
       },
     );
@@ -886,7 +886,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "description": sType<String>(),
         "status": sType<String>(),
@@ -942,7 +942,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(),
+        "id": sType<int>(isPrimaryKey: true),
         "title": sType<String>(),
         "description": sType<String>(),
         "status": sType<String>(),
@@ -1013,7 +1013,7 @@ void main() {
     SupabaseTest.createTable(
       'todos',
       {
-        "id": sType<int>(isIdentity: true),
+        "id": sType<int>(isPrimaryKey: true, isIdentity: true),
         "title": sType<String>(isUnique: true),
       },
     );
