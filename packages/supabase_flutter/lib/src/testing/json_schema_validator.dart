@@ -1,7 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:collection/collection.dart';
-
-import 'package:supabase_flutter/src/testing/supabase_test.dart';
+import 'package:supabase_flutter/src/testing/schema_metadata.dart';
+import 'package:supabase_flutter/src/testing/schema_types.dart';
 
 class JsonValidator {
   ValidatorResult validate(
@@ -15,7 +15,7 @@ class JsonValidator {
       return keyResult;
     }
 
-    final valueResult = _validateValues(schema, jsonContent);
+    final valueResult = _validateValues(schema, metadata, jsonContent);
 
     if (valueResult.isValid == false) {
       return valueResult;
@@ -27,11 +27,52 @@ class JsonValidator {
     );
   }
 
+  List<String> _checkForRepeatedValues(
+      List<Map<String, dynamic>> jsonList, String field) {
+    final values = jsonList.map((task) => task[field]).toList();
+    return _hasRepeatedValue(values);
+  }
+
+  List<String> _hasRepeatedValue(List<dynamic> valueList) {
+    Set<dynamic> uniqueElements = {};
+    List<dynamic> repeatedElements = [];
+
+    for (final element in valueList) {
+      if (!uniqueElements.add(element)) {
+        // If the element is already in the set, it's a repeat
+        if (!repeatedElements.contains(element)) {
+          repeatedElements.add(element);
+        }
+      }
+    }
+
+    if (repeatedElements.isNotEmpty) {
+      return [...repeatedElements];
+    }
+
+    return [];
+  }
+
   ValidatorResult validateAll(
     Map<String, SchemaType> schema,
     SchemaMetadata metadata,
     List<Map<String, dynamic>> jsonList,
   ) {
+    if (jsonList.isNotEmpty) {
+      final fields = metadata.uniqueKeys;
+
+      for (final field in fields) {
+        final result = _checkForRepeatedValues(jsonList, field);
+        if (result.isNotEmpty) {
+          return ValidatorResult(
+            message:
+                'values in the field \'$field\' must be unique, but \'${result.first}\' is not.',
+            isValid: false,
+          );
+        }
+      }
+    }
+
     for (final content in jsonList) {
       final result = validate(schema, metadata, content);
 
@@ -48,6 +89,7 @@ class JsonValidator {
 
   ValidatorResult _validateValues(
     Map<String, SchemaType> schema,
+    SchemaMetadata metadata,
     Map<String, dynamic> jsonContent,
   ) {
     final keys = jsonContent.keys;
@@ -66,6 +108,7 @@ The error was caused by the schema field: $key''',
       }
 
       if (validateFunc is ValueSchemaType) {
+        // Validates the value type
         final result = validateFunc(value);
 
         if (result == false) {
@@ -78,6 +121,7 @@ The error was caused by the schema field: $key''',
       }
 
       if (validateFunc is UniqueKeySchemaType) {
+        // Validates the value type
         final result = validateFunc(value);
 
         if (result == false) {
@@ -88,7 +132,8 @@ The error was caused by the schema field: $key''',
           );
         }
 
-        final isUnique = validateFunc.addValue(value);
+        // Checks value uniqueness
+        final isUnique = metadata.isUnique(key, value);
 
         if (isUnique == false) {
           return ValidatorResult(

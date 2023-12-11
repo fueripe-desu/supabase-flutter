@@ -5,28 +5,14 @@ import 'dart:io';
 
 import 'package:supabase_flutter/src/constants.dart';
 import 'package:supabase_flutter/src/testing/json_schema_validator.dart';
+import 'package:supabase_flutter/src/testing/schema_metadata.dart';
+import 'package:supabase_flutter/src/testing/schema_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
 
 const TEST_URL = "";
 const TEST_ANON = "test_anon";
-
-typedef _ValidatorFunction = bool Function(dynamic value);
-
-class SchemaMetadata {
-  final List<String> primaryKeys;
-  final List<String> identityFields;
-  final List<String> uniqueKeys;
-  final List<String> requiredFields;
-
-  const SchemaMetadata({
-    required this.primaryKeys,
-    required this.identityFields,
-    required this.uniqueKeys,
-    required this.requiredFields,
-  });
-}
 
 class SupabaseTest {
   factory SupabaseTest.instance() => _shared;
@@ -45,6 +31,7 @@ class SupabaseTest {
     _urlString = TEST_URL;
     _urlAnon = TEST_ANON;
     _schemas = {};
+    _schemaMetadata = {};
     _tables = {};
     _validator = JsonValidator();
     _initialized = true;
@@ -52,10 +39,7 @@ class SupabaseTest {
 
   static bool get tablesIsEmpty => _schemas.isEmpty;
 
-  static void createTable(
-    String tableName,
-    Map<String, SchemaType> schema,
-  ) {
+  static void createTable(String tableName, Map<String, SchemaType> schema) {
     if (tableExists(tableName)) {
       throw Exception('Table already exists.');
     }
@@ -68,9 +52,13 @@ class SupabaseTest {
     final List<String> identityFields = [];
     final List<String> uniqueKeys = [];
     final List<String> primaryKeys = [];
+    final List<String> foreignKeys = [];
 
     schema.forEach((key, value) {
       if (value is ValueSchemaType) {
+        if (value.foreignKeyInfo != null) {
+          foreignKeys.add(key);
+        }
         requiredFields.add(key);
       }
 
@@ -78,12 +66,18 @@ class SupabaseTest {
         if (value.isPrimary) {
           primaryKeys.add(key);
         }
+        if (value.foreignKeyInfo != null) {
+          foreignKeys.add(key);
+        }
         identityFields.add(key);
       }
 
       if (value is UniqueKeySchemaType) {
         if (value.isPrimary) {
           primaryKeys.add(key);
+        }
+        if (value.foreignKeyInfo != null) {
+          foreignKeys.add(key);
         }
         requiredFields.add(key);
         uniqueKeys.add(key);
@@ -94,15 +88,36 @@ class SupabaseTest {
       throw Exception('schema must have at least one primary key.');
     }
 
-    final metadata = SchemaMetadata(
+    // Check for foreign key's error at creation time
+    for (final fk in foreignKeys) {
+      final value = schema[fk]!;
+      final tableName = value.foreignKeyInfo!.tableName;
+      final column = value.foreignKeyInfo!.field;
+
+      // Checks if the table referenced by the foreign key exists
+      if (!tableExists(tableName)) {
+        throw Exception(
+          'Table \'$tableName\' referenced by foreign key $fk does not exist.',
+        );
+      }
+
+      // Checks if the column referenced by the foreign key exists
+      if (!columnExists(tableName, column)) {
+        throw Exception(
+          'Column \'$column\' referenced by foreign key $fk does not exist.',
+        );
+      }
+    }
+
+    final metadata = SchemaMetadata.init(
       primaryKeys: primaryKeys,
+      foreignKeys: foreignKeys,
       identityFields: identityFields,
       uniqueKeys: uniqueKeys,
       requiredFields: requiredFields,
     );
 
     _schemas[tableName] = {};
-    _schemaMetadata = {};
     _schemas[tableName] = schema;
     _schemaMetadata[tableName] = metadata;
     _tables[tableName] = [];
@@ -164,7 +179,12 @@ class SupabaseTest {
             Map<String, dynamic>.from(item as Map<String, dynamic>))
         .toList();
 
-    _insertData(tableName, contents);
+    final fieldsToExtract = _schemaMetadata[tableName]!.requiredFields;
+    List<Map<String, dynamic>> filteredContents = contents.map((map) {
+      return {for (var field in fieldsToExtract) field: map[field]};
+    }).toList();
+
+    _insertData(tableName, filteredContents);
   }
 
   static bool columnExists(String tableName, String columnName) {
@@ -301,6 +321,74 @@ class SupabaseTest {
     return MockSupabaseClient(supabaseClient, httpClient);
   }
 
+  static List<T> getTableColumnData<T>(String tableName, String field) {
+    final table = _tables[tableName];
+    final values = table!.map((task) => task[field] as T).toList();
+    return values;
+  }
+
+  static void _checkForeignKey({
+    required SchemaType schemaType,
+    required String foreignKeyName,
+    required SchemaMetadata metadata,
+    dynamic valueToMatchAgainst,
+  }) {
+    final foreignTableName = schemaType.foreignKeyInfo!.tableName;
+    final foreignField = schemaType.foreignKeyInfo!.field;
+
+    final exception = Exception(
+      '''Foreign key '$foreignKeyName' must reference a value in the 
+                table '$foreignTableName.$foreignField'. 
+                But the value does not exist.''',
+    );
+
+    if (schemaType is IdentitySchemaType) {
+      final columnData =
+          getTableColumnData<int>(foreignTableName, foreignField);
+      final identityNum = metadata.getIdentity(foreignKeyName);
+
+      if (!columnData.contains(identityNum)) {
+        throw exception;
+      }
+    }
+
+    if (schemaType is UniqueKeySchemaType) {
+      final validatorFunction = _schemas[foreignTableName]![foreignField]!;
+      final result = validatorFunction(valueToMatchAgainst);
+
+      if (!result) {
+        throw Exception(
+          '''Value '$valueToMatchAgainst' in foreign key '$foreignKeyName' does 
+          not match the type of '$foreignTableName.$foreignField\'''',
+        );
+      }
+
+      final columnData = getTableColumnData(foreignTableName, foreignField);
+
+      if (!columnData.contains(valueToMatchAgainst)) {
+        throw exception;
+      }
+    }
+
+    if (schemaType is ValueSchemaType) {
+      final validatorFunction = _schemas[foreignTableName]![foreignField]!;
+      final result = validatorFunction(valueToMatchAgainst);
+
+      if (!result) {
+        throw Exception(
+          '''Value '$valueToMatchAgainst' in foreign key '$foreignKeyName' does 
+          not match the type of '$foreignTableName.$foreignField\'''',
+        );
+      }
+
+      final columnData = getTableColumnData(foreignTableName, foreignField);
+
+      if (!columnData.contains(valueToMatchAgainst)) {
+        throw exception;
+      }
+    }
+  }
+
   static void _insertData(
     String tableName,
     List<Map<String, dynamic>> contents,
@@ -319,14 +407,47 @@ class SupabaseTest {
 
     // Extract identity fields from the schema
     final identityList = metadata.identityFields;
-    final identityFields = _extractFromSchema(identityList, schema);
+    final requiredList = metadata.requiredFields;
+    final fieldsToExtract = [...identityList, ...requiredList];
+    final updateFields = _extractFromSchema(fieldsToExtract, schema);
 
     // Update identity fields in all contents
     for (final data in contents) {
-      identityFields.forEach((key, value) {
+      updateFields.forEach((field, value) {
         if (value is IdentitySchemaType) {
-          data[key] = value.initialNumber;
-          value.call();
+          if (value.foreignKeyInfo != null) {
+            _checkForeignKey(
+              schemaType: value,
+              foreignKeyName: field,
+              metadata: metadata,
+            );
+          }
+          data[field] = metadata.getIdentity(field);
+          metadata.incrementIdentity(field);
+        }
+
+        if (value is UniqueKeySchemaType) {
+          if (value.foreignKeyInfo != null) {
+            _checkForeignKey(
+              schemaType: value,
+              foreignKeyName: field,
+              metadata: metadata,
+              valueToMatchAgainst: data[field],
+            );
+          }
+          final uniqueField = data[field];
+          metadata.addUniqueValue(field, uniqueField);
+        }
+
+        if (value is ValueSchemaType) {
+          if (value.foreignKeyInfo != null) {
+            _checkForeignKey(
+              schemaType: value,
+              foreignKeyName: field,
+              metadata: metadata,
+              valueToMatchAgainst: data[field],
+            );
+          }
         }
       });
     }
@@ -366,49 +487,42 @@ class MockSupabaseClient {
   }
 }
 
-abstract class SchemaType {}
+SchemaType fKey(
+  String relation, {
+  bool isNullable = false,
+  bool isIdentity = false,
+  bool isUnique = false,
+  bool isPrimaryKey = false,
+}) {
+  // Checks if string is formatted like: tablename(field)
+  RegExp regex = RegExp(r'^([a-zA-Z_]+)\(([a-zA-Z_]+)\)$');
 
-class IdentitySchemaType implements SchemaType {
-  IdentitySchemaType({this.initialNumber = 0, this.isPrimary = false});
-
-  int initialNumber;
-  final bool isPrimary;
-
-  void call() {
-    initialNumber = initialNumber + 1;
-  }
-}
-
-class UniqueKeySchemaType<T> implements SchemaType {
-  UniqueKeySchemaType(this.validatorFunction, {this.isPrimary = false});
-
-  final bool isPrimary;
-
-  final List<T> valuePool = [];
-  bool Function(T value) validatorFunction;
-
-  bool addValue(T value) {
-    if (valuePool.contains(value)) {
-      return false;
-    }
-
-    valuePool.add(value);
-    return true;
+  if (!regex.hasMatch(relation)) {
+    throw Exception(
+      'relation must match the pattern \'tablename(field)\'. You\'ve inputted: \'$relation\'',
+    );
   }
 
-  bool call(T value) {
-    return validatorFunction(value);
-  }
-}
+  final Iterable<RegExpMatch> allMatches = regex.allMatches(relation);
+  final RegExpMatch match = allMatches.first;
+  final String tableName = match.group(1)!;
+  final String field = match.group(2)!;
 
-class ValueSchemaType implements SchemaType {
-  ValueSchemaType(this.validatorFunction);
+  final foreignKeyInfo = ForeignKeyInfo(
+    tableName: tableName,
+    field: field,
+  );
 
-  bool Function(dynamic value) validatorFunction;
+  SchemaType schemaType = sType(
+    isNullable: isNullable,
+    isPrimaryKey: isPrimaryKey,
+    isUnique: isUnique,
+    isIdentity: isIdentity,
+  );
 
-  bool call(dynamic value) {
-    return validatorFunction(value);
-  }
+  final newSchema = schemaType.copyWith(foreignKeyInfo: foreignKeyInfo);
+
+  return newSchema;
 }
 
 SchemaType sType<T>({
@@ -440,7 +554,7 @@ SchemaType sType<T>({
     }
 
     if (isUnique || isPrimaryKey) {
-      return UniqueKeySchemaType<String>(dtFn, isPrimary: isPrimaryKey);
+      return UniqueKeySchemaType(dtFn, isPrimary: isPrimaryKey);
     }
 
     return ValueSchemaType(dtFn);
@@ -457,7 +571,7 @@ SchemaType sType<T>({
   }
 
   if (isUnique || isPrimaryKey) {
-    return UniqueKeySchemaType<T>(validateFn, isPrimary: isPrimaryKey);
+    return UniqueKeySchemaType(validateFn, isPrimary: isPrimaryKey);
   }
 
   return ValueSchemaType(validateFn);
