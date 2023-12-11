@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/src/testing/schema_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
@@ -1025,6 +1026,159 @@ void main() {
       ]),
       throwsException,
     );
+  });
+
+  test('should ensure that unique fields are required', () async {
+    // arrange
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(isPrimaryKey: true, isIdentity: true),
+        "online": sType<bool>(),
+        "title": sType<String>(isUnique: true),
+      },
+    );
+
+    expect(
+      () => SupabaseTest.insertData('todos', [
+        {"online": true},
+      ]),
+      throwsException,
+    );
+  });
+
+  test(
+      'should return an exception when calling fKey() with an invalid relation string',
+      () {
+    expect(() => fKey('todosid)'), throwsException);
+  });
+
+  test(
+      'should return a ForeignKeySchemaType when called with a valid relation string',
+      () {
+    final foreignKey = fKey('todos(id)');
+    expect(foreignKey, isA<SchemaType>());
+  });
+
+  test('should throw an Exception when foreign key references an unknown table',
+      () {
+    expect(
+      () => SupabaseTest.createTable(
+        'users',
+        {
+          "id": sType<int>(isPrimaryKey: true, isIdentity: true),
+          "username": sType<String>(isUnique: true),
+          "current_task": fKey("unknown(id)"),
+        },
+      ),
+      throwsException,
+    );
+  });
+
+  test(
+      'should throw an Exception when foreign key references an unknown column',
+      () {
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(isPrimaryKey: true),
+        "title": sType<String>(),
+        "description": sType<String>(),
+        "status": sType<String>(),
+        "deadline": sType<DateTime>(),
+      },
+    );
+
+    expect(
+      () => SupabaseTest.createTable(
+        'users',
+        {
+          "id": sType<int>(isPrimaryKey: true, isIdentity: true),
+          "username": sType<String>(isUnique: true),
+          "current_task": fKey("todos(unknown)"),
+        },
+      ),
+      throwsException,
+    );
+  });
+
+  test(
+      'should throw an Exception when the foreign key\'s value type does not match the table referenced',
+      () {
+    final jsonString = readJson('tasks.json');
+
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(isPrimaryKey: true),
+        "title": sType<String>(),
+        "description": sType<String>(),
+        "status": sType<String>(),
+        "deadline": sType<DateTime>(),
+      },
+    );
+
+    SupabaseTest.createTable(
+      'users',
+      {
+        "id": sType<int>(isPrimaryKey: true, isIdentity: true),
+        "username": sType<String>(isUnique: true),
+        "current_task": fKey("todos(id)"),
+      },
+    );
+
+    SupabaseTest.insertDataFromJson(
+      'todos',
+      jsonString,
+    );
+
+    expect(
+      () => SupabaseTest.insertData('users', [
+        {
+          "username": "user1",
+          "current_task": "wrong_type",
+        },
+      ]),
+      throwsException,
+    );
+  });
+
+  test('should successfuly create a foreign key relation', () {
+    // arrange
+
+    final jsonString = readJson('tasks.json');
+
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(isPrimaryKey: true),
+        "title": sType<String>(),
+        "description": sType<String>(),
+        "status": sType<String>(),
+        "deadline": sType<DateTime>(),
+      },
+    );
+
+    SupabaseTest.createTable(
+      'users',
+      {
+        "id": sType<int>(isPrimaryKey: true, isIdentity: true),
+        "username": sType<String>(isUnique: true),
+        "current_task": fKey("todos(id)"),
+      },
+    );
+
+    SupabaseTest.insertDataFromJson(
+      'todos',
+      jsonString,
+    );
+
+    SupabaseTest.insertData('users', [
+      {
+        "username": "user1",
+        "current_task": 1,
+      },
+    ]);
   });
 
   test('should hit mock http client endpoint', () async {
