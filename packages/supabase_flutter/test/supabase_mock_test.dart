@@ -938,62 +938,6 @@ void main() {
     await client.dispose();
   });
 
-  test('should return only the desired columns with from().select()', () async {
-    // arrange
-    SupabaseTest.createTable(
-      'todos',
-      {
-        "id": sType<int>(isPrimaryKey: true),
-        "title": sType<String>(),
-        "description": sType<String>(),
-        "status": sType<String>(),
-        "deadline": sType<DateTime>(),
-      },
-    );
-
-    final dataMap = [
-      {
-        "id": 1,
-        "title": "Complete presentation slides",
-        "description": "This is the task description for task 1",
-        "status": "in-progress",
-        "deadline": "2024-01-15T08:00:00Z"
-      },
-      {
-        "id": 2,
-        "title": "Send report to manager",
-        "description": "This is the task description for task 2",
-        "status": "pending",
-        "deadline": "2024-01-20T08:00:00Z"
-      },
-    ];
-
-    final expectedMap = dataMap
-        .map((e) => {
-              "title": e['title'],
-              "description": e['description'],
-            })
-        .toList();
-
-    SupabaseTest.insertData(
-      'todos',
-      dataMap,
-    );
-
-    final deepEq = const DeepCollectionEquality.unordered().equals;
-
-    // act
-    final client = SupabaseTest.getClient();
-
-    final data =
-        await client.supabaseClient.from('todos').select('title, description');
-
-    // assert
-    expect(deepEq(data, expectedMap), true);
-
-    await client.dispose();
-  });
-
   test(
       'should throw an Exception when calling from().select(\'*\') on a unknown table',
       () async {
@@ -1179,6 +1123,165 @@ void main() {
         "current_task": 1,
       },
     ]);
+  });
+
+  test("should successfuly fetch with identity foreign key", () async {
+    final jsonString = readJson('tasks.json');
+
+    final expectedMap = [
+      {
+        'username': 'user1',
+        'current_task': {
+          'title': 'New Task Title',
+          'description': 'New Task Description'
+        }
+      },
+      {
+        'username': 'user2',
+        'current_task': {
+          'title': 'Complete presentation slides',
+          'description': 'This is the task description for task 1'
+        }
+      },
+      {
+        'username': 'user3',
+        'current_task': {
+          'title': 'Send report to manager',
+          'description': 'This is the task description for task 2'
+        }
+      }
+    ];
+
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(isPrimaryKey: true),
+        "title": sType<String>(),
+        "description": sType<String>(),
+        "status": sType<String>(),
+        "deadline": sType<DateTime>(),
+      },
+    );
+
+    SupabaseTest.createTable(
+      'users',
+      {
+        "id": sType<int>(isPrimaryKey: true, isIdentity: true),
+        "username": sType<String>(isUnique: true),
+        "current_task": fKey("todos(id)", isIdentity: true),
+      },
+    );
+
+    SupabaseTest.insertDataFromJson(
+      'todos',
+      jsonString,
+    );
+
+    SupabaseTest.insertData('users', [
+      {"username": "user1"},
+      {"username": "user2"},
+      {"username": "user3"},
+    ]);
+
+    final deepEq = const DeepCollectionEquality.unordered().equals;
+
+    final client = SupabaseTest.getClient();
+
+    final data = await client.supabaseClient.from('users').select('''
+    username,
+    current_task (
+      title,
+      description
+    )
+  ''');
+
+    expect(deepEq(data, expectedMap), true);
+
+    await client.dispose();
+  });
+
+  test("should fetch specific fields from foreign key", () async {
+    final jsonString = readJson('tasks.json');
+
+    final expectedMap = [
+      {
+        'username': 'user1',
+        'current_task': {
+          'title': 'Complete presentation slides',
+          'description': 'This is the task description for task 1'
+        }
+      },
+      {
+        'username': 'user2',
+        'current_task': {
+          'title': 'Send report to manager',
+          'description': 'This is the task description for task 2'
+        }
+      },
+      {
+        'username': 'user3',
+        'current_task': {
+          'title': 'Meeting with team at 10 AM',
+          'description': 'This is the task description for task 3'
+        }
+      }
+    ];
+
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(isPrimaryKey: true),
+        "title": sType<String>(),
+        "description": sType<String>(),
+        "status": sType<String>(),
+        "deadline": sType<DateTime>(),
+      },
+    );
+
+    SupabaseTest.createTable(
+      'users',
+      {
+        "id": sType<int>(isPrimaryKey: true, isIdentity: true),
+        "username": sType<String>(isUnique: true),
+        "current_task": fKey("todos(id)"),
+      },
+    );
+
+    SupabaseTest.insertDataFromJson(
+      'todos',
+      jsonString,
+    );
+
+    SupabaseTest.insertData('users', [
+      {
+        "username": "user1",
+        "current_task": 1,
+      },
+      {
+        "username": "user2",
+        "current_task": 2,
+      },
+      {
+        "username": "user3",
+        "current_task": 3,
+      },
+    ]);
+
+    final deepEq = const DeepCollectionEquality.unordered().equals;
+
+    final client = SupabaseTest.getClient();
+
+    final data = await client.supabaseClient.from('users').select('''
+    username,
+    current_task (
+      title,
+      description
+    )
+  ''');
+
+    expect(deepEq(data, expectedMap), true);
+
+    await client.dispose();
   });
 
   test('should hit mock http client endpoint', () async {

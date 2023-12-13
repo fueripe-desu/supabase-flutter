@@ -1,5 +1,12 @@
 [
     {
+        "id": 0,
+        "title": "New Task Title",
+        "description": "New Task Description",
+        "status": "pending",
+        "deadline": "2024-12-31T23:59:59Z"
+    },
+    {
         "id": 1,
         "title": "Complete presentation slides",
         "description": "This is the task description for task 1",
