@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:supabase_flutter/src/constants.dart';
 import 'package:supabase_flutter/src/testing/json_schema_validator.dart';
+import 'package:supabase_flutter/src/testing/query_parser.dart';
 import 'package:supabase_flutter/src/testing/schema_metadata.dart';
 import 'package:supabase_flutter/src/testing/schema_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -243,7 +244,7 @@ class SupabaseTest {
 
     final httpClient = http.MockClient(
       (request) async {
-        final parser = _QueryParser(request.url);
+        final parser = QueryParser(request.url);
         http.Response res(Object data, int statusCode, String reasonPhrase) {
           final jsonString = jsonEncode(data);
           final res = http.Response(
@@ -259,8 +260,7 @@ class SupabaseTest {
           return res;
         }
 
-        if (parser.mode == 'rest') {
-          final select = parser.queryParams['select']!;
+        if (parser.mode == RequestMode.rest) {
           final tableName = parser.table;
 
           if (!tableExists(tableName)) {
@@ -274,28 +274,65 @@ class SupabaseTest {
             return res(error, HttpStatus.notFound, "Not Found");
           }
 
-          if (select == '*') {
+          if (parser.queryParams.first is EverythingParam) {
             final tableContents = _tables[tableName]!;
             return res(tableContents, HttpStatus.ok, "Ok");
           }
 
-          final columns = select.trim().split(",");
-          for (final column in columns) {
-            final result = columnExists(tableName, column);
+          final Map<String, List<dynamic>> data = {};
 
-            if (result == false) {
-              final error = {
-                "code": "42703",
-                "details": null,
-                "hint": null,
-                "message": "column $tableName.$column does not exist",
-              };
-              return res(error, HttpStatus.badRequest, "Bad Request");
+          for (final param in parser.queryParams) {
+            if (param is ColumnParam) {
+              if (!columnExists(tableName, param.column)) {
+                final error = {
+                  "code": "42703",
+                  "details": null,
+                  "hint": null,
+                  "message": "column $tableName.${param.column} does not exist",
+                };
+                return res(error, HttpStatus.badRequest, "Bad Request");
+              }
+
+              final columnData = getColumn(tableName, [param.column]);
+              data[param.column] = columnData;
             }
 
-            final columnData = getColumn(tableName, columns);
-            return res(columnData, HttpStatus.ok, "Ok");
+            if (param is ForeignKeyParam) {
+              if (!foreignKeyExists(tableName, param.table)) {
+                // TODO: Implement error when trying to access normal column as foreign key
+              }
+
+              final List<Map<String, dynamic>> joinedFk = [];
+
+              // Gets the foreign key and the values inside the table
+              final foreignKey = _schemas[tableName]![param.table]!;
+              final foreignKeyValues = getColumn(tableName, [param.table]);
+
+              final foreignTablePrimaryKey = foreignKey.foreignKeyInfo!.field;
+              final foreignTableName = foreignKey.foreignKeyInfo!.tableName;
+
+              for (var element in foreignKeyValues) {
+                final foreignFetch = getDataByPrimaryKey<Map<String, dynamic>>(
+                  foreignTableName,
+                  foreignTablePrimaryKey,
+                  element[param.table],
+                  param.columns,
+                );
+
+                final finalMap = {
+                  param.table: foreignFetch,
+                };
+
+                joinedFk.add(finalMap);
+              }
+
+              data[param.table] = joinedFk;
+            }
           }
+
+          final resData = _mergeMapsOfLists(data);
+
+          return res(resData, HttpStatus.ok, "Ok");
         }
 
         return http.Response('', HttpStatus.notFound);
@@ -319,6 +356,79 @@ class SupabaseTest {
     );
 
     return MockSupabaseClient(supabaseClient, httpClient);
+  }
+
+  static T getDataByPrimaryKey<T>(
+    String tableName,
+    String primaryKey,
+    dynamic value,
+    List<String>? columns,
+  ) {
+    if (!tableExists(tableName)) {
+      throw Exception('Table does not exist.');
+    }
+
+    if (!columnExists(tableName, primaryKey)) {
+      throw Exception(
+        'Column does not exist.',
+      );
+    }
+
+    final contents = getTable(tableName);
+    final data =
+        contents.singleWhere((element) => element[primaryKey] == value);
+
+    if (columns == null) {
+      return data as T;
+    }
+
+    final Map<String, dynamic> extractMap = {};
+
+    for (final column in columns) {
+      extractMap[column] = data[column]!;
+    }
+
+    return extractMap as T;
+  }
+
+  static bool foreignKeyExists(String tableName, String column) {
+    if (!tableExists(tableName)) {
+      throw Exception('Table does not exist.');
+    }
+
+    if (!columnExists(tableName, column)) {
+      throw Exception(
+        'Column does not exist.',
+      );
+    }
+
+    final metadata = _schemaMetadata[tableName]!;
+    final foreignKeys = metadata.foreignKeys;
+
+    return foreignKeys.contains(column);
+  }
+
+  static List<Map<String, dynamic>> _mergeMapsOfLists(
+      Map<String, List<dynamic>> input) {
+    // Check if all lists in the input map have the same size
+    int size = input.values.first.length;
+    if (!input.values.every((list) => list.length == size)) {
+      throw Exception("Lists are not of the same size.");
+    }
+
+    // Create a list to hold the merged maps
+    List<Map<String, dynamic>> result = [];
+
+    // Merge maps by iterating through the indices of the lists
+    for (int i = 0; i < size; i++) {
+      Map<String, dynamic> mergedMap = {};
+      input.forEach((key, value) {
+        mergedMap[key] = value[i][key];
+      });
+      result.add(mergedMap);
+    }
+
+    return result;
   }
 
   static List<T> getTableColumnData<T>(String tableName, String field) {
@@ -513,12 +623,19 @@ SchemaType fKey(
     field: field,
   );
 
-  SchemaType schemaType = sType(
-    isNullable: isNullable,
-    isPrimaryKey: isPrimaryKey,
-    isUnique: isUnique,
-    isIdentity: isIdentity,
-  );
+  SchemaType schemaType = isIdentity
+      ? sType<int>(
+          isNullable: isNullable,
+          isPrimaryKey: isPrimaryKey,
+          isUnique: isUnique,
+          isIdentity: isIdentity,
+        )
+      : sType(
+          isNullable: isNullable,
+          isPrimaryKey: isPrimaryKey,
+          isUnique: isUnique,
+          isIdentity: isIdentity,
+        );
 
   final newSchema = schemaType.copyWith(foreignKeyInfo: foreignKeyInfo);
 
@@ -575,23 +692,4 @@ SchemaType sType<T>({
   }
 
   return ValueSchemaType(validateFn);
-}
-
-class _QueryParser {
-  final Uri query;
-  late final String url;
-  late final String mode;
-  late final String version;
-  late final String table;
-  late final Map<String, String> queryParams;
-
-  _QueryParser(this.query) {
-    final splitPath = query.path.split('/');
-    url = splitPath[0];
-    mode = splitPath[1];
-    version = splitPath[2];
-    table = splitPath[3];
-
-    queryParams = query.queryParameters;
-  }
 }
