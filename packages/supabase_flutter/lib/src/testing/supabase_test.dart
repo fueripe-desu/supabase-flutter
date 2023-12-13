@@ -299,7 +299,16 @@ class SupabaseTest {
 
             if (param is ForeignKeyParam) {
               if (!foreignKeyExists(tableName, param.table)) {
-                // TODO: Implement error when trying to access normal column as foreign key
+                final error = {
+                  "code": "PGRST200",
+                  "details":
+                      "Searched for a foreign key relationship between '$tableName' and '${param.table}' in the schema 'public', but no matches were found.",
+                  "hint": null,
+                  "message":
+                      "Could not find a relationship between '$tableName' and '${param.table}' in the schema cache",
+                };
+
+                return res(error, HttpStatus.badRequest, "Bad Request");
               }
 
               final List<Map<String, dynamic>> joinedFk = [];
@@ -310,6 +319,19 @@ class SupabaseTest {
 
               final foreignTablePrimaryKey = foreignKey.foreignKeyInfo!.field;
               final foreignTableName = foreignKey.foreignKeyInfo!.tableName;
+
+              for (final column in param.columns) {
+                if (!columnExists(foreignTableName, column)) {
+                  final error = {
+                    "code": "42703",
+                    "details": null,
+                    "hint": null,
+                    "message":
+                        "column $foreignTableName.$column does not exist",
+                  };
+                  return res(error, HttpStatus.badRequest, "Bad Request");
+                }
+              }
 
               for (var element in foreignKeyValues) {
                 final foreignFetch = getDataByPrimaryKey<Map<String, dynamic>>(
@@ -338,6 +360,8 @@ class SupabaseTest {
         return http.Response('', HttpStatus.notFound);
       },
     );
+
+    // { message: Could not find a relationship between 'languages' and 'value' in the schema cache, code: PGRST200, details: Searched for a foreign key relationship between 'languages' and 'value' in the schema 'public', but no matches were found., hint: null }
 
     // Set up headers
     final headers = {
