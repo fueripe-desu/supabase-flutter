@@ -1284,6 +1284,120 @@ void main() {
     await client.dispose();
   });
 
+  test("should throw an error when trying to access an unknown foreign key",
+      () async {
+    final jsonString = readJson('tasks.json');
+
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(isPrimaryKey: true),
+        "title": sType<String>(),
+        "description": sType<String>(),
+        "status": sType<String>(),
+        "deadline": sType<DateTime>(),
+      },
+    );
+
+    SupabaseTest.createTable(
+      'users',
+      {
+        "id": sType<int>(isPrimaryKey: true, isIdentity: true),
+        "username": sType<String>(isUnique: true),
+        "current_task": fKey("todos(id)"),
+      },
+    );
+
+    SupabaseTest.insertDataFromJson(
+      'todos',
+      jsonString,
+    );
+
+    SupabaseTest.insertData('users', [
+      {
+        "username": "user1",
+        "current_task": 1,
+      },
+      {
+        "username": "user2",
+        "current_task": 2,
+      },
+      {
+        "username": "user3",
+        "current_task": 3,
+      },
+    ]);
+
+    final client = SupabaseTest.getClient();
+
+    expect(() async => await client.supabaseClient.from('users').select('''
+    username (
+      title,
+      description
+    )
+  '''), throwsException);
+
+    await client.dispose();
+  });
+
+  test(
+      "should throw an error when trying to access an unknown foreign key's column",
+      () async {
+    final jsonString = readJson('tasks.json');
+
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(isPrimaryKey: true),
+        "title": sType<String>(),
+        "description": sType<String>(),
+        "status": sType<String>(),
+        "deadline": sType<DateTime>(),
+      },
+    );
+
+    SupabaseTest.createTable(
+      'users',
+      {
+        "id": sType<int>(isPrimaryKey: true, isIdentity: true),
+        "username": sType<String>(isUnique: true),
+        "current_task": fKey("todos(id)"),
+      },
+    );
+
+    SupabaseTest.insertDataFromJson(
+      'todos',
+      jsonString,
+    );
+
+    SupabaseTest.insertData('users', [
+      {
+        "username": "user1",
+        "current_task": 1,
+      },
+      {
+        "username": "user2",
+        "current_task": 2,
+      },
+      {
+        "username": "user3",
+        "current_task": 3,
+      },
+    ]);
+
+    final client = SupabaseTest.getClient();
+
+    expect(() async => await client.supabaseClient.from('users').select('''
+    username,
+    current_task (
+      unknown,
+      description
+    )
+  '''), throwsException);
+
+    await client.dispose();
+  });
+
   test('should hit mock http client endpoint', () async {
     var response = await client.get(Uri.parse('https://www.example.com/'));
     expect(response.body, 'hello world!');
