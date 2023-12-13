@@ -21,7 +21,7 @@ class JsonValidator {
       return valueResult;
     }
 
-    return ValidatorResult(
+    return const ValidatorResult(
       message: 'data is valid.',
       isValid: true,
     );
@@ -81,7 +81,7 @@ class JsonValidator {
       }
     }
 
-    return ValidatorResult(
+    return const ValidatorResult(
       message: 'validation successful. All data is valid.',
       isValid: true,
     );
@@ -145,7 +145,7 @@ The error was caused by the schema field: $key''',
       }
     }
 
-    return ValidatorResult(
+    return const ValidatorResult(
       message: 'all values are valid.',
       isValid: true,
     );
@@ -188,13 +188,13 @@ The error was caused by the schema field: $key''',
 
     final containAllKeys = deepEq(keysList, schemaKeys);
     if (!containAllKeys) {
-      return ValidatorResult(
+      return const ValidatorResult(
         message: 'schema does not contain all required fields.',
         isValid: false,
       );
     }
 
-    return ValidatorResult(
+    return const ValidatorResult(
       message: 'all keys are valid.',
       isValid: true,
     );

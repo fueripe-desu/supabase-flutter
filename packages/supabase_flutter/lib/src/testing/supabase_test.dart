@@ -350,9 +350,7 @@ class SupabaseTest {
       _urlAnon,
       httpClient: httpClient,
       headers: headers,
-      storageRetryAttempts: 0,
       realtimeClientOptions: const RealtimeClientOptions(),
-      authFlowType: AuthFlowType.implicit,
     );
 
     return MockSupabaseClient(supabaseClient, httpClient);

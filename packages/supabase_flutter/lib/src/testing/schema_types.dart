@@ -1,4 +1,4 @@
-typedef _ValidatorFunction = bool Function(dynamic value);
+typedef ValidatorFunction = bool Function(dynamic value);
 
 abstract class SchemaType {
   final ForeignKeyInfo? foreignKeyInfo;
@@ -33,7 +33,7 @@ class UniqueKeySchemaType extends SchemaType {
 
   final bool isPrimary;
 
-  final _ValidatorFunction validatorFunction;
+  final ValidatorFunction validatorFunction;
 
   @override
   bool call(dynamic value) {
