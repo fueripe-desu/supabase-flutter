@@ -73,4 +73,44 @@ void main() {
 
     expect(deepEq(result, expectedMap), true);
   });
+
+  group('like and ilike filters tests', () {
+    test('should match pattern with %', () {
+      const pattern =
+          'Meeting%'; // Pattern to match titles starting with 'Meeting'
+      final result = FilterBuilder(tasks).ilike('title', pattern).execute();
+      expect(
+        result,
+        [tasks[3]],
+      );
+    });
+
+    test('should return an exact match pattern', () {
+      const pattern = 'Send report to manager'; // Exact title match
+      final result = FilterBuilder(tasks).like('title', pattern).execute();
+      expect(
+        result,
+        [tasks[2]],
+      );
+    });
+
+    test('should match pattern with _', () {
+      const pattern =
+          'Meeting with team at 1_ AM'; // Matching description pattern
+      final result = FilterBuilder(tasks).like('title', pattern).execute();
+      expect(
+        result,
+        [tasks[3]],
+      );
+    });
+
+    test('should return nothing with non-matching pattern', () {
+      const pattern = 'Non-existent Task'; // Non-matching pattern
+      final result = FilterBuilder(tasks).like('title', pattern).execute();
+      expect(
+        result,
+        [],
+      );
+    });
+  });
 }
