@@ -17,4 +17,32 @@ class FilterBuilder {
 
     return FilterBuilder(newData);
   }
+
+  FilterBuilder gt(String column, dynamic value) {
+    final data = _data;
+    final newData = data.where((element) => element[column] > value).toList();
+
+    return FilterBuilder(newData);
+  }
+
+  FilterBuilder gte(String column, dynamic value) {
+    final data = _data;
+    final newData = data.where((element) => element[column] >= value).toList();
+
+    return FilterBuilder(newData);
+  }
+
+  FilterBuilder lt(String column, dynamic value) {
+    final data = _data;
+    final newData = data.where((element) => element[column] < value).toList();
+
+    return FilterBuilder(newData);
+  }
+
+  FilterBuilder lte(String column, dynamic value) {
+    final data = _data;
+    final newData = data.where((element) => element[column] <= value).toList();
+
+    return FilterBuilder(newData);
+  }
 }
