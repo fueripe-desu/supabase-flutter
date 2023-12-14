@@ -10,7 +10,7 @@ void main() {
   late final List<Map<String, dynamic>> tasks;
   late final bool Function(Object?, Object?) deepEq;
 
-  setUp(() {
+  setUpAll(() {
     final jsonString = readJson('tasks.json');
     final parsedList = json.decode(jsonString) as List<dynamic>;
     tasks = parsedList
@@ -37,5 +37,40 @@ void main() {
 
     expect(deepEq(result, expectedMap), true);
     expect(deepEq(result2, expectedMap2), true);
+  });
+
+  test(
+      'should return all the elements that are greater than the value specified',
+      () {
+    final expectedMap = tasks.where((element) => element['id'] > 1).toList();
+    final result = FilterBuilder(tasks).gt('id', 1).execute();
+
+    expect(deepEq(result, expectedMap), true);
+  });
+
+  test(
+      'should return all the elements that are greater than or equal to the value specified',
+      () {
+    final expectedMap = tasks.where((element) => element['id'] >= 1).toList();
+    final result = FilterBuilder(tasks).gte('id', 1).execute();
+
+    expect(deepEq(result, expectedMap), true);
+  });
+
+  test('should return all the elements that are less than the value specified',
+      () {
+    final expectedMap = tasks.where((element) => element['id'] < 3).toList();
+    final result = FilterBuilder(tasks).lt('id', 3).execute();
+
+    expect(deepEq(result, expectedMap), true);
+  });
+
+  test(
+      'should return all the elements that are less than or equal to the value specified',
+      () {
+    final expectedMap = tasks.where((element) => element['id'] <= 3).toList();
+    final result = FilterBuilder(tasks).lte('id', 3).execute();
+
+    expect(deepEq(result, expectedMap), true);
   });
 }
