@@ -45,4 +45,41 @@ class FilterBuilder {
 
     return FilterBuilder(newData);
   }
+
+  FilterBuilder like(String column, String pattern) {
+    final data = _data;
+    final newData = data
+        .where(
+            (element) => _like(element[column], pattern, caseSensitive: true))
+        .toList();
+
+    return FilterBuilder(newData);
+  }
+
+  FilterBuilder ilike(String column, String pattern) {
+    final data = _data;
+    final newData = data
+        .where(
+            (element) => _like(element[column], pattern, caseSensitive: false))
+        .toList();
+
+    return FilterBuilder(newData);
+  }
+
+  bool _like(String value, String pattern, {bool caseSensitive = true}) {
+    // Escape regex metacharacters in the pattern
+    final escapedPattern = pattern.replaceAllMapped(
+        RegExp(r'[.*+?^${}()|[\]\\]'), (match) => '\\${match.group(0)}');
+
+    // Replace SQL wildcards with regex equivalents
+    final regexPattern =
+        '^${escapedPattern.replaceAll('%', '.*').replaceAll('_', '.')}\$';
+
+    // Create RegExp with case sensitivity option
+    final regex =
+        RegExp(regexPattern, caseSensitive: caseSensitive ? true : false);
+
+    // Match input against the regex pattern
+    return regex.hasMatch(value);
+  }
 }
