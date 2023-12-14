@@ -1398,6 +1398,91 @@ void main() {
     await client.dispose();
   });
 
+  test("should fetch foreign key and assigning it to custom field in json",
+      () async {
+    final jsonString = readJson('tasks.json');
+
+    final expectedMap = [
+      {
+        'custom_username': 'user1',
+        'custom_task': {
+          'title': 'Complete presentation slides',
+          'description': 'This is the task description for task 1'
+        }
+      },
+      {
+        'custom_username': 'user2',
+        'custom_task': {
+          'title': 'Send report to manager',
+          'description': 'This is the task description for task 2'
+        }
+      },
+      {
+        'custom_username': 'user3',
+        'custom_task': {
+          'title': 'Meeting with team at 10 AM',
+          'description': 'This is the task description for task 3'
+        }
+      }
+    ];
+
+    SupabaseTest.createTable(
+      'todos',
+      {
+        "id": sType<int>(isPrimaryKey: true),
+        "title": sType<String>(),
+        "description": sType<String>(),
+        "status": sType<String>(),
+        "deadline": sType<DateTime>(),
+      },
+    );
+
+    SupabaseTest.createTable(
+      'users',
+      {
+        "id": sType<int>(isPrimaryKey: true, isIdentity: true),
+        "username": sType<String>(isUnique: true),
+        "current_task": fKey("todos(id)"),
+      },
+    );
+
+    SupabaseTest.insertDataFromJson(
+      'todos',
+      jsonString,
+    );
+
+    SupabaseTest.insertData('users', [
+      {
+        "username": "user1",
+        "current_task": 1,
+      },
+      {
+        "username": "user2",
+        "current_task": 2,
+      },
+      {
+        "username": "user3",
+        "current_task": 3,
+      },
+    ]);
+
+    final deepEq = const DeepCollectionEquality.unordered().equals;
+
+    final client = SupabaseTest.getClient();
+
+    final data = await client.supabaseClient.from('users').select('''
+    custom_username:username,
+    custom_task:current_task (
+      title,
+      description
+    )
+  ''');
+
+    expect(deepEq(data, expectedMap), true);
+
+    await client.dispose();
+  });
+
   test('should hit mock http client endpoint', () async {
     var response = await client.get(Uri.parse('https://www.example.com/'));
     expect(response.body, 'hello world!');
