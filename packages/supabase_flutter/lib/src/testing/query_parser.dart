@@ -44,6 +44,17 @@ class QueryParser {
         final splitParams = selectParams.split(splitRegex);
 
         for (final param in splitParams) {
+          // Handles the case where a custom field name is passed in the query
+          String? customName;
+          List<String>? customNameSplit;
+
+          // When it contains a colon it means that a custom field name
+          // has been specified
+          if (param.contains(':')) {
+            customNameSplit = param.split(':');
+            customName = customNameSplit[0];
+          }
+
           // If a param contains an opening parenthesis it's a foreign key
           if (param.contains('(')) {
             // Used to split the foreign key param string by its columns inside
@@ -51,7 +62,8 @@ class QueryParser {
             // e.g. "current_task(title,description)"
             // output: "current_task" and ["title", "description"]
             final foreignKeyRegex = RegExp(r'^(.*?)\((.*?)\)$');
-            final match = foreignKeyRegex.firstMatch(param);
+            final match =
+                foreignKeyRegex.firstMatch(customNameSplit?[1] ?? param);
 
             if (match != null) {
               final tableName = match.group(1)!;
@@ -62,6 +74,7 @@ class QueryParser {
               final fkParam = ForeignKeyParam(
                 table: tableName,
                 columns: columnsList,
+                customName: customName,
               );
 
               queryParamsList.add(fkParam);
@@ -72,7 +85,10 @@ class QueryParser {
           }
 
           // Case it doesn't pass any of the above if statements, it's a column param
-          final columnParam = ColumnParam(column: param);
+          final columnParam = ColumnParam(
+            column: customNameSplit?[1] ?? param,
+            customName: customName,
+          );
           queryParamsList.add(columnParam);
         }
       }
@@ -102,19 +118,23 @@ abstract class QueryParam {}
 
 class ColumnParam implements QueryParam {
   final String column;
+  final String? customName;
 
   const ColumnParam({
     required this.column,
+    this.customName,
   });
 }
 
 class ForeignKeyParam implements QueryParam {
   final String table;
+  final String? customName;
   final List<String> columns;
 
   const ForeignKeyParam({
     required this.table,
     required this.columns,
+    this.customName,
   });
 }
 

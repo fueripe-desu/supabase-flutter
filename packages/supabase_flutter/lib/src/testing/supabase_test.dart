@@ -294,7 +294,14 @@ class SupabaseTest {
               }
 
               final columnData = getColumn(tableName, [param.column]);
-              data[param.column] = columnData;
+
+              // Changes the field of the fetched data to custom name if not null
+              final namedData = columnData
+                  .map((e) => {
+                        param.customName ?? e.keys.first: e.values.first,
+                      })
+                  .toList();
+              data[param.customName ?? param.column] = namedData;
             }
 
             if (param is ForeignKeyParam) {
@@ -342,13 +349,13 @@ class SupabaseTest {
                 );
 
                 final finalMap = {
-                  param.table: foreignFetch,
+                  param.customName ?? param.table: foreignFetch,
                 };
 
                 joinedFk.add(finalMap);
               }
 
-              data[param.table] = joinedFk;
+              data[param.customName ?? param.table] = joinedFk;
             }
           }
 
