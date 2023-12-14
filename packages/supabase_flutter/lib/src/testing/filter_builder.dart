@@ -10,4 +10,11 @@ class FilterBuilder {
 
     return FilterBuilder(newData);
   }
+
+  FilterBuilder neq(String column, dynamic value) {
+    final data = _data;
+    final newData = data.where((element) => element[column] != value).toList();
+
+    return FilterBuilder(newData);
+  }
 }
