@@ -4,67 +4,45 @@ class FilterBuilder {
 
   List<Map<String, dynamic>> execute() => _data;
 
-  FilterBuilder eq(String column, dynamic value) {
-    final data = _data;
-    final newData = data.where((element) => element[column] == value).toList();
+  FilterBuilder eq(String column, dynamic value) => _filter(
+        test: (element) => element[column] == value,
+      );
 
-    return FilterBuilder(newData);
-  }
+  FilterBuilder neq(String column, dynamic value) => _filter(
+        test: (element) => element[column] != value,
+      );
 
-  FilterBuilder neq(String column, dynamic value) {
-    final data = _data;
-    final newData = data.where((element) => element[column] != value).toList();
+  FilterBuilder gt(String column, dynamic value) => _filter(
+        test: (element) => element[column] > value,
+      );
 
-    return FilterBuilder(newData);
-  }
+  FilterBuilder gte(String column, dynamic value) => _filter(
+        test: (element) => element[column] >= value,
+      );
 
-  FilterBuilder gt(String column, dynamic value) {
-    final data = _data;
-    final newData = data.where((element) => element[column] > value).toList();
+  FilterBuilder lt(String column, dynamic value) => _filter(
+        test: (element) => element[column] < value,
+      );
 
-    return FilterBuilder(newData);
-  }
+  FilterBuilder lte(String column, dynamic value) => _filter(
+        test: (element) => element[column] <= value,
+      );
 
-  FilterBuilder gte(String column, dynamic value) {
-    final data = _data;
-    final newData = data.where((element) => element[column] >= value).toList();
+  FilterBuilder like(String column, String pattern) => _filter(
+        test: (element) => _like(
+          element[column],
+          pattern,
+          caseSensitive: true,
+        ),
+      );
 
-    return FilterBuilder(newData);
-  }
-
-  FilterBuilder lt(String column, dynamic value) {
-    final data = _data;
-    final newData = data.where((element) => element[column] < value).toList();
-
-    return FilterBuilder(newData);
-  }
-
-  FilterBuilder lte(String column, dynamic value) {
-    final data = _data;
-    final newData = data.where((element) => element[column] <= value).toList();
-
-    return FilterBuilder(newData);
-  }
-
-  FilterBuilder like(String column, String pattern) {
-    final data = _data;
-    final newData = data
-        .where(
-            (element) => _like(element[column], pattern, caseSensitive: true))
-        .toList();
-
-    return FilterBuilder(newData);
-  }
-
-  FilterBuilder ilike(String column, String pattern) {
-    final data = _data;
-    final newData = data
-        .where(
-            (element) => _like(element[column], pattern, caseSensitive: false))
-        .toList();
-
-    return FilterBuilder(newData);
-  }
+  FilterBuilder ilike(String column, String pattern) => _filter(
+        test: (element) => _like(
+          element[column],
+          pattern,
+          caseSensitive: false,
+        ),
+      );
 
   bool _like(String value, String pattern, {bool caseSensitive = true}) {
     // Escape regex metacharacters in the pattern
@@ -81,5 +59,16 @@ class FilterBuilder {
 
     // Match input against the regex pattern
     return regex.hasMatch(value);
+  }
+
+  FilterBuilder _filter({
+    required bool Function(
+      Map<String, dynamic> element,
+    ) test,
+  }) {
+    final data = _data;
+    final newData = data.where(test).toList();
+
+    return FilterBuilder(newData);
   }
 }
