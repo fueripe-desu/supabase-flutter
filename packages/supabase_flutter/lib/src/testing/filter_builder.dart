@@ -70,6 +70,33 @@ class FilterBuilder {
   FilterBuilder ilikeAllOf(String column, List<String> patterns) =>
       _likeAllOf(column, patterns, false);
 
+  FilterBuilder likeAnyOf(String column, List<String> patterns) =>
+      _likeAnyOf(column, patterns, true);
+
+  FilterBuilder ilikeAnyOf(String column, List<String> patterns) =>
+      _likeAnyOf(column, patterns, false);
+
+  FilterBuilder _likeAnyOf(
+      String column, List<String> patterns, bool caseSensitive) {
+    // Initialize an empty list to store filtered data
+    final List<Map<String, dynamic>> newData = [];
+    for (final row in _data) {
+      // Extract the value of the specified column for the current row
+      final data = row[column];
+      for (final pattern in patterns) {
+        // If a match is found, add the matched data to the newData list
+        // and break out of the loop, therefore only adding if it satisfies one
+        // of the patterns
+        if (_like(data, pattern, caseSensitive: caseSensitive)) {
+          newData.add(row);
+          break;
+        }
+      }
+    }
+
+    return FilterBuilder([...newData]);
+  }
+
   FilterBuilder _likeAllOf(
       String column, List<String> patterns, bool caseSensitive) {
     // Temporary list to hold filtered data
