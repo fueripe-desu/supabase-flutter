@@ -99,25 +99,21 @@ class FilterBuilder {
 
   FilterBuilder _likeAllOf(
       String column, List<String> patterns, bool caseSensitive) {
-    // Temporary list to hold filtered data
     final List<Map<String, dynamic>> newData = [];
+    for (final row in _data) {
+      // Extract the value of the specified column for the current row
+      final data = row[column];
+      for (final pattern in patterns) {
+        // If it does not match any of the patterns, it breaks out of the loop
+        if (!_like(data, pattern, caseSensitive: caseSensitive)) {
+          break;
+        }
 
-    for (final pattern in patterns) {
-      final List<Map<String, dynamic>> dataToFilter = [];
-
-      if (newData.isNotEmpty) {
-        // If the newData list is empty, add data from the _data list
-        dataToFilter.addAll(newData);
-      } else {
-        dataToFilter.addAll(_data);
+        // If the current pattern is the last one, it means all others have passed
+        if (pattern == patterns.last) {
+          newData.add(row);
+        }
       }
-
-      // Filter the dataToFilter list to retain elements where the specified column matches the pattern
-      dataToFilter.retainWhere((element) =>
-          _like(element[column], pattern, caseSensitive: caseSensitive));
-
-      newData.clear();
-      newData.addAll(dataToFilter);
     }
 
     return FilterBuilder([...newData]);
