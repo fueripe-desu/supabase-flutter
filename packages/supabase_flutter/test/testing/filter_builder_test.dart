@@ -162,8 +162,41 @@ void main() {
       expect(deepEq(result, [tasks[3]]), true);
     });
 
-    test('Should return no data when no patterns provided', () {
+    test('should return no data when no patterns provided', () {
       final result = FilterBuilder(tasks).likeAllOf('title', []).execute();
+      expect(result.isEmpty, true);
+    });
+  });
+
+  group('likeAnyOf and ilikeAnyOf tests', () {
+    test('should return filtered data for matching patterns', () {
+      final result = FilterBuilder(tasks).ilikeAnyOf(
+          'title', ['Send%', '%presentation%', '%project']).execute();
+      expect(deepEq(result, [tasks[1], tasks[2], tasks[4]]), true);
+    });
+
+    test('should return empty list for non-matching patterns', () {
+      final result = FilterBuilder(tasks)
+          .likeAnyOf('description', ['unknown', 'invalid']).execute();
+      expect(result.isEmpty, true);
+    });
+
+    test('should return data for partial matches', () {
+      final result = FilterBuilder(tasks)
+          .ilikeAnyOf('title', ['%TASK%', 'Unknown']).execute();
+
+      expect(deepEq(result, [tasks[0]]), true);
+    });
+
+    test('should return filtered data with exact matches', () {
+      final result = FilterBuilder(tasks).likeAnyOf('deadline',
+          ['2024-01-12T08:00:00Z', '2024-01-14T08:00:00Z']).execute();
+
+      expect(deepEq(result, [tasks[3], tasks[5]]), true);
+    });
+
+    test('should return no data when no patterns provided', () {
+      final result = FilterBuilder(tasks).ilikeAnyOf('title', []).execute();
       expect(result.isEmpty, true);
     });
   });
