@@ -4,27 +4,47 @@ class FilterBuilder {
 
   List<Map<String, dynamic>> execute() => _data;
 
-  FilterBuilder eq(String column, dynamic value) => _filter(
-        test: (element) => element[column] == value,
-      );
+  FilterBuilder eq(String column, Object value) {
+    if (value is List) {
+      final newData = _data
+          .where(
+            (element) => value.contains(element[column]),
+          )
+          .toList();
+      return FilterBuilder(newData);
+    }
 
-  FilterBuilder neq(String column, dynamic value) => _filter(
-        test: (element) => element[column] != value,
-      );
+    final newData = _data.where((element) => element[column] == value).toList();
+    return FilterBuilder(newData);
+  }
 
-  FilterBuilder gt(String column, dynamic value) => _filter(
+  FilterBuilder neq(String column, Object value) {
+    if (value is List) {
+      final newData = _data
+          .where(
+            (element) => !value.contains(element[column]),
+          )
+          .toList();
+      return FilterBuilder(newData);
+    }
+
+    final newData = _data.where((element) => element[column] != value).toList();
+    return FilterBuilder(newData);
+  }
+
+  FilterBuilder gt(String column, Object value) => _filter(
         test: (element) => element[column] > value,
       );
 
-  FilterBuilder gte(String column, dynamic value) => _filter(
+  FilterBuilder gte(String column, Object value) => _filter(
         test: (element) => element[column] >= value,
       );
 
-  FilterBuilder lt(String column, dynamic value) => _filter(
+  FilterBuilder lt(String column, Object value) => _filter(
         test: (element) => element[column] < value,
       );
 
-  FilterBuilder lte(String column, dynamic value) => _filter(
+  FilterBuilder lte(String column, Object value) => _filter(
         test: (element) => element[column] <= value,
       );
 
@@ -43,6 +63,38 @@ class FilterBuilder {
           caseSensitive: false,
         ),
       );
+
+  FilterBuilder likeAllOf(String column, List<String> patterns) =>
+      _likeAllOf(column, patterns, true);
+
+  FilterBuilder ilikeAllOf(String column, List<String> patterns) =>
+      _likeAllOf(column, patterns, false);
+
+  FilterBuilder _likeAllOf(
+      String column, List<String> patterns, bool caseSensitive) {
+    // Temporary list to hold filtered data
+    final List<Map<String, dynamic>> newData = [];
+
+    for (final pattern in patterns) {
+      final List<Map<String, dynamic>> dataToFilter = [];
+
+      if (newData.isNotEmpty) {
+        // If the newData list is empty, add data from the _data list
+        dataToFilter.addAll(newData);
+      } else {
+        dataToFilter.addAll(_data);
+      }
+
+      // Filter the dataToFilter list to retain elements where the specified column matches the pattern
+      dataToFilter.retainWhere((element) =>
+          _like(element[column], pattern, caseSensitive: caseSensitive));
+
+      newData.clear();
+      newData.addAll(dataToFilter);
+    }
+
+    return FilterBuilder([...newData]);
+  }
 
   bool _like(String value, String pattern, {bool caseSensitive = true}) {
     // Escape regex metacharacters in the pattern
