@@ -26,6 +26,15 @@ void main() {
   });
 
   test(
+      'should return only the elements that are equal to one of the values specified',
+      () {
+    final expectedMap =
+        tasks.where((element) => [0, 1, 4].contains(element['id'])).toList();
+    final result = FilterBuilder(tasks).eq('id', [0, 1, 4]).execute();
+    expect(deepEq(result, expectedMap), true);
+  });
+
+  test(
       'should return all the elements that are not equal the condition specified',
       () {
     final expectedMap = tasks.where((element) => element['id'] != 2).toList();
@@ -37,6 +46,17 @@ void main() {
 
     expect(deepEq(result, expectedMap), true);
     expect(deepEq(result2, expectedMap2), true);
+  });
+
+  test(
+      'should return all the elements that are not equal to any of the elements of the specified list',
+      () {
+    final expectedMap =
+        tasks.where((element) => ![1, 2].contains(element['id'])).toList();
+
+    final result = FilterBuilder(tasks).neq('id', [1, 2]).execute();
+
+    expect(deepEq(result, expectedMap), true);
   });
 
   test(
@@ -111,6 +131,40 @@ void main() {
         result,
         [],
       );
+    });
+  });
+
+  group('likeAllOf and ilikeAllOf tests', () {
+    test('should return filtered data for matching patterns', () {
+      final result = FilterBuilder(tasks)
+          .likeAllOf('title', ['Send%', '%manager']).execute();
+      expect(deepEq(result, [tasks[2]]), true);
+    });
+
+    test('should return empty list for non-matching patterns', () {
+      final result = FilterBuilder(tasks)
+          .likeAllOf('description', ['unknown', 'invalid']).execute();
+      expect(result.isEmpty, true);
+    });
+
+    test('should return filtered data with case-insensitive matching', () {
+      final expectedMap =
+          tasks.where((element) => [0, 2, 5].contains(element['id'])).toList();
+      final result =
+          FilterBuilder(tasks).ilikeAllOf('status', ['%PENDING%']).execute();
+      expect(deepEq(result, expectedMap), true);
+    });
+
+    test('should return filtered data with exact matches', () {
+      final result = FilterBuilder(tasks)
+          .likeAllOf('deadline', ['2024-01-12T08:00:00Z']).execute();
+
+      expect(deepEq(result, [tasks[3]]), true);
+    });
+
+    test('Should return no data when no patterns provided', () {
+      final result = FilterBuilder(tasks).likeAllOf('title', []).execute();
+      expect(result.isEmpty, true);
     });
   });
 }
