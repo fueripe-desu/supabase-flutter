@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/src/testing/range_type.dart';
+
 typedef ValidatorFunction = bool Function(dynamic value);
 
 abstract class SchemaType {
@@ -65,6 +67,32 @@ class ValueSchemaType extends SchemaType {
     return ValueSchemaType(
       validatorFunction,
       foreignKeyInfo: foreignKeyInfo ?? this.foreignKeyInfo,
+    );
+  }
+}
+
+class RangeSchemaType extends SchemaType {
+  RangeDataType rangeDataType;
+
+  RangeSchemaType(this.rangeDataType, {super.foreignKeyInfo});
+
+  @override
+  bool call(value) {
+    try {
+      final range = RangeType.createRange(range: value);
+      if (range.rangeDataType != rangeDataType) {
+        return false;
+      }
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  @override
+  SchemaType copyWith({ForeignKeyInfo? foreignKeyInfo}) {
+    throw Exception(
+      'Range values do not support foreign keys, therefore they can\'t be changed.',
     );
   }
 }

@@ -143,6 +143,18 @@ The error was caused by the schema field: $key''',
           );
         }
       }
+
+      if (validateFunc is RangeSchemaType) {
+        final result = validateFunc(value);
+
+        if (result == false) {
+          ValidatorResult(
+            message:
+                'the value \'$value\' is not a valid input for the field \'$key\'.',
+            isValid: false,
+          );
+        }
+      }
     }
 
     return const ValidatorResult(

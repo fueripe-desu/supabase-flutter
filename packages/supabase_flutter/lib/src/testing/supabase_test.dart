@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:supabase_flutter/src/constants.dart';
 import 'package:supabase_flutter/src/testing/json_schema_validator.dart';
 import 'package:supabase_flutter/src/testing/query_parser.dart';
+import 'package:supabase_flutter/src/testing/range_type.dart';
 import 'package:supabase_flutter/src/testing/schema_metadata.dart';
 import 'package:supabase_flutter/src/testing/schema_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -82,6 +83,10 @@ class SupabaseTest {
         }
         requiredFields.add(key);
         uniqueKeys.add(key);
+      }
+
+      if (value is RangeSchemaType) {
+        requiredFields.add(key);
       }
     });
 
@@ -721,4 +726,8 @@ SchemaType sType<T>({
   }
 
   return ValueSchemaType(validateFn);
+}
+
+SchemaType sRange({required RangeDataType dataType}) {
+  return RangeSchemaType(dataType);
 }
