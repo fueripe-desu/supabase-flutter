@@ -73,6 +73,11 @@ abstract class RangeType {
         );
       }
 
+      // Reassigns valuePair without removing spaces, because they are needed
+      // in certain circumstances
+      valuePair.clear();
+      valuePair.addAll(range.removeBrackets().split(',').trimAll());
+
       if (DateTime.tryParse(valuePair[0]) != null) {
         if (DateTime.tryParse(valuePair[1]) == null) {
           throw Exception(
@@ -110,6 +115,7 @@ abstract class RangeType {
   final String rawRangeString;
 
   bool isInRange(dynamic value);
+  List<dynamic> getComparable();
 
   static RangeDataType _getDataTypeFromTimestamp(String timestamp) {
     // Matches all characters ignoring digits, this is used with the
@@ -159,6 +165,14 @@ class IntegerRangeType extends RangeType {
 
     return inLowerRange && inUpperRange;
   }
+
+  @override
+  List<int> getComparable() {
+    final newLowerRange = lowerRangeInclusive ? lowerRange : lowerRange + 1;
+    final newUpperRange = upperRangeInclusive ? upperRange : upperRange - 1;
+
+    return [newLowerRange, newUpperRange];
+  }
 }
 
 class FloatRangeType extends RangeType {
@@ -185,6 +199,14 @@ class FloatRangeType extends RangeType {
         : valueToCheck < upperRange;
 
     return inLowerRange && inUpperRange;
+  }
+
+  @override
+  List<double> getComparable() {
+    final newLowerRange = lowerRangeInclusive ? lowerRange : lowerRange + 0.1;
+    final newUpperRange = upperRangeInclusive ? upperRange : upperRange - 0.1;
+
+    return [newLowerRange, newUpperRange];
   }
 }
 
@@ -342,6 +364,24 @@ class DateRangeType extends RangeType {
         : valueToCheck.isBefore(upperRange);
 
     return inLowerRange && inUpperRange;
+  }
+
+  @override
+  List<DateTime> getComparable() {
+    late final Duration duration;
+
+    if (rangeDataType == RangeDataType.date) {
+      duration = const Duration(days: 1);
+    } else {
+      duration = const Duration(milliseconds: 1);
+    }
+
+    final newLowerRange =
+        lowerRangeInclusive ? lowerRange : lowerRange.add(duration);
+    final newUpperRange =
+        upperRangeInclusive ? upperRange : upperRange.subtract(duration);
+
+    return [newLowerRange, newUpperRange];
   }
 
   static String _removeTzOffsets(String range) {

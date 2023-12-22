@@ -5,3 +5,7 @@ extension RangeTypeExtension on String {
 extension StringUtils on String {
   String removeSpaces() => replaceAll(' ', '');
 }
+
+extension ListStringUtils on List<String> {
+  List<String> trimAll() => map((e) => e.trim()).toList();
+}
