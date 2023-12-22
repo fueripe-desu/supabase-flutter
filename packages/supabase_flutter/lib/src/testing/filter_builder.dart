@@ -1,3 +1,6 @@
+import 'package:collection/collection.dart';
+import 'package:supabase_flutter/src/testing/range_type.dart';
+
 class FilterBuilder {
   final List<Map<String, dynamic>> _data;
   const FilterBuilder(List<Map<String, dynamic>> data) : _data = data;
@@ -75,6 +78,67 @@ class FilterBuilder {
 
   FilterBuilder ilikeAnyOf(String column, List<String> patterns) =>
       _likeAnyOf(column, patterns, false);
+
+  FilterBuilder isFilter(String column, Object? value) => _filter(
+        test: (element) => element[column] == value,
+      );
+
+  FilterBuilder inFilter(String column, List<dynamic> value) => _filter(
+        test: (element) => value.contains(
+          element[column],
+        ),
+      );
+
+  FilterBuilder contains(String column, Object value) {
+    if (value is String) {
+      final rangeValue = RangeType.createRange(range: value);
+      final comparable = rangeValue.getComparable();
+      return _filter(
+        test: (element) {
+          final data = element[column];
+          final rangeToTest = RangeType.createRange(range: data);
+
+          return rangeToTest.isInRange(comparable[0]) &&
+              rangeToTest.isInRange(comparable[1]);
+        },
+      );
+    }
+    if (value is List) {
+      return _filter(
+        test: (row) {
+          final data = row[column];
+
+          if (data is List) {
+            return value.every((element) => data.contains(element));
+          }
+
+          return value.every((element) => element == data);
+        },
+      );
+    }
+
+    if (value is Map) {
+      return _filter(
+        test: (row) {
+          final data = row[column];
+
+          if (data is Map) {
+            final everyKeyExists =
+                value.keys.every((element) => data.containsKey(element));
+            final everyValueExists =
+                value.values.every((element) => data.containsValue(element));
+            return everyKeyExists && everyValueExists;
+          }
+
+          throw Exception(
+            'Invalid use of \'contains\' filter. Please when using contains with jsonb make sure that the target data is also a json map.',
+          );
+        },
+      );
+    }
+
+    return const FilterBuilder([]);
+  }
 
   FilterBuilder _likeAnyOf(
       String column, List<String> patterns, bool caseSensitive) {
