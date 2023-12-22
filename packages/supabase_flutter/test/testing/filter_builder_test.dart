@@ -8,15 +8,21 @@ import '../json/json_reader.dart';
 
 void main() {
   late final List<Map<String, dynamic>> tasks;
+  late final List<Map<String, dynamic>> reservations;
   late final bool Function(Object?, Object?) deepEq;
 
-  setUpAll(() {
-    final jsonString = readJson('tasks.json');
+  List<Map<String, dynamic>> loadJson(String jsonName) {
+    final jsonString = readJson(jsonName);
     final parsedList = json.decode(jsonString) as List<dynamic>;
-    tasks = parsedList
+    return parsedList
         .map((dynamic item) =>
             Map<String, dynamic>.from(item as Map<String, dynamic>))
         .toList();
+  }
+
+  setUpAll(() {
+    tasks = loadJson('tasks.json');
+    reservations = loadJson('reservations.json');
     deepEq = const DeepCollectionEquality.unordered().equals;
   });
   test('should return only the elements that are equal to the value specified',
@@ -198,6 +204,119 @@ void main() {
     test('should return no data when no patterns provided', () {
       final result = FilterBuilder(tasks).ilikeAnyOf('title', []).execute();
       expect(result.isEmpty, true);
+    });
+  });
+
+  group('contains tests', () {
+    test('should match all rows that are within the range', () {
+      final result = FilterBuilder(reservations)
+          .contains('during', '[2000-01-01 13:00, 2000-01-01 13:30)')
+          .execute();
+
+      expect(deepEq(result, [reservations[0]]), true);
+    });
+
+    test(
+        'should correctly carry out comparisons between inclusive and exclusive ends',
+        () {
+      final data = [
+        {
+          "id": 1,
+          "room_name": "Emerald",
+          "during": "[2000-01-01 13:00, 2000-01-01 15:00)"
+        }
+      ];
+
+      // So, in the last bracket, it's a comparison between exclusive (filter) and
+      // exclusive (data), so it must return true
+      final result1 = FilterBuilder(data)
+          .contains('during', '[2000-01-01 13:00, 2000-01-01 15:00)')
+          .execute();
+
+      // So, in the last bracket, it's a comparison between inclusive (filter) and
+      // exclusive (data), so it must return false
+      final result2 = FilterBuilder(data)
+          .contains('during', '[2000-01-01 13:00, 2000-01-01 15:00]')
+          .execute();
+
+      // So, in the first bracket, it's a comparison between exclusive (filter) and
+      // inclusive (data), so it must return true
+      final result3 = FilterBuilder(data)
+          .contains('during', '(2000-01-01 13:00, 2000-01-01 15:00)')
+          .execute();
+
+      // So, in the first bracket, it's a comparison between inclusive (filter) and
+      // inclusive (data), so it must return true
+      final result4 = FilterBuilder(reservations)
+          .contains('during', '[2000-01-01 13:00, 2000-01-01 15:00)')
+          .execute();
+
+      expect(deepEq(result1, [reservations[0]]), true);
+      expect(result2.isEmpty, true);
+      expect(deepEq(result3, [reservations[0]]), true);
+      expect(deepEq(result4, [reservations[0]]), true);
+    });
+
+    test('should return rows that contains every element specified', () {
+      final expectedMap =
+          tasks.where((element) => [0, 2, 5].contains(element['id'])).toList();
+
+      final result =
+          FilterBuilder(tasks).contains('status', ['pending']).execute();
+
+      expect(deepEq(result, expectedMap), true);
+    });
+
+    test(
+        'should return rows that contains every element when a list is specified',
+        () {
+      final issues = [
+        {
+          'id': 1,
+          'title': 'Cache invalidation is not working',
+          'tags': ['is:open', 'severity:high', 'priority:low'],
+        },
+        {
+          'id': 2,
+          'title': 'Use better names',
+          'tags': ['is:open', 'severity:low', 'priority:medium'],
+        },
+      ];
+
+      final result = FilterBuilder(issues)
+          .contains('tags', ['is:open', 'priority:low']).execute();
+
+      expect(deepEq(result, [issues[0]]), true);
+    });
+
+    test('should return rows that contains every element in the specified map',
+        () {
+      final users = [
+        {
+          'id': 1,
+          'name': 'Michael',
+          'address': {"postcode": 90210, "street": "Melrose Place"},
+        },
+        {
+          'id': 2,
+          'name': 'Jane',
+          'address': {},
+        },
+      ];
+
+      final result = FilterBuilder(users)
+          .contains('address', {"postcode": 90210}).execute();
+
+      expect(deepEq(result, [users[0]]), true);
+    });
+
+    test(
+        'should throw an Exception when using contains with a map on a field that is not a map',
+        () {
+      expect(
+        () => FilterBuilder(tasks).contains('id', {"unknown": null}).execute(),
+        throwsException,
+      );
     });
   });
 }
