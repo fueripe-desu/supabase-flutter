@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:supabase_flutter/src/testing/range_type.dart';
+import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
 
 class FilterBuilder {
   final List<Map<String, dynamic>> _data;
@@ -123,11 +124,7 @@ class FilterBuilder {
           final data = row[column];
 
           if (data is Map) {
-            final everyKeyExists =
-                value.keys.every((element) => data.containsKey(element));
-            final everyValueExists =
-                value.values.every((element) => data.containsValue(element));
-            return everyKeyExists && everyValueExists;
+            return data.contains(value);
           }
 
           throw Exception(

@@ -9,3 +9,9 @@ extension StringUtils on String {
 extension ListStringUtils on List<String> {
   List<String> trimAll() => map((e) => e.trim()).toList();
 }
+
+extension MapUtils on Map {
+  bool contains(Map other) => other.entries.every(
+        (element) => containsKey(element.key) && containsValue(element.value),
+      );
+}
