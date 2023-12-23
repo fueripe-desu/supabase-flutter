@@ -9,6 +9,7 @@ import '../json/json_reader.dart';
 void main() {
   late final List<Map<String, dynamic>> tasks;
   late final List<Map<String, dynamic>> reservations;
+  late final List<Map<String, dynamic>> users;
   late final bool Function(Object?, Object?) deepEq;
 
   List<Map<String, dynamic>> loadJson(String jsonName) {
@@ -24,6 +25,19 @@ void main() {
     tasks = loadJson('tasks.json');
     reservations = loadJson('reservations.json');
     deepEq = const DeepCollectionEquality.unordered().equals;
+
+    users = [
+      {
+        'id': 1,
+        'name': 'Michael',
+        'address': {"postcode": 90210, "street": "Melrose Place"},
+      },
+      {
+        'id': 2,
+        'name': 'Jane',
+        'address': {},
+      },
+    ];
   });
   test('should return only the elements that are equal to the value specified',
       () {
@@ -291,19 +305,6 @@ void main() {
 
     test('should return rows that contains every element in the specified map',
         () {
-      final users = [
-        {
-          'id': 1,
-          'name': 'Michael',
-          'address': {"postcode": 90210, "street": "Melrose Place"},
-        },
-        {
-          'id': 2,
-          'name': 'Jane',
-          'address': {},
-        },
-      ];
-
       final result = FilterBuilder(users)
           .contains('address', {"postcode": 90210}).execute();
 
@@ -317,6 +318,68 @@ void main() {
         () => FilterBuilder(tasks).contains('id', {"unknown": null}).execute(),
         throwsException,
       );
+    });
+  });
+
+  group('containedBy tests', () {
+    test('should return all rows that are contained by the specified range',
+        () {
+      final expectedMap = reservations
+          .where((element) => [1, 2, 3].contains(element['id']))
+          .toList();
+
+      final result = FilterBuilder(reservations)
+          .containedBy('during', '[2000-01-01 00:00, 2000-01-03 23:59)')
+          .execute();
+
+      expect(
+        deepEq(result, expectedMap),
+        true,
+      );
+    });
+
+    test('should return all rows that are contained by the specified list', () {
+      final classes = [
+        {
+          'id': 1,
+          'name': 'Chemistry',
+          'days': ['monday', 'friday'],
+        },
+        {
+          'id': 2,
+          'name': 'History',
+          'days': ['monday', 'wednesday', 'thursday'],
+        },
+      ];
+
+      final result = FilterBuilder(classes).containedBy(
+          'days', ['monday', 'tuesday', 'wednesday', 'friday']).execute();
+
+      expect(deepEq(result, [classes[0]]), true);
+    });
+
+    test(
+        'should return all rows that are contained by the specified list on a column that is not a list',
+        () {
+      final expectedMap = tasks.where((element) => element['id'] != 3).toList();
+
+      final result = FilterBuilder(tasks)
+          .containedBy('status', ['pending', 'in-progress']).execute();
+
+      expect(deepEq(result, expectedMap), true);
+    });
+
+    test('should return all rows that are contained by the specified map', () {
+      final result = FilterBuilder(users).containedBy(
+          'address', {"postcode": 90210, "street": "Melrose Place"}).execute();
+
+      expect(deepEq(result, users), true);
+    });
+
+    test('should works as expected with empty maps', () {
+      final result = FilterBuilder(users).containedBy('address', {}).execute();
+
+      expect(deepEq(result, [users[1]]), true);
     });
   });
 }
