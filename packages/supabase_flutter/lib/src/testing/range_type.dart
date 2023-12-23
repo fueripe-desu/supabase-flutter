@@ -117,6 +117,8 @@ abstract class RangeType {
   bool isInRange(dynamic value);
   List<dynamic> getComparable();
 
+  bool operator >(RangeType other);
+
   static RangeDataType _getDataTypeFromTimestamp(String timestamp) {
     // Matches all characters ignoring digits, this is used with the
     // replaceAll() function to remove all characters leaving only digits, e.g.
@@ -173,6 +175,23 @@ class IntegerRangeType extends RangeType {
 
     return [newLowerRange, newUpperRange];
   }
+
+  @override
+  bool operator >(RangeType other) {
+    if (other is IntegerRangeType) {
+      final thisComparable = getComparable();
+      final otherComparable = other.getComparable();
+
+      final thisLowerRange = thisComparable[0];
+      final otherUpperRange = otherComparable[1];
+
+      return thisLowerRange > otherUpperRange;
+    }
+
+    throw Exception(
+      'Cannot compare range type with an object of a different type',
+    );
+  }
 }
 
 class FloatRangeType extends RangeType {
@@ -207,6 +226,23 @@ class FloatRangeType extends RangeType {
     final newUpperRange = upperRangeInclusive ? upperRange : upperRange - 0.1;
 
     return [newLowerRange, newUpperRange];
+  }
+
+  @override
+  bool operator >(RangeType other) {
+    if (other is FloatRangeType) {
+      final thisComparable = getComparable();
+      final otherComparable = other.getComparable();
+
+      final thisLowerRange = thisComparable[0];
+      final otherUpperRange = otherComparable[1];
+
+      return thisLowerRange > otherUpperRange;
+    }
+
+    throw Exception(
+      'Cannot compare range type with an object of a different type',
+    );
   }
 }
 
@@ -382,6 +418,23 @@ class DateRangeType extends RangeType {
         upperRangeInclusive ? upperRange : upperRange.subtract(duration);
 
     return [newLowerRange, newUpperRange];
+  }
+
+  @override
+  bool operator >(RangeType other) {
+    if (other is DateRangeType) {
+      final thisComparable = getComparable();
+      final otherComparable = other.getComparable();
+
+      final thisLowerRange = thisComparable[0];
+      final otherUpperRange = otherComparable[1];
+
+      return thisLowerRange.isAfter(otherUpperRange);
+    }
+
+    throw Exception(
+      'Cannot compare range type with an object of a different type',
+    );
   }
 
   static String _removeTzOffsets(String range) {
