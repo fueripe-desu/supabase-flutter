@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/src/testing/range_type.dart';
 import 'package:supabase_flutter/src/testing/schema_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
@@ -1481,6 +1482,25 @@ void main() {
     expect(deepEq(data, expectedMap), true);
 
     await client.dispose();
+  });
+
+  test('should successfuly create a range field', () {
+    // arrange
+    SupabaseTest.createTable(
+      'events',
+      {
+        "id": sType<int>(isPrimaryKey: true, isIdentity: true),
+        "title": sType<String>(),
+        "duration": sRange(dataType: RangeDataType.timestamp),
+      },
+    );
+
+    SupabaseTest.insertData('events', [
+      {
+        "title": "event 1",
+        "duration": '[2000-01-01 13:00, 2000-01-01 13:30)',
+      },
+    ]);
   });
 
   test('should hit mock http client endpoint', () async {
