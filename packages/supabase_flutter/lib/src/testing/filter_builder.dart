@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:supabase_flutter/src/testing/range_type.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
 
@@ -90,17 +89,33 @@ class FilterBuilder {
         ),
       );
 
-  FilterBuilder contains(String column, Object value) {
+  FilterBuilder contains(String column, Object value) =>
+      _contains(column, value, false);
+
+  FilterBuilder containedBy(String column, Object value) =>
+      _contains(column, value, true);
+
+  FilterBuilder _contains(String column, Object value, bool isContainedBy) {
     if (value is String) {
       final rangeValue = RangeType.createRange(range: value);
-      final comparable = rangeValue.getComparable();
       return _filter(
         test: (element) {
           final data = element[column];
           final rangeToTest = RangeType.createRange(range: data);
 
-          return rangeToTest.isInRange(comparable[0]) &&
-              rangeToTest.isInRange(comparable[1]);
+          late final List<dynamic> comparable;
+          late final RangeType rangeToCompare;
+
+          if (isContainedBy) {
+            comparable = rangeToTest.getComparable();
+            rangeToCompare = rangeValue;
+          } else {
+            comparable = rangeValue.getComparable();
+            rangeToCompare = rangeToTest;
+          }
+
+          return rangeToCompare.isInRange(comparable[0]) &&
+              rangeToCompare.isInRange(comparable[1]);
         },
       );
     }
@@ -110,7 +125,15 @@ class FilterBuilder {
           final data = row[column];
 
           if (data is List) {
+            if (isContainedBy) {
+              return data.every((element) => value.contains(element));
+            }
+
             return value.every((element) => data.contains(element));
+          }
+
+          if (isContainedBy) {
+            return value.any((element) => element == data);
           }
 
           return value.every((element) => element == data);
@@ -124,17 +147,22 @@ class FilterBuilder {
           final data = row[column];
 
           if (data is Map) {
+            if (isContainedBy) {
+              return value.contains(data);
+            }
             return data.contains(value);
           }
 
           throw Exception(
-            'Invalid use of \'contains\' filter. Please when using contains with jsonb make sure that the target data is also a json map.',
+            'Invalid use of \'${isContainedBy ? 'containedBy' : 'contains'}\' filter. Please when using contains with jsonb make sure that the target data is also a json map.',
           );
         },
       );
     }
 
-    return const FilterBuilder([]);
+    throw Exception(
+      'Invalid use of \'${isContainedBy ? 'containedBy' : 'contains'}\' filter. Must be used with range, list or jsonb.',
+    );
   }
 
   FilterBuilder _likeAnyOf(
