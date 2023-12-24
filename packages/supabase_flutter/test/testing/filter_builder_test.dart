@@ -382,4 +382,47 @@ void main() {
       expect(deepEq(result, [users[1]]), true);
     });
   });
+
+  group('range comparison filters tests', () {
+    test('should return all rows that are greater than the range specified',
+        () {
+      final expectedMap =
+          reservations.where((element) => element['id'] != 1).toList();
+      final result = FilterBuilder(reservations)
+          .rangeGt('during', '[2000-01-02 08:00, 2000-01-02 09:00)')
+          .execute();
+
+      expect(deepEq(result, expectedMap), true);
+    });
+
+    test(
+        'should return all rows that are greater than or equal to the range specified',
+        () {
+      final expectedMap =
+          reservations.where((element) => element['id'] != 1).toList();
+      final result = FilterBuilder(reservations)
+          .rangeGte('during', '[2000-01-02 08:30, 2000-01-02 09:30)')
+          .execute();
+
+      expect(deepEq(result, expectedMap), true);
+    });
+
+    test('should return all rows that are less than the range specified', () {
+      final result = FilterBuilder(reservations)
+          .rangeLt('during', '[2000-01-02 08:30, 2000-01-02 09:30)')
+          .execute();
+
+      expect(deepEq(result, [reservations[0]]), true);
+    });
+
+    test(
+        'should return all rows that are less than or equal to the range specified',
+        () {
+      final result = FilterBuilder(reservations)
+          .rangeLte('during', '[2000-01-02 08:30, 2000-01-02 09:30)')
+          .execute();
+
+      expect(deepEq(result, [reservations[0]]), true);
+    });
+  });
 }
