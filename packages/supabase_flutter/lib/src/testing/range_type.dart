@@ -115,9 +115,12 @@ abstract class RangeType {
   final String rawRangeString;
 
   bool isInRange(dynamic value);
-  List<dynamic> getComparable();
+  RangeComparable getComparable();
 
-  bool operator >(RangeType other);
+  bool operator >(RangeType other) => getComparable() > other.getComparable();
+  bool operator >=(RangeType other) => getComparable() >= other.getComparable();
+  bool operator <(RangeType other) => getComparable() < other.getComparable();
+  bool operator <=(RangeType other) => getComparable() <= other.getComparable();
 
   static RangeDataType _getDataTypeFromTimestamp(String timestamp) {
     // Matches all characters ignoring digits, this is used with the
@@ -169,27 +172,13 @@ class IntegerRangeType extends RangeType {
   }
 
   @override
-  List<int> getComparable() {
+  RangeComparable<int> getComparable() {
     final newLowerRange = lowerRangeInclusive ? lowerRange : lowerRange + 1;
     final newUpperRange = upperRangeInclusive ? upperRange : upperRange - 1;
 
-    return [newLowerRange, newUpperRange];
-  }
-
-  @override
-  bool operator >(RangeType other) {
-    if (other is IntegerRangeType) {
-      final thisComparable = getComparable();
-      final otherComparable = other.getComparable();
-
-      final thisLowerRange = thisComparable[0];
-      final otherUpperRange = otherComparable[1];
-
-      return thisLowerRange > otherUpperRange;
-    }
-
-    throw Exception(
-      'Cannot compare range type with an object of a different type',
+    return RangeComparable<int>(
+      lowerRange: newLowerRange,
+      upperRange: newUpperRange,
     );
   }
 }
@@ -221,27 +210,13 @@ class FloatRangeType extends RangeType {
   }
 
   @override
-  List<double> getComparable() {
+  RangeComparable<double> getComparable() {
     final newLowerRange = lowerRangeInclusive ? lowerRange : lowerRange + 0.1;
     final newUpperRange = upperRangeInclusive ? upperRange : upperRange - 0.1;
 
-    return [newLowerRange, newUpperRange];
-  }
-
-  @override
-  bool operator >(RangeType other) {
-    if (other is FloatRangeType) {
-      final thisComparable = getComparable();
-      final otherComparable = other.getComparable();
-
-      final thisLowerRange = thisComparable[0];
-      final otherUpperRange = otherComparable[1];
-
-      return thisLowerRange > otherUpperRange;
-    }
-
-    throw Exception(
-      'Cannot compare range type with an object of a different type',
+    return RangeComparable<double>(
+      lowerRange: newLowerRange,
+      upperRange: newUpperRange,
     );
   }
 }
@@ -403,7 +378,7 @@ class DateRangeType extends RangeType {
   }
 
   @override
-  List<DateTime> getComparable() {
+  RangeComparable<DateTime> getComparable() {
     late final Duration duration;
 
     if (rangeDataType == RangeDataType.date) {
@@ -417,23 +392,9 @@ class DateRangeType extends RangeType {
     final newUpperRange =
         upperRangeInclusive ? upperRange : upperRange.subtract(duration);
 
-    return [newLowerRange, newUpperRange];
-  }
-
-  @override
-  bool operator >(RangeType other) {
-    if (other is DateRangeType) {
-      final thisComparable = getComparable();
-      final otherComparable = other.getComparable();
-
-      final thisLowerRange = thisComparable[0];
-      final otherUpperRange = otherComparable[1];
-
-      return thisLowerRange.isAfter(otherUpperRange);
-    }
-
-    throw Exception(
-      'Cannot compare range type with an object of a different type',
+    return RangeComparable<DateTime>(
+      lowerRange: newLowerRange,
+      upperRange: newUpperRange,
     );
   }
 
@@ -508,5 +469,149 @@ class DateRangeType extends RangeType {
     }
 
     return offsets;
+  }
+}
+
+class RangeComparable<T> {
+  const RangeComparable({
+    required this.lowerRange,
+    required this.upperRange,
+  });
+
+  final T upperRange;
+  final T lowerRange;
+
+  bool operator >(RangeComparable other) => _compare(
+        other: other,
+        dateTimeFunc: (
+          thisLowerRange,
+          otherLowerRange,
+          _,
+          __,
+        ) =>
+            thisLowerRange.isAfter(otherLowerRange),
+        compareFunc: (
+          thisLowerRange,
+          otherLowerRange,
+          _,
+          __,
+        ) =>
+            thisLowerRange > otherLowerRange,
+      );
+
+  bool operator >=(RangeComparable other) => _compare(
+        other: other,
+        dateTimeFunc: (
+          thisLowerRange,
+          otherLowerRange,
+          _,
+          __,
+        ) =>
+            thisLowerRange.isAfter(otherLowerRange) ||
+            thisLowerRange.isAtSameMomentAs(otherLowerRange),
+        compareFunc: (
+          thisLowerRange,
+          otherLowerRange,
+          _,
+          __,
+        ) =>
+            thisLowerRange >= otherLowerRange,
+      );
+
+  bool operator <(RangeComparable other) => _compare(
+        other: other,
+        dateTimeFunc: (
+          thisLowerRange,
+          otherLowerRange,
+          _,
+          __,
+        ) =>
+            thisLowerRange.isBefore(otherLowerRange),
+        compareFunc: (
+          thisLowerRange,
+          otherLowerRange,
+          _,
+          __,
+        ) =>
+            thisLowerRange < otherLowerRange,
+      );
+
+  bool operator <=(RangeComparable other) => _compare(
+        other: other,
+        dateTimeFunc: (
+          thisLowerRange,
+          otherLowerRange,
+          _,
+          __,
+        ) =>
+            thisLowerRange.isBefore(otherLowerRange) ||
+            thisLowerRange.isAtSameMomentAs(otherLowerRange),
+        compareFunc: (
+          thisLowerRange,
+          otherLowerRange,
+          _,
+          __,
+        ) =>
+            thisLowerRange <= otherLowerRange,
+      );
+
+  @override
+  bool operator ==(Object other) => _compare(
+        other: other as RangeComparable,
+        dateTimeFunc: (
+          thisLowerRange,
+          otherLowerRange,
+          thisUpperRange,
+          otherUpperRange,
+        ) =>
+            thisLowerRange.isAtSameMomentAs(otherLowerRange) &&
+            thisUpperRange.isAtSameMomentAs(otherUpperRange),
+        compareFunc: (
+          thisLowerRange,
+          otherLowerRange,
+          thisUpperRange,
+          otherUpperRange,
+        ) =>
+            thisLowerRange == otherLowerRange &&
+            thisUpperRange == otherUpperRange,
+      );
+
+  @override
+  int get hashCode => Object.hash(lowerRange, upperRange);
+
+  bool _compare({
+    required RangeComparable other,
+    required bool Function(
+      DateTime thisLowerRange,
+      DateTime otherLowerRange,
+      DateTime thisUpperRange,
+      DateTime otherUpperRange,
+    ) dateTimeFunc,
+    required bool Function(
+      dynamic thisLowerRange,
+      dynamic otherLowerRange,
+      dynamic thisUpperRange,
+      dynamic otherUpperRange,
+    ) compareFunc,
+  }) {
+    if (T == DateTime && other.lowerRange is DateTime) {
+      return dateTimeFunc(
+        this.lowerRange as DateTime,
+        other.lowerRange as DateTime,
+        this.upperRange as DateTime,
+        other.upperRange as DateTime,
+      );
+    } else if (lowerRange.runtimeType == other.lowerRange.runtimeType) {
+      return compareFunc(
+        this.lowerRange,
+        other.lowerRange,
+        this.upperRange,
+        other.upperRange,
+      );
+    }
+
+    throw Exception(
+      'Cannot compare two range types of different types',
+    );
   }
 }
