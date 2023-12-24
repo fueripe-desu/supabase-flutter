@@ -95,21 +95,41 @@ class FilterBuilder {
   FilterBuilder containedBy(String column, Object value) =>
       _contains(column, value, true);
 
-  FilterBuilder rangeGt(String column, String range) {
-    final rangeValue = RangeType.createRange(range: range);
+  FilterBuilder rangeGt(String column, String range) => _compareRanges(
+        column: column,
+        range: range,
+        compareFunc: (inputRange, rowRange) => rowRange > inputRange,
+      );
+
+  FilterBuilder rangeGte(String column, String range) => _compareRanges(
+        column: column,
+        range: range,
+        compareFunc: (inputRange, rowRange) => rowRange >= inputRange,
+      );
+
+  FilterBuilder rangeLt(String column, String range) => _compareRanges(
+        column: column,
+        range: range,
+        compareFunc: (inputRange, rowRange) => rowRange < inputRange,
+      );
+
+  FilterBuilder rangeLte(String column, String range) => _compareRanges(
+        column: column,
+        range: range,
+        compareFunc: (inputRange, rowRange) => rowRange <= inputRange,
+      );
+
+  FilterBuilder _compareRanges({
+    required String column,
+    required String range,
+    required bool Function(RangeType inputRange, RangeType rowRange)
+        compareFunc,
+  }) {
+    final inputRange = RangeType.createRange(range: range);
 
     return _filter(test: (element) {
-      final elementRange = RangeType.createRange(range: element[column]);
-      return elementRange > rangeValue;
-    });
-  }
-
-  FilterBuilder rangeGte(String column, String range) {
-    final rangeValue = RangeType.createRange(range: range);
-
-    return _filter(test: (element) {
-      final elementRange = RangeType.createRange(range: element[column]);
-      return elementRange >= rangeValue;
+      final rowRange = RangeType.createRange(range: element[column]);
+      return compareFunc(inputRange, rowRange);
     });
   }
 
