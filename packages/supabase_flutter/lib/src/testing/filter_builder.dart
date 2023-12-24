@@ -95,6 +95,24 @@ class FilterBuilder {
   FilterBuilder containedBy(String column, Object value) =>
       _contains(column, value, true);
 
+  FilterBuilder rangeGt(String column, String range) {
+    final rangeValue = RangeType.createRange(range: range);
+
+    return _filter(test: (element) {
+      final elementRange = RangeType.createRange(range: element[column]);
+      return elementRange > rangeValue;
+    });
+  }
+
+  FilterBuilder rangeGte(String column, String range) {
+    final rangeValue = RangeType.createRange(range: range);
+
+    return _filter(test: (element) {
+      final elementRange = RangeType.createRange(range: element[column]);
+      return elementRange >= rangeValue;
+    });
+  }
+
   FilterBuilder _contains(String column, Object value, bool isContainedBy) {
     if (value is String) {
       final rangeValue = RangeType.createRange(range: value);
@@ -103,7 +121,7 @@ class FilterBuilder {
           final data = element[column];
           final rangeToTest = RangeType.createRange(range: data);
 
-          late final List<dynamic> comparable;
+          late final RangeComparable comparable;
           late final RangeType rangeToCompare;
 
           if (isContainedBy) {
@@ -114,8 +132,8 @@ class FilterBuilder {
             rangeToCompare = rangeToTest;
           }
 
-          return rangeToCompare.isInRange(comparable[0]) &&
-              rangeToCompare.isInRange(comparable[1]);
+          return rangeToCompare.isInRange(comparable.lowerRange) &&
+              rangeToCompare.isInRange(comparable.upperRange);
         },
       );
     }
