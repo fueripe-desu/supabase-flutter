@@ -451,4 +451,17 @@ void main() {
 
     expect(result, [issues[0]]);
   });
+
+  test('shoud match all the conditions specified', () {
+    final countries = [
+      {'id': 1, 'name': 'Afghanistan'},
+      {'id': 2, 'name': 'Albania'},
+      {'id': 3, 'name': 'Algeria'},
+    ];
+
+    final result =
+        FilterBuilder(countries).match({'id': 2, 'name': 'Albania'}).execute();
+
+    expect(result, [countries[1]]);
+  });
 }
