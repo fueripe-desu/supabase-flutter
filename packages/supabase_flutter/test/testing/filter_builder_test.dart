@@ -425,4 +425,20 @@ void main() {
       expect(deepEq(result, [reservations[0]]), true);
     });
   });
+
+  test('should return all rows that are adjacent to the specified range', () {
+    final result = FilterBuilder(reservations)
+        .rangeAdjacent('during', '[2000-01-01 12:00, 2000-01-01 13:00)')
+        .execute();
+
+    expect(result, [reservations[0]]);
+  });
+
+  test('should return all rows that overlaps the specified range', () {
+    final result = FilterBuilder(reservations)
+        .overlaps('during', '[2000-01-01 12:45, 2000-01-01 13:15)')
+        .execute();
+
+    expect(result, [reservations[0]]);
+  });
 }
