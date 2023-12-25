@@ -10,6 +10,7 @@ void main() {
   late final List<Map<String, dynamic>> tasks;
   late final List<Map<String, dynamic>> reservations;
   late final List<Map<String, dynamic>> users;
+  late final List<Map<String, dynamic>> issues;
   late final bool Function(Object?, Object?) deepEq;
 
   List<Map<String, dynamic>> loadJson(String jsonName) {
@@ -36,6 +37,19 @@ void main() {
         'id': 2,
         'name': 'Jane',
         'address': {},
+      },
+    ];
+
+    issues = [
+      {
+        'id': 1,
+        'title': 'Cache invalidation is not working',
+        'tags': ['is:open', 'severity:high', 'priority:low'],
+      },
+      {
+        'id': 2,
+        'title': 'Use better names',
+        'tags': ['is:open', 'severity:low', 'priority:medium'],
       },
     ];
   });
@@ -284,19 +298,6 @@ void main() {
     test(
         'should return rows that contains every element when a list is specified',
         () {
-      final issues = [
-        {
-          'id': 1,
-          'title': 'Cache invalidation is not working',
-          'tags': ['is:open', 'severity:high', 'priority:low'],
-        },
-        {
-          'id': 2,
-          'title': 'Use better names',
-          'tags': ['is:open', 'severity:low', 'priority:medium'],
-        },
-      ];
-
       final result = FilterBuilder(issues)
           .contains('tags', ['is:open', 'priority:low']).execute();
 
@@ -440,5 +441,14 @@ void main() {
         .execute();
 
     expect(result, [reservations[0]]);
+  });
+
+  test(
+      'should return all rows that have element in common with the specified list',
+      () {
+    final result = FilterBuilder(issues)
+        .overlaps('tags', ['is:closed', 'severity:high']).execute();
+
+    expect(result, [issues[0]]);
   });
 }
