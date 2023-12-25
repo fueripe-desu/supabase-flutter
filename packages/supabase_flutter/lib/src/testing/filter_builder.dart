@@ -125,11 +125,31 @@ class FilterBuilder {
         compareFunc: (inputRange, rowRange) => rowRange.isAdjacent(inputRange),
       );
 
-  FilterBuilder overlaps(String column, String range) => _compareRanges(
+  FilterBuilder overlaps(String column, Object value) {
+    if (value is String) {
+      return _compareRanges(
         column: column,
-        range: range,
+        range: value,
         compareFunc: (inputRange, rowRange) => rowRange.overlaps(inputRange),
       );
+    }
+
+    if (value is List) {
+      return _filter(test: (element) {
+        final data = element[column];
+
+        if (data is List) {
+          return value.any((element) => data.contains(element));
+        }
+
+        throw Exception(
+          'Overlaps must be used in lists when passing a list as argument.',
+        );
+      });
+    }
+
+    throw Exception('Invalid use of overlaps.');
+  }
 
   FilterBuilder _compareRanges({
     required String column,
