@@ -151,6 +151,16 @@ class FilterBuilder {
     throw Exception('Invalid use of overlaps.');
   }
 
+  FilterBuilder match(Map<String, dynamic> query) {
+    FilterBuilder oldResult = FilterBuilder(_data);
+
+    query.forEach((key, value) {
+      oldResult = oldResult.eq(key, value);
+    });
+
+    return oldResult;
+  }
+
   FilterBuilder _compareRanges({
     required String column,
     required String range,
