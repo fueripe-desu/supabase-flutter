@@ -119,6 +119,18 @@ class FilterBuilder {
         compareFunc: (inputRange, rowRange) => rowRange <= inputRange,
       );
 
+  FilterBuilder rangeAdjacent(String column, String range) => _compareRanges(
+        column: column,
+        range: range,
+        compareFunc: (inputRange, rowRange) => rowRange.isAdjacent(inputRange),
+      );
+
+  FilterBuilder overlaps(String column, String range) => _compareRanges(
+        column: column,
+        range: range,
+        compareFunc: (inputRange, rowRange) => rowRange.overlaps(inputRange),
+      );
+
   FilterBuilder _compareRanges({
     required String column,
     required String range,

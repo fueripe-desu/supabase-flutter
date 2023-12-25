@@ -115,6 +115,8 @@ abstract class RangeType {
   final String rawRangeString;
 
   bool isInRange(dynamic value);
+  bool isAdjacent(RangeType other);
+  bool overlaps(RangeType other);
   RangeComparable getComparable();
 
   bool operator >(RangeType other) => getComparable() > other.getComparable();
@@ -181,6 +183,35 @@ class IntegerRangeType extends RangeType {
       upperRange: newUpperRange,
     );
   }
+
+  @override
+  bool isAdjacent(RangeType other) {
+    // If ranges overlap, they cannot be adjacent
+    if (overlaps(other)) {
+      return false;
+    }
+
+    if (rangeDataType == other.rangeDataType) {
+      final otherRange = other as IntegerRangeType;
+
+      // Check if the ranges share a common boundary
+      return (lowerRange == otherRange.upperRange) ||
+          (upperRange == otherRange.lowerRange);
+    }
+
+    throw Exception(
+      'Cannot check adjacency between two datetimes of different types.',
+    );
+  }
+
+  @override
+  bool overlaps(RangeType other) {
+    final thisComparable = getComparable();
+    final otherComparable = other.getComparable();
+
+    return thisComparable.lowerRange < otherComparable.upperRange &&
+        thisComparable.upperRange > otherComparable.lowerRange;
+  }
 }
 
 class FloatRangeType extends RangeType {
@@ -217,6 +248,35 @@ class FloatRangeType extends RangeType {
     return RangeComparable<double>(
       lowerRange: newLowerRange,
       upperRange: newUpperRange,
+    );
+  }
+
+  @override
+  bool overlaps(RangeType other) {
+    final thisComparable = getComparable();
+    final otherComparable = other.getComparable();
+
+    return thisComparable.lowerRange < otherComparable.upperRange &&
+        thisComparable.upperRange > otherComparable.lowerRange;
+  }
+
+  @override
+  bool isAdjacent(RangeType other) {
+    // If ranges overlap, they cannot be adjacent
+    if (overlaps(other)) {
+      return false;
+    }
+
+    if (rangeDataType == other.rangeDataType) {
+      final otherRange = other as FloatRangeType;
+
+      // Check if the ranges share a common boundary
+      return (lowerRange == otherRange.upperRange) ||
+          (upperRange == otherRange.lowerRange);
+    }
+
+    throw Exception(
+      'Cannot check adjacency between two datetimes of different types.',
     );
   }
 }
@@ -395,6 +455,42 @@ class DateRangeType extends RangeType {
     return RangeComparable<DateTime>(
       lowerRange: newLowerRange,
       upperRange: newUpperRange,
+    );
+  }
+
+  @override
+  bool overlaps(RangeType other) {
+    final thisComparable = getComparable();
+    final otherComparable = other.getComparable();
+
+    return thisComparable.lowerRange.isBefore(otherComparable.upperRange) &&
+        thisComparable.upperRange.isAfter(otherComparable.lowerRange);
+  }
+
+  @override
+  bool isAdjacent(RangeType other) {
+    // This method does not use comparables, because it is already certain that
+    // all of the ranges are not overlapping, due to the method overlaps(), so
+    // if they use comparables, they will never share a commom boundary because
+    // comparables subtract from exclusive ranges, so when checking for adjacency
+    // between an inclusive and exclusive range, it would return unexpected results,
+    // therefore, comparables should not be used in this occasion.
+
+    // If ranges overlap, they cannot be adjacent
+    if (overlaps(other)) {
+      return false;
+    }
+
+    if (rangeDataType == other.rangeDataType) {
+      final otherRange = other as DateRangeType;
+
+      // Check if the ranges share a common boundary
+      return (lowerRange.isAtSameMomentAs(otherRange.upperRange)) ||
+          (upperRange.isAtSameMomentAs(otherRange.lowerRange));
+    }
+
+    throw Exception(
+      'Cannot check adjacency between two datetimes of different types.',
     );
   }
 
