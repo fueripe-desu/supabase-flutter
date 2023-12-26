@@ -11,6 +11,47 @@ void main() {
     );
   });
 
+  test('should throw an Exception when the first bracket is not valid', () {
+    expect(
+      () => RangeType.createRange(range: '{0, 10]'),
+      throwsException,
+    );
+  });
+
+  test('should throw an Exception when the last bracket is not valid', () {
+    expect(
+      () => RangeType.createRange(range: '[0, 10}'),
+      throwsException,
+    );
+  });
+
+  test('should throw an Exception when more than 2 values is passed in a range',
+      () {
+    expect(
+      () => RangeType.createRange(range: '[0, 10, 30]'),
+      throwsException,
+    );
+  });
+
+  test('should return the correct inclusivity of the ranges', () {
+    final range1 = RangeType.createRange(range: '[1, 10]');
+    final range2 = RangeType.createRange(range: '[1, 10)');
+    final range3 = RangeType.createRange(range: '(1, 10]');
+    final range4 = RangeType.createRange(range: '(1, 10)');
+
+    expect(range1.lowerRangeInclusive, true);
+    expect(range1.upperRangeInclusive, true);
+
+    expect(range2.lowerRangeInclusive, true);
+    expect(range2.upperRangeInclusive, false);
+
+    expect(range3.lowerRangeInclusive, false);
+    expect(range3.upperRangeInclusive, true);
+
+    expect(range4.lowerRangeInclusive, false);
+    expect(range4.upperRangeInclusive, false);
+  });
+
   group('IntegerRangeType tests', () {
     test('should successfuly create a range of integer type', () {
       RangeType.createRange(range: '[1, 10]');
@@ -87,6 +128,15 @@ void main() {
       expect(range.isInRange(1), false);
       expect(range.isInRange(0), false);
       expect(range.isInRange(11), false);
+    });
+
+    test(
+        'should throw an Exception when the second value does not match the type of the first',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[0, 5.0]'),
+        throwsException,
+      );
     });
   });
 
@@ -166,6 +216,47 @@ void main() {
       expect(range.isInRange(1.5), false);
       expect(range.isInRange(0), false);
       expect(range.isInRange(11), false);
+    });
+
+    test(
+        'should throw an Exception when the second value does not match the type of the first',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[5.0, 2022-01-01]'),
+        throwsException,
+      );
+    });
+  });
+
+  group('DateRangeType general tests', () {
+    test(
+        'should throw an Exception when the second value does not match the type of the first',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[2022-01-01, 5.0]'),
+        throwsException,
+      );
+    });
+
+    test(
+        'should throw an Exception when both values does not have the same precision',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[2022-01-01, 2022-01-01T15:00:00]'),
+        throwsException,
+      );
+
+      expect(
+        () =>
+            RangeType.createRange(range: '[2022-01-01, 2022-01-01T15:00:00Z]'),
+        throwsException,
+      );
+
+      expect(
+        () => RangeType.createRange(
+            range: '[2022-01-01T15:00:00, 2022-01-01T15:00:00Z]'),
+        throwsException,
+      );
     });
   });
 
@@ -612,6 +703,1137 @@ void main() {
       expect(range2.isInRange(DateTime.utc(2023, 1, 1, 12, 0, 0, 999)), false);
       expect(
           range2.isInRange(DateTime.utc(2021, 12, 31, 12, 0, 0, 999)), false);
+    });
+  });
+
+  group('comparable tests', () {
+    group('IntegerRangeType comparable tests', () {
+      test(
+          'should return a comparable of the correct generic type when calling getComparable()',
+          () {
+        final comparable =
+            RangeType.createRange(range: '[1, 10]').getComparable();
+
+        expect(comparable, isA<RangeComparable<int>>());
+      });
+
+      test('should return the correct comparable when calling getComparable()',
+          () {
+        final comparable1 = RangeType.createRange(range: '[1, 10]')
+            .getComparable() as RangeComparable<int>;
+        final comparable2 = RangeType.createRange(range: '[1, 10)')
+            .getComparable() as RangeComparable<int>;
+        final comparable3 = RangeType.createRange(range: '(1, 10]')
+            .getComparable() as RangeComparable<int>;
+        final comparable4 = RangeType.createRange(range: '(1, 10)')
+            .getComparable() as RangeComparable<int>;
+
+        expect(comparable1.lowerRange, 1);
+        expect(comparable1.upperRange, 10);
+
+        expect(comparable2.lowerRange, 1);
+        expect(comparable2.upperRange, 9);
+
+        expect(comparable3.lowerRange, 2);
+        expect(comparable3.upperRange, 10);
+
+        expect(comparable4.lowerRange, 2);
+        expect(comparable4.upperRange, 9);
+      });
+
+      test('should return true if a range is greater than the other', () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 > c2;
+        }
+
+        expect(compare('[11, 20]', '[1, 10]'), true);
+        expect(compare('[-5, 20]', '[1, 10]'), false);
+
+        expect(compare('(10, 20]', '[10, 15]'), true);
+        expect(compare('[10, 20]', '(10, 15]'), false);
+
+        // Return true if lower bounds are equal but the upper bounds are greater
+        expect(compare('[10, 20]', '[10, 15]'), true);
+        expect(compare('(10, 20)', '(10, 15)'), true);
+
+        // Return false if values are equal
+        expect(compare('[1, 10]', '[1, 10]'), false);
+        expect(compare('(1, 10)', '(1, 10)'), false);
+      });
+
+      test('should return true if a range is less than the other', () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 < c2;
+        }
+
+        // Lower bound of range1 is less than lower bound of range2
+        expect(compare('[1, 10]', '[11, 20]'), true);
+        expect(compare('[1, 10]', '[-5, 20]'), false);
+
+        // Upper bound of range1 is less than upper bound of range2
+        expect(compare('[10, 15]', '(10, 20]'), true);
+        expect(compare('(10, 15]', '[10, 20]'), false);
+
+        // Lower bounds are equal but the upper bound of range1 is less
+        expect(compare('[10, 15]', '[10, 20]'), true);
+        expect(compare('(10, 15)', '(10, 20)'), true);
+
+        // Values are equal
+        expect(compare('[1, 10]', '[1, 10]'), false);
+        expect(compare('(1, 10)', '(1, 10)'), false);
+      });
+
+      test('should return true if a range is less than or equal to the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 <= c2;
+        }
+
+        // Lower bound of range1 is less than or equal to lower bound of range2
+        expect(compare('[1, 10]', '[11, 20]'), true);
+        expect(compare('[1, 10]', '[-5, 20]'), false);
+
+        // Upper bound of range1 is less than or equal to upper bound of range2
+        expect(compare('[10, 15]', '(10, 20]'), true);
+        expect(compare('(10, 15]', '[10, 20]'), false);
+
+        // Lower bounds are equal but the upper bound of range1 is less or equal
+        expect(compare('[10, 15]', '[10, 20]'), true);
+        expect(compare('(10, 15)', '(10, 20)'), true);
+
+        // Values are equal
+        expect(compare('[1, 10]', '[1, 10]'), true);
+        expect(compare('(1, 10)', '(1, 10)'), true);
+      });
+
+      test(
+          'should return true if a range is greater than or equal to the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 >= c2;
+        }
+
+        // Lower bound of range1 is greater than or equal to lower bound of range2
+        expect(compare('[11, 20]', '[1, 10]'), true);
+        expect(compare('[-5, 20]', '[1, 10]'), false);
+
+        // Upper bound of range1 is greater than or equal to upper bound of range2
+        expect(compare('(10, 20]', '[10, 15]'), true);
+        expect(compare('[10, 20]', '(10, 15]'), false);
+
+        // Lower bounds are equal but the upper bound of range1 is greater or equal
+        expect(compare('[10, 20]', '[10, 15]'), true);
+        expect(compare('(10, 20)', '(10, 15)'), true);
+
+        // Values are equal
+        expect(compare('[1, 10]', '[1, 10]'), true);
+        expect(compare('(1, 10)', '(1, 10)'), true);
+      });
+    });
+
+    group('FloatRangeType comparable tests', () {
+      test(
+          'should return a comparable of the correct generic type when calling getComparable()',
+          () {
+        final comparable =
+            RangeType.createRange(range: '[1.0, 5.0]').getComparable();
+
+        expect(comparable, isA<RangeComparable<double>>());
+      });
+
+      test('should return the correct comparable when calling getComparable()',
+          () {
+        final comparable1 = RangeType.createRange(range: '[1.0, 5.0]')
+            .getComparable() as RangeComparable<double>;
+        final comparable2 = RangeType.createRange(range: '[1.0, 5.0)')
+            .getComparable() as RangeComparable<double>;
+        final comparable3 = RangeType.createRange(range: '(1.0, 5.0]')
+            .getComparable() as RangeComparable<double>;
+        final comparable4 = RangeType.createRange(range: '(1.0, 5.0)')
+            .getComparable() as RangeComparable<double>;
+
+        expect(comparable1.lowerRange, 1.0);
+        expect(comparable1.upperRange, 5.0);
+
+        expect(comparable2.lowerRange, 1.0);
+        expect(comparable2.upperRange, 4.9);
+
+        expect(comparable3.lowerRange, 1.1);
+        expect(comparable3.upperRange, 5.0);
+
+        expect(comparable4.lowerRange, 1.1);
+        expect(comparable4.upperRange, 4.9);
+      });
+
+      test('should return true if a range is greater than the other', () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 > c2;
+        }
+
+        expect(compare('[11.0, 20.0]', '[1.0, 10.0]'), true);
+        expect(compare('[-5.0, 20.0]', '[1.0, 10.0]'), false);
+
+        expect(compare('(10.0, 20.0]', '[10.0, 15.0]'), true);
+        expect(compare('[10.0, 20.0]', '(10.0, 15.0]'), false);
+
+        // Return true if lower bounds are equal but the upper bounds are greater
+        expect(compare('[10.0, 20.0]', '[10.0, 15.0]'), true);
+        expect(compare('(10.0, 20.0)', '(10.0, 15.0)'), true);
+
+        // Return false if values are equal
+        expect(compare('[1.0, 10.0]', '[1.0, 10.0]'), false);
+        expect(compare('(1.0, 10.0)', '(1.0, 10.0)'), false);
+      });
+
+      test('should return true if a range is less than the other', () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 < c2;
+        }
+
+        // Lower bound of range1 is less than lower bound of range2
+        expect(compare('[1.0, 10.0]', '[11.0, 20.0]'), true);
+        expect(compare('[1.0, 10.0]', '[-5.0, 20.0]'), false);
+
+        // Upper bound of range1 is less than upper bound of range2
+        expect(compare('[10.0, 15.0]', '(10.0, 20.0]'), true);
+        expect(compare('(10.0, 15.0]', '[10.0, 20.0]'), false);
+
+        // Lower bounds are equal but the upper bound of range1 is less
+        expect(compare('[10.0, 15.0]', '[10.0, 20.0]'), true);
+        expect(compare('(10.0, 15.0)', '(10.0, 20.0)'), true);
+
+        // Values are equal
+        expect(compare('[1.0, 10.0]', '[1.0, 10.0]'), false);
+        expect(compare('(1.0, 10.0)', '(1.0, 10.0)'), false);
+      });
+
+      test('should return true if a range is less than or equal to the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 <= c2;
+        }
+
+        // Lower bound of range1 is less than or equal to lower bound of range2
+        expect(compare('[1.0, 10.0]', '[11.0, 20.0]'), true);
+        expect(compare('[1.0, 10.0]', '[-5.0, 20.0]'), false);
+
+        // Upper bound of range1 is less than or equal to upper bound of range2
+        expect(compare('[10.0, 15.0]', '(10.0, 20.0]'), true);
+        expect(compare('(10.0, 15.0]', '[10.0, 20.0]'), false);
+
+        // Lower bounds are equal but the upper bound of range1 is less or equal
+        expect(compare('[10.0, 15.0]', '[10.0, 20.0]'), true);
+        expect(compare('(10.0, 15.0)', '(10.0, 20.0)'), true);
+
+        // Values are equal
+        expect(compare('[1.0, 10.0]', '[1.0, 10.0]'), true);
+        expect(compare('(1.0, 10.0)', '(1.0, 10.0)'), true);
+      });
+
+      test(
+          'should return true if a range is greater than or equal to the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 >= c2;
+        }
+
+        // Lower bound of range1 is greater than or equal to lower bound of range2
+        expect(compare('[11.0, 20.0]', '[1.0, 10.0]'), true);
+        expect(compare('[-5.0, 20.0]', '[1.0, 10.0]'), false);
+
+        // Upper bound of range1 is greater than or equal to upper bound of range2
+        expect(compare('(10.0, 20.0]', '[10.0, 15.0]'), true);
+        expect(compare('[10.0, 20.0]', '(10.0, 15.0]'), false);
+
+        // Lower bounds are equal but the upper bound of range1 is greater or equal
+        expect(compare('[10.0, 20.0]', '[10.0, 15.0]'), true);
+        expect(compare('(10.0, 20.0)', '(10.0, 15.0)'), true);
+
+        // Values are equal
+        expect(compare('[1.0, 10.0]', '[1.0, 10.0]'), true);
+        expect(compare('(1.0, 10.0)', '(1.0, 10.0)'), true);
+      });
+    });
+
+    group('DateRangeType comparable tests', () {
+      test(
+          'should return a comparable of the correct generic type when calling getComparable()',
+          () {
+        final comparable =
+            RangeType.createRange(range: '[2023-01-10, 2023-12-25]')
+                .getComparable();
+
+        expect(comparable, isA<RangeComparable<DateTime>>());
+      });
+
+      test('should return the correct comparable when calling getComparable()',
+          () {
+        final comparable1 =
+            RangeType.createRange(range: '[2023-01-10, 2023-12-25]')
+                .getComparable() as RangeComparable<DateTime>;
+        final comparable2 =
+            RangeType.createRange(range: '[2023-01-10, 2023-12-25)')
+                .getComparable() as RangeComparable<DateTime>;
+        final comparable3 =
+            RangeType.createRange(range: '(2023-01-10, 2023-12-25]')
+                .getComparable() as RangeComparable<DateTime>;
+        final comparable4 =
+            RangeType.createRange(range: '(2023-01-10, 2023-12-25)')
+                .getComparable() as RangeComparable<DateTime>;
+
+        const duration = Duration(days: 1);
+        final lowerDt = DateTime.utc(2023, 1, 10);
+        final upperDt = DateTime.utc(2023, 12, 25);
+
+        expect(comparable1.lowerRange, lowerDt);
+        expect(comparable1.upperRange, upperDt);
+
+        expect(comparable2.lowerRange, lowerDt);
+        expect(comparable2.upperRange, upperDt.subtract(duration));
+
+        expect(comparable3.lowerRange, lowerDt.add(duration));
+        expect(comparable3.upperRange, upperDt);
+
+        expect(comparable4.lowerRange, lowerDt.add(duration));
+        expect(comparable4.upperRange, upperDt.subtract(duration));
+      });
+
+      test('should return true if a date range is greater than the other', () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 > c2;
+        }
+
+        // Lower bound of range1 is greater than lower bound of range2
+        expect(
+          compare('[2023-01-02, 2023-01-15]', '[2022-12-01, 2023-01-01]'),
+          true,
+        );
+
+        // Upper bound of range1 is greater than upper bound of range2
+        expect(
+          compare('[2023-01-01, 2023-01-20]', '[2023-01-01, 2023-01-10]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is greater
+        expect(
+          compare('[2023-01-01, 2023-01-15]', '[2023-01-01, 2023-01-10]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01, 2023-01-10]', '[2023-01-01, 2023-01-10]'),
+          false,
+        );
+      });
+
+      test('should return true if a date range is less than the other', () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 < c2;
+        }
+
+        // Lower bound of range1 is less than lower bound of range2
+        expect(
+          compare('[2022-12-01, 2023-01-01]', '[2023-01-02, 2023-01-15]'),
+          true,
+        );
+
+        // Upper bound of range1 is less than upper bound of range2
+        expect(
+          compare('[2023-01-01, 2023-01-10]', '[2023-01-01, 2023-01-20]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is less
+        expect(
+          compare('[2023-01-01, 2023-01-10]', '[2023-01-01, 2023-01-15]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01, 2023-01-10]', '[2023-01-01, 2023-01-10]'),
+          false,
+        );
+      });
+
+      test(
+          'should return true if a date range is greater than or equal to the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 >= c2;
+        }
+
+        // Lower bound of range1 is greater than lower bound of range2
+        expect(
+          compare('[2023-01-02, 2023-01-15]', '[2022-12-01, 2023-01-01]'),
+          true,
+        );
+
+        // Upper bound of range1 is greater than upper bound of range2
+        expect(
+          compare('[2023-01-01, 2023-01-20]', '[2023-01-01, 2023-01-10]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is greater
+        expect(
+          compare('[2023-01-01, 2023-01-15]', '[2023-01-01, 2023-01-10]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01, 2023-01-10]', '[2023-01-01, 2023-01-10]'),
+          true,
+        );
+      });
+
+      test(
+          'should return true if a date range is less than or equal to the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 <= c2;
+        }
+
+        // Lower bound of range1 is less than lower bound of range2
+        expect(
+          compare('[2022-12-01, 2023-01-01]', '[2023-01-02, 2023-01-15]'),
+          true,
+        );
+
+        // Upper bound of range1 is less than upper bound of range2
+        expect(
+          compare('[2023-01-01, 2023-01-10]', '[2023-01-01, 2023-01-20]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is less
+        expect(
+          compare('[2023-01-01, 2023-01-10]', '[2023-01-01, 2023-01-15]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01, 2023-01-10]', '[2023-01-01, 2023-01-10]'),
+          true,
+        );
+      });
+    });
+
+    group('DateRangeType timestamp comparable tests', () {
+      test(
+          'should return a comparable of the correct generic type when calling getComparable()',
+          () {
+        final comparable = RangeType.createRange(
+                range: '[2023-01-10T12:00:00, 2023-12-25T15:00:00]')
+            .getComparable();
+
+        expect(comparable, isA<RangeComparable<DateTime>>());
+      });
+
+      test('should return the correct comparable when calling getComparable()',
+          () {
+        final comparable1 = RangeType.createRange(
+                range: '[2023-01-10T12:00:00, 2023-12-25T15:00:00]')
+            .getComparable() as RangeComparable<DateTime>;
+        final comparable2 = RangeType.createRange(
+                range: '[2023-01-10T12:00:00, 2023-12-25T15:00:00)')
+            .getComparable() as RangeComparable<DateTime>;
+        final comparable3 = RangeType.createRange(
+                range: '(2023-01-10T12:00:00, 2023-12-25T15:00:00]')
+            .getComparable() as RangeComparable<DateTime>;
+        final comparable4 = RangeType.createRange(
+                range: '(2023-01-10T12:00:00, 2023-12-25T15:00:00)')
+            .getComparable() as RangeComparable<DateTime>;
+
+        const duration = Duration(milliseconds: 1);
+        final lowerDt = DateTime.utc(2023, 1, 10, 12, 0, 0, 0);
+        final upperDt = DateTime.utc(2023, 12, 25, 15, 0, 0, 0);
+
+        expect(comparable1.lowerRange, lowerDt);
+        expect(comparable1.upperRange, upperDt);
+
+        expect(comparable2.lowerRange, lowerDt);
+        expect(comparable2.upperRange, upperDt.subtract(duration));
+
+        expect(comparable3.lowerRange, lowerDt.add(duration));
+        expect(comparable3.upperRange, upperDt);
+
+        expect(comparable4.lowerRange, lowerDt.add(duration));
+        expect(comparable4.upperRange, upperDt.subtract(duration));
+      });
+
+      test('should return true if a timestamp range is greater than the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 > c2;
+        }
+
+        // Lower bound of range1 is greater than lower bound of range2
+        expect(
+          compare('[2023-12-25T15:00:01, 2024-01-01T00:00:00]',
+              '[2023-01-10T12:00:00, 2023-12-25T15:00:00]'),
+          true,
+        );
+
+        // Upper bound of range1 is greater than upper bound of range2
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-15T00:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-10T12:00:00]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is greater
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-15T00:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-10T12:00:00]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-10T12:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-10T12:00:00]'),
+          false,
+        );
+
+        // Smaller ranges
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-10T12:00:00]',
+              '[2023-01-15T00:00:00, 2023-01-20T00:00:00]'),
+          false,
+        );
+      });
+
+      test(
+          'should return true if a timestamp range is less than or equal to the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 <= c2;
+        }
+
+        // Lower bound of range1 is less than lower bound of range2
+        expect(
+          compare('[2023-01-10T12:00:00, 2023-12-25T15:00:00]',
+              '[2023-12-25T15:00:01, 2024-01-01T00:00:00]'),
+          true,
+        );
+
+        // Upper bound of range1 is less than upper bound of range2
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-10T12:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-15T00:00:00]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is less
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-10T12:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-15T00:00:00]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-10T12:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-10T12:00:00]'),
+          true,
+        );
+
+        // Greater ranges
+        expect(
+          compare('[2023-01-15T00:00:00, 2023-01-20T00:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-10T12:00:00]'),
+          false,
+        );
+      });
+
+      test(
+          'should return true if a timestamp range is greater than or equal to the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 >= c2;
+        }
+
+        // Lower bound of range1 is greater than lower bound of range2
+        expect(
+          compare('[2023-12-25T15:00:01, 2024-01-01T00:00:00]',
+              '[2023-01-10T12:00:00, 2023-12-25T15:00:00]'),
+          true,
+        );
+
+        // Upper bound of range1 is greater than upper bound of range2
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-15T00:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-10T12:00:00]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is greater
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-15T00:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-10T12:00:00]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-10T12:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-10T12:00:00]'),
+          true,
+        );
+
+        // Smaller ranges
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-10T12:00:00]',
+              '[2023-01-15T00:00:00, 2023-01-20T00:00:00]'),
+          false,
+        );
+      });
+
+      test('should return true if a timestamp range is less than the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 < c2;
+        }
+
+        // Lower bound of range1 is less than lower bound of range2
+        expect(
+          compare('[2023-01-10T12:00:00, 2023-12-25T15:00:00]',
+              '[2023-12-25T15:00:01, 2024-01-01T00:00:00]'),
+          true,
+        );
+
+        // Upper bound of range1 is less than upper bound of range2
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-10T12:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-15T00:00:00]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is less
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-10T12:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-15T00:00:00]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01T00:00:00, 2023-01-10T12:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-10T12:00:00]'),
+          false,
+        );
+
+        // Greater ranges
+        expect(
+          compare('[2023-01-15T00:00:00, 2023-01-20T00:00:00]',
+              '[2023-01-01T00:00:00, 2023-01-10T12:00:00]'),
+          false,
+        );
+      });
+    });
+
+    group('DateRangeType timestamptz comparable tests', () {
+      test(
+          'should return a comparable of the correct generic type when calling getComparable()',
+          () {
+        final comparable = RangeType.createRange(
+                range: '[2023-01-10T12:00:00Z, 2023-12-25T15:00:00Z]')
+            .getComparable();
+
+        final comparable2 = RangeType.createRange(
+                range: '[2023-01-10T12:00:00-03, 2023-12-25T15:00:00+05]')
+            .getComparable();
+
+        expect(comparable, isA<RangeComparable<DateTime>>());
+        expect(comparable2, isA<RangeComparable<DateTime>>());
+      });
+
+      test(
+          'should return the correct comparable when calling getComparable() with UTC timezones',
+          () {
+        final comparable1 = RangeType.createRange(
+                range: '[2023-01-10T12:00:00Z, 2023-12-25T15:00:00Z]')
+            .getComparable() as RangeComparable<DateTime>;
+        final comparable2 = RangeType.createRange(
+                range: '[2023-01-10T12:00:00Z, 2023-12-25T15:00:00Z)')
+            .getComparable() as RangeComparable<DateTime>;
+        final comparable3 = RangeType.createRange(
+                range: '(2023-01-10T12:00:00Z, 2023-12-25T15:00:00Z]')
+            .getComparable() as RangeComparable<DateTime>;
+        final comparable4 = RangeType.createRange(
+                range: '(2023-01-10T12:00:00Z, 2023-12-25T15:00:00Z)')
+            .getComparable() as RangeComparable<DateTime>;
+
+        const duration = Duration(milliseconds: 1);
+        final lowerDt = DateTime.utc(2023, 1, 10, 12, 0, 0, 0);
+        final upperDt = DateTime.utc(2023, 12, 25, 15, 0, 0, 0);
+
+        expect(comparable1.lowerRange, lowerDt);
+        expect(comparable1.upperRange, upperDt);
+
+        expect(comparable2.lowerRange, lowerDt);
+        expect(comparable2.upperRange, upperDt.subtract(duration));
+
+        expect(comparable3.lowerRange, lowerDt.add(duration));
+        expect(comparable3.upperRange, upperDt);
+
+        expect(comparable4.lowerRange, lowerDt.add(duration));
+        expect(comparable4.upperRange, upperDt.subtract(duration));
+      });
+
+      test(
+          'should return the correct comparable when calling getComparable() with timezone offsets',
+          () {
+        final comparable1 = RangeType.createRange(
+                range: '[2023-01-10T12:00:00-03, 2023-12-25T15:00:00+05]')
+            .getComparable() as RangeComparable<DateTime>;
+        final comparable2 = RangeType.createRange(
+                range: '[2023-01-10T12:00:00-03, 2023-12-25T15:00:00+05)')
+            .getComparable() as RangeComparable<DateTime>;
+        final comparable3 = RangeType.createRange(
+                range: '(2023-01-10T12:00:00-03, 2023-12-25T15:00:00+05]')
+            .getComparable() as RangeComparable<DateTime>;
+        final comparable4 = RangeType.createRange(
+                range: '(2023-01-10T12:00:00-03, 2023-12-25T15:00:00+05)')
+            .getComparable() as RangeComparable<DateTime>;
+
+        const duration = Duration(milliseconds: 1);
+        final lowerDt = DateTime.parse('2023-01-10T12:00:00.000-03');
+        final upperDt = DateTime.parse('2023-12-25T15:00:00.000+05');
+
+        expect(comparable1.lowerRange, lowerDt);
+        expect(comparable1.upperRange, upperDt);
+
+        expect(comparable2.lowerRange, lowerDt);
+        expect(comparable2.upperRange, upperDt.subtract(duration));
+
+        expect(comparable3.lowerRange, lowerDt.add(duration));
+        expect(comparable3.upperRange, upperDt);
+
+        expect(comparable4.lowerRange, lowerDt.add(duration));
+        expect(comparable4.upperRange, upperDt.subtract(duration));
+      });
+
+      test(
+          'should return true if an UTC timestamptz range is greater than the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 > c2;
+        }
+
+        // Lower bound of range1 is greater than lower bound of range2
+        expect(
+          compare('[2023-12-25T15:00:01Z, 2024-01-01T00:00:00Z]',
+              '[2023-01-10T12:00:00Z, 2023-12-25T15:00:00Z]'),
+          true,
+        );
+
+        // Upper bound of range1 is greater than upper bound of range2
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-15T00:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is greater
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-15T00:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]'),
+          false,
+        );
+
+        // Smaller ranges
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]',
+              '[2023-01-15T00:00:00Z, 2023-01-20T00:00:00Z]'),
+          false,
+        );
+      });
+
+      test(
+          'should return true if am UTC timestamptz range is less than or equal to the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 <= c2;
+        }
+
+        // Lower bound of range1 is less than lower bound of range2
+        expect(
+          compare('[2023-01-10T12:00:00Z, 2023-12-25T15:00:00Z]',
+              '[2023-12-25T15:00:01Z, 2024-01-01T00:00:00Z]'),
+          true,
+        );
+
+        // Upper bound of range1 is less than upper bound of range2
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-15T00:00:00Z]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is less
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-15T00:00:00Z]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]'),
+          true,
+        );
+
+        // Greater ranges
+        expect(
+          compare('[2023-01-15T00:00:00Z, 2023-01-20T00:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]'),
+          false,
+        );
+      });
+
+      test(
+          'should return true if an UTC timestamptz range is greater than or equal to the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 >= c2;
+        }
+
+        // Lower bound of range1 is greater than lower bound of range2
+        expect(
+          compare('[2023-12-25T15:00:01Z, 2024-01-01T00:00:00Z]',
+              '[2023-01-10T12:00:00Z, 2023-12-25T15:00:00Z]'),
+          true,
+        );
+
+        // Upper bound of range1 is greater than upper bound of range2
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-15T00:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is greater
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-15T00:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]'),
+          true,
+        );
+
+        // Smaller ranges
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]',
+              '[2023-01-15T00:00:00Z, 2023-01-20T00:00:00Z]'),
+          false,
+        );
+      });
+
+      test(
+          'should return true if an UTC timestamptz range is less than the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 < c2;
+        }
+
+        // Lower bound of range1 is less than lower bound of range2
+        expect(
+          compare('[2023-01-10T12:00:00Z, 2023-12-25T15:00:00Z]',
+              '[2023-12-25T15:00:01Z, 2024-01-01T00:00:00Z]'),
+          true,
+        );
+
+        // Upper bound of range1 is less than upper bound of range2
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-15T00:00:00Z]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is less
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-15T00:00:00Z]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]'),
+          false,
+        );
+
+        // Greater ranges
+        expect(
+          compare('[2023-01-15T00:00:00Z, 2023-01-20T00:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]'),
+          false,
+        );
+      });
+
+      test(
+          'should return true if a timestamptz with tz offset range is greater than the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 > c2;
+        }
+
+        // Lower bound of range1 is greater than lower bound of range2
+        expect(
+          compare('[2023-12-25T15:00:01-03, 2024-01-01T00:00:00+05]',
+              '[2023-01-10T12:00:00-03, 2023-12-25T15:00:00+05]'),
+          true,
+        );
+
+        // Upper bound of range1 is greater than upper bound of range2
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-15T00:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is greater
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-15T00:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]'),
+          false,
+        );
+
+        // Smaller ranges
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]',
+              '[2023-01-15T00:00:00-03, 2023-01-20T00:00:00+05]'),
+          false,
+        );
+      });
+
+      test(
+          'should return true if a timestamptz with tz offset range is less than or equal to the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 <= c2;
+        }
+
+        // Lower bound of range1 is less than lower bound of range2
+        expect(
+          compare('[2023-01-10T12:00:00-03, 2023-12-25T15:00:00+05]',
+              '[2023-12-25T15:00:01-03, 2024-01-01T00:00:00+05]'),
+          true,
+        );
+
+        // Upper bound of range1 is less than upper bound of range2
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-15T00:00:00+05]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is less
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-15T00:00:00+05]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]'),
+          true,
+        );
+
+        // Greater ranges
+        expect(
+          compare('[2023-01-15T00:00:00-03, 2023-01-20T00:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]'),
+          false,
+        );
+      });
+
+      test(
+          'should return true if a timestamptz with a tz offset range is greater than or equal to the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 >= c2;
+        }
+
+        // Lower bound of range1 is greater than lower bound of range2
+        expect(
+          compare('[2023-12-25T15:00:01-03, 2024-01-01T00:00:00+05]',
+              '[2023-01-10T12:00:00-03, 2023-12-25T15:00:00+05]'),
+          true,
+        );
+
+        // Upper bound of range1 is greater than upper bound of range2
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-15T00:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is greater
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-15T00:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]'),
+          true,
+        );
+
+        // Smaller ranges
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]',
+              '[2023-01-15T00:00:00-03, 2023-01-20T00:00:00+05]'),
+          false,
+        );
+      });
+
+      test(
+          'should return true if a timestamptz with tz offset range is less than the other',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 < c2;
+        }
+
+        // Lower bound of range1 is less than lower bound of range2
+        expect(
+          compare('[2023-01-10T12:00:00-03, 2023-12-25T15:00:00+05]',
+              '[2023-12-25T15:00:01-03, 2024-01-01T00:00:00+05]'),
+          true,
+        );
+
+        // Upper bound of range1 is less than upper bound of range2
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-15T00:00:00+05]'),
+          true,
+        );
+
+        // Lower bounds are equal but the upper bound of range1 is less
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-15T00:00:00+05]'),
+          true,
+        );
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]'),
+          false,
+        );
+
+        // Greater ranges
+        expect(
+          compare('[2023-01-15T00:00:00-03, 2023-01-20T00:00:00+05]',
+              '[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]'),
+          false,
+        );
+      });
     });
   });
 }
