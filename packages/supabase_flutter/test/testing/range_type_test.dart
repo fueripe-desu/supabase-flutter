@@ -841,6 +841,27 @@ void main() {
         expect(compare('[1, 10]', '[1, 10]'), true);
         expect(compare('(1, 10)', '(1, 10)'), true);
       });
+
+      test('should return true if ranges are equal', () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 == c2;
+        }
+
+        // Values are equal
+        expect(compare('[10, 20]', '[10, 20]'), true);
+        expect(compare('(10, 20]', '(10, 20]'), true);
+        expect(compare('[10, 20)', '[10, 20)'), true);
+        expect(compare('(10, 20)', '(10, 20)'), true);
+
+        // Ranges cover same values
+        expect(compare('[10, 20]', '(9, 21)'), true);
+
+        // Ranges are different
+        expect(compare('[10, 20]', '[30, 40]'), false);
+      });
     });
 
     group('FloatRangeType comparable tests', () {
@@ -976,6 +997,27 @@ void main() {
         // Values are equal
         expect(compare('[1.0, 10.0]', '[1.0, 10.0]'), true);
         expect(compare('(1.0, 10.0)', '(1.0, 10.0)'), true);
+      });
+
+      test('should return true if ranges are equal', () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 == c2;
+        }
+
+        // Values are equal
+        expect(compare('[10.0, 20.0]', '[10.0, 20.0]'), true);
+        expect(compare('(10.0, 20.0]', '(10.0, 20.0]'), true);
+        expect(compare('[10.0, 20.0)', '[10.0, 20.0)'), true);
+        expect(compare('(10.0, 20.0)', '(10.0, 20.0)'), true);
+
+        // Ranges cover same values
+        expect(compare('[10.1, 19.9]', '(10.0, 20.0)'), true);
+
+        // Ranges are different
+        expect(compare('[10.0, 20.0]', '[30.0, 40.0]'), false);
       });
     });
 
@@ -1155,6 +1197,45 @@ void main() {
         expect(
           compare('[2023-01-01, 2023-01-10]', '[2023-01-01, 2023-01-10]'),
           true,
+        );
+      });
+
+      test('should return true if ranges are equal', () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 == c2;
+        }
+
+        // Values are equal
+        expect(
+          compare('[2023-01-01, 2023-01-10]', '[2023-01-01, 2023-01-10]'),
+          true,
+        );
+        expect(
+          compare('(2023-01-01, 2023-01-10]', '(2023-01-01, 2023-01-10]'),
+          true,
+        );
+        expect(
+          compare('[2023-01-01, 2023-01-10)', '[2023-01-01, 2023-01-10)'),
+          true,
+        );
+        expect(
+          compare('(2023-01-01, 2023-01-10)', '(2023-01-01, 2023-01-10)'),
+          true,
+        );
+
+        // Ranges cover same values
+        expect(
+          compare('[2023-01-02, 2023-01-10]', '(2023-01-01, 2023-01-11)'),
+          true,
+        );
+
+        // Ranges are different
+        expect(
+          compare('[2023-01-01, 2023-01-10]', '[2023-01-01, 2023-01-15]'),
+          false,
         );
       });
     });
@@ -1383,6 +1464,63 @@ void main() {
           false,
         );
       });
+
+      test('should return true if ranges are equal', () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 == c2;
+        }
+
+        // Values are equal
+        expect(
+          compare(
+            '[2023-01-01T12:00:00, 2023-01-10T15:00:00]',
+            '[2023-01-01T12:00:00, 2023-01-10T15:00:00]',
+          ),
+          true,
+        );
+        expect(
+          compare(
+            '(2023-01-01T12:00:00, 2023-01-10T15:00:00]',
+            '(2023-01-01T12:00:00, 2023-01-10T15:00:00]',
+          ),
+          true,
+        );
+        expect(
+          compare(
+            '[2023-01-01T12:00:00, 2023-01-10T15:00:00)',
+            '[2023-01-01T12:00:00, 2023-01-10T15:00:00)',
+          ),
+          true,
+        );
+        expect(
+          compare(
+            '(2023-01-01T12:00:00, 2023-01-10T15:00:00)',
+            '(2023-01-01T12:00:00, 2023-01-10T15:00:00)',
+          ),
+          true,
+        );
+
+        // Ranges cover same values
+        expect(
+          compare(
+            '[2023-01-01T12:00:00.001, 2023-01-10T14:59:59.999]',
+            '(2023-01-01T12:00:00, 2023-01-10T15:00:00)',
+          ),
+          true,
+        );
+
+        // Ranges are different
+        expect(
+          compare(
+            '[2023-01-01T12:00:00, 2023-01-10T15:00:00]',
+            '[2023-01-01T18:00:00, 2023-01-15T23:00:00]',
+          ),
+          false,
+        );
+      });
     });
 
     group('DateRangeType timestamptz comparable tests', () {
@@ -1514,7 +1652,7 @@ void main() {
       });
 
       test(
-          'should return true if am UTC timestamptz range is less than or equal to the other',
+          'should return true if an UTC timestamptz range is less than or equal to the other',
           () {
         bool compare(String range1, String range2) {
           final c1 = RangeType.createRange(range: range1).getComparable();
@@ -1647,6 +1785,63 @@ void main() {
         expect(
           compare('[2023-01-15T00:00:00Z, 2023-01-20T00:00:00Z]',
               '[2023-01-01T00:00:00Z, 2023-01-10T12:00:00Z]'),
+          false,
+        );
+      });
+
+      test('should return true if UTC timestamptz ranges are equal', () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 == c2;
+        }
+
+        // Values are equal
+        expect(
+          compare(
+            '[2023-01-01T12:00:00Z, 2023-01-10T15:00:00Z]',
+            '[2023-01-01T12:00:00Z, 2023-01-10T15:00:00Z]',
+          ),
+          true,
+        );
+        expect(
+          compare(
+            '(2023-01-01T12:00:00Z, 2023-01-10T15:00:00Z]',
+            '(2023-01-01T12:00:00Z, 2023-01-10T15:00:00Z]',
+          ),
+          true,
+        );
+        expect(
+          compare(
+            '[2023-01-01T12:00:00Z, 2023-01-10T15:00:00Z)',
+            '[2023-01-01T12:00:00Z, 2023-01-10T15:00:00Z)',
+          ),
+          true,
+        );
+        expect(
+          compare(
+            '(2023-01-01T12:00:00Z, 2023-01-10T15:00:00Z)',
+            '(2023-01-01T12:00:00Z, 2023-01-10T15:00:00Z)',
+          ),
+          true,
+        );
+
+        // Ranges cover same values
+        expect(
+          compare(
+            '[2023-01-01T12:00:00.001Z, 2023-01-10T14:59:59.999Z]',
+            '(2023-01-01T12:00:00Z, 2023-01-10T15:00:00Z)',
+          ),
+          true,
+        );
+
+        // Ranges are different
+        expect(
+          compare(
+            '[2023-01-01T12:00:00Z, 2023-01-10T15:00:00Z]',
+            '[2023-01-01T18:00:00Z, 2023-01-15T23:00:00Z]',
+          ),
           false,
         );
       });
@@ -1831,6 +2026,64 @@ void main() {
         expect(
           compare('[2023-01-15T00:00:00-03, 2023-01-20T00:00:00+05]',
               '[2023-01-01T00:00:00-03, 2023-01-10T12:00:00+05]'),
+          false,
+        );
+      });
+
+      test('should return true if timestamptz ranges with tz offset are equal',
+          () {
+        bool compare(String range1, String range2) {
+          final c1 = RangeType.createRange(range: range1).getComparable();
+          final c2 = RangeType.createRange(range: range2).getComparable();
+
+          return c1 == c2;
+        }
+
+        // Values are equal
+        expect(
+          compare(
+            '[2023-01-01T12:00:00-03, 2023-01-10T15:00:00+05]',
+            '[2023-01-01T12:00:00-03, 2023-01-10T15:00:00+05]',
+          ),
+          true,
+        );
+        expect(
+          compare(
+            '(2023-01-01T12:00:00-03, 2023-01-10T15:00:00+05]',
+            '(2023-01-01T12:00:00-03, 2023-01-10T15:00:00+05]',
+          ),
+          true,
+        );
+        expect(
+          compare(
+            '[2023-01-01T12:00:00-03, 2023-01-10T15:00:00+05)',
+            '[2023-01-01T12:00:00-03, 2023-01-10T15:00:00+05)',
+          ),
+          true,
+        );
+        expect(
+          compare(
+            '(2023-01-01T12:00:00-03, 2023-01-10T15:00:00+05)',
+            '(2023-01-01T12:00:00-03, 2023-01-10T15:00:00+05)',
+          ),
+          true,
+        );
+
+        // Ranges cover same values
+        expect(
+          compare(
+            '[2023-01-01T12:00:00.001-03, 2023-01-10T14:59:59.999+05]',
+            '(2023-01-01T12:00:00-03, 2023-01-10T15:00:00+05)',
+          ),
+          true,
+        );
+
+        // Ranges are different
+        expect(
+          compare(
+            '[2023-01-01T12:00:00-03, 2023-01-10T15:00:00+05]',
+            '[2023-01-01T18:00:00-03, 2023-01-15T23:00:00+05]',
+          ),
           false,
         );
       });
