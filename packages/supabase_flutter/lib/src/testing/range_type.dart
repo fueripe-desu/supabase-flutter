@@ -206,11 +206,17 @@ class IntegerRangeType extends RangeType {
 
   @override
   bool overlaps(RangeType other) {
+    if (rangeDataType != other.rangeDataType) {
+      throw Exception(
+        'Ranges must be of the same type in order to check if they overlap.',
+      );
+    }
+
     final thisComparable = getComparable();
     final otherComparable = other.getComparable();
 
-    return thisComparable.lowerRange < otherComparable.upperRange &&
-        thisComparable.upperRange > otherComparable.lowerRange;
+    return thisComparable.lowerRange <= otherComparable.upperRange &&
+        thisComparable.upperRange >= otherComparable.lowerRange;
   }
 }
 
@@ -253,11 +259,17 @@ class FloatRangeType extends RangeType {
 
   @override
   bool overlaps(RangeType other) {
+    if (rangeDataType != other.rangeDataType) {
+      throw Exception(
+        'Ranges must be of the same type in order to check if they overlap.',
+      );
+    }
+
     final thisComparable = getComparable();
     final otherComparable = other.getComparable();
 
-    return thisComparable.lowerRange < otherComparable.upperRange &&
-        thisComparable.upperRange > otherComparable.lowerRange;
+    return thisComparable.lowerRange <= otherComparable.upperRange &&
+        thisComparable.upperRange >= otherComparable.lowerRange;
   }
 
   @override
@@ -460,11 +472,17 @@ class DateRangeType extends RangeType {
 
   @override
   bool overlaps(RangeType other) {
+    if (rangeDataType != other.rangeDataType) {
+      throw Exception(
+        'Ranges must be of the same type in order to check if they overlap.',
+      );
+    }
+
     final thisComparable = getComparable();
     final otherComparable = other.getComparable();
 
-    return thisComparable.lowerRange.isBefore(otherComparable.upperRange) &&
-        thisComparable.upperRange.isAfter(otherComparable.lowerRange);
+    return thisComparable.lowerRange <= otherComparable.upperRange &&
+        thisComparable.upperRange >= otherComparable.lowerRange;
   }
 
   @override
