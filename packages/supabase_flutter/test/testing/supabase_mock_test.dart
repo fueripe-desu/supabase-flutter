@@ -8,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart' as http;
 
-import 'json/json_reader.dart';
+import '../json/json_reader.dart';
 
 void main() {
   late http.Client client;
