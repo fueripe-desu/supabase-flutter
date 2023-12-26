@@ -138,6 +138,39 @@ void main() {
         throwsException,
       );
     });
+
+    test('should return true if the specified range overlaps the other', () {
+      bool checkOverlap(String range1, String range2) {
+        final r1 = RangeType.createRange(range: range1);
+        final r2 = RangeType.createRange(range: range2);
+        return r1.overlaps(r2);
+      }
+
+      // Ranges overlap completely
+      expect(checkOverlap('[1, 10]', '[5, 15]'), true);
+
+      // One range is completely within the other
+      expect(checkOverlap('[1, 10]', '[3, 8]'), true);
+
+      // Ranges have the same start or end points
+      expect(checkOverlap('[1, 10]', '[10, 15]'), true);
+      expect(checkOverlap('[1, 10]', '[0, 5]'), true);
+
+      // Ranges touch but do not overlap
+      expect(checkOverlap('[1, 10]', '(10, 20]'), false);
+
+      // Ranges don't overlap
+      expect(checkOverlap('[1, 5]', '[6, 10]'), false);
+    });
+
+    test(
+        'should throw an Exception when checking if two ranges of different type overlap',
+        () {
+      final range1 = RangeType.createRange(range: '[10, 20]');
+      final range2 = RangeType.createRange(range: '[10.0, 20.0]');
+
+      expect(() => range1.overlaps(range2), throwsException);
+    });
   });
 
   group('FloatRangeType tests', () {
@@ -225,6 +258,39 @@ void main() {
         () => RangeType.createRange(range: '[5.0, 2022-01-01]'),
         throwsException,
       );
+    });
+
+    test('should return true if the specified range overlaps the other', () {
+      bool checkOverlap(String range1, String range2) {
+        final r1 = RangeType.createRange(range: range1);
+        final r2 = RangeType.createRange(range: range2);
+        return r1.overlaps(r2);
+      }
+
+      // Ranges overlap completely
+      expect(checkOverlap('[1.0, 10.0]', '[5.0, 15.0]'), true);
+
+      // One range is completely within the other
+      expect(checkOverlap('[1.0, 10.0]', '[3.0, 8.0]'), true);
+
+      // Ranges have the same start or end points
+      expect(checkOverlap('[1.0, 10.0]', '[10.0, 15.0]'), true);
+      expect(checkOverlap('[1.0, 10.0]', '[0.0, 5.0]'), true);
+
+      // Ranges touch but do not overlap
+      expect(checkOverlap('[1.0, 10.0]', '(10.0, 20.0]'), false);
+
+      // Ranges don't overlap
+      expect(checkOverlap('[1.0, 5.0]', '[6.0, 10.0]'), false);
+    });
+
+    test(
+        'should throw an Exception when checking if two ranges of different type overlap',
+        () {
+      final range1 = RangeType.createRange(range: '[10.0, 20.0]');
+      final range2 = RangeType.createRange(range: '[10, 20]');
+
+      expect(() => range1.overlaps(range2), throwsException);
     });
   });
 
@@ -343,6 +409,75 @@ void main() {
       expect(range.isInRange(DateTime.utc(2022, 12, 31)), true);
       expect(range.isInRange(DateTime.utc(2023, 1, 1)), false);
       expect(range.isInRange(DateTime.utc(2021, 12, 31)), false);
+    });
+
+    test('should return true if two date ranges overlap', () {
+      bool checkDateOverlap(String range1, String range2) {
+        final r1 = RangeType.createRange(range: range1);
+        final r2 = RangeType.createRange(range: range2);
+        return r1.overlaps(r2);
+      }
+
+      // Date ranges overlap completely
+      expect(
+        checkDateOverlap(
+          '[2023-01-01, 2023-01-10]',
+          '[2023-01-05, 2023-01-15]',
+        ),
+        true,
+      );
+
+      // One date range is completely within the other
+      expect(
+        checkDateOverlap(
+          '[2023-01-01, 2023-01-10]',
+          '[2023-01-03, 2023-01-08]',
+        ),
+        true,
+      );
+
+      // Date ranges have the same start or end points
+      expect(
+        checkDateOverlap(
+          '[2023-01-01, 2023-01-10]',
+          '[2023-01-10, 2023-01-15]',
+        ),
+        true,
+      );
+      expect(
+        checkDateOverlap(
+          '[2023-01-01, 2023-01-10]',
+          '[2022-12-31, 2023-01-05]',
+        ),
+        true,
+      );
+
+      // Date ranges touch but do not overlap
+      expect(
+        checkDateOverlap(
+          '[2023-01-01, 2023-01-10]',
+          '(2023-01-10, 2023-01-20]',
+        ),
+        false,
+      );
+
+      // Date ranges don't overlap
+      expect(
+        checkDateOverlap(
+          '[2023-01-01, 2023-01-05]',
+          '[2023-01-06, 2023-01-10]',
+        ),
+        false,
+      );
+    });
+
+    test(
+        'should throw an Exception when checking if two ranges of different type overlap',
+        () {
+      final range1 = RangeType.createRange(range: '[2023-01-01, 2023-01-05]');
+      final range2 = RangeType.createRange(range: '[10, 20]');
+
+      expect(() => range1.overlaps(range2), throwsException);
     });
   });
 
@@ -515,6 +650,77 @@ void main() {
       expect(range2.isInRange(DateTime.utc(2023, 1, 1, 12, 0, 0, 999)), false);
       expect(
           range2.isInRange(DateTime.utc(2021, 12, 31, 12, 0, 0, 999)), false);
+    });
+
+    test('should return true if two timestamp ranges overlap', () {
+      bool checkDateTimeOverlap(String range1, String range2) {
+        final r1 = RangeType.createRange(range: range1);
+        final r2 = RangeType.createRange(range: range2);
+        return r1.overlaps(r2);
+      }
+
+      // DateTime ranges overlap completely
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00, 2023-01-01T12:00:00]',
+          '[2023-01-01T10:00:00, 2023-01-01T15:00:00]',
+        ),
+        true,
+      );
+
+      // One DateTime range is completely within the other
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00, 2023-01-01T12:00:00]',
+          '[2023-01-01T09:00:00, 2023-01-01T11:00:00]',
+        ),
+        true,
+      );
+
+      // DateTime ranges have the same start or end points
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00, 2023-01-01T12:00:00]',
+          '[2023-01-01T08:00:00, 2023-01-01T14:00:00]',
+        ),
+        true,
+      );
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00, 2023-01-01T12:00:00]',
+          '[2023-01-01T05:00:00, 2023-01-01T08:00:00]',
+        ),
+        true,
+      );
+
+      // DateTime ranges touch but do not overlap
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00, 2023-01-01T12:00:00]',
+          '(2023-01-01T12:00:00, 2023-01-01T16:00:00]',
+        ),
+        false,
+      );
+
+      // DateTime ranges don't overlap
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00, 2023-01-01T10:00:00]',
+          '[2023-01-01T11:00:00, 2023-01-01T15:00:00]',
+        ),
+        false,
+      );
+    });
+
+    test(
+        'should throw an Exception when checking if two ranges of different type overlap',
+        () {
+      final range1 = RangeType.createRange(
+        range: '[2023-01-01T08:00:00, 2023-01-01T10:00:00]',
+      );
+      final range2 = RangeType.createRange(range: '[10, 20]');
+
+      expect(() => range1.overlaps(range2), throwsException);
     });
   });
 
@@ -703,6 +909,142 @@ void main() {
       expect(range2.isInRange(DateTime.utc(2023, 1, 1, 12, 0, 0, 999)), false);
       expect(
           range2.isInRange(DateTime.utc(2021, 12, 31, 12, 0, 0, 999)), false);
+    });
+
+    test('should return true if two UTC timestamptz ranges overlap', () {
+      bool checkDateTimeOverlap(String range1, String range2) {
+        final r1 = RangeType.createRange(range: range1);
+        final r2 = RangeType.createRange(range: range2);
+        return r1.overlaps(r2);
+      }
+
+      // DateTime ranges overlap completely
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00Z, 2023-01-01T12:00:00Z]',
+          '[2023-01-01T10:00:00Z, 2023-01-01T15:00:00Z]',
+        ),
+        true,
+      );
+
+      // One DateTime range is completely within the other
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00Z, 2023-01-01T12:00:00Z]',
+          '[2023-01-01T09:00:00Z, 2023-01-01T11:00:00Z]',
+        ),
+        true,
+      );
+
+      // DateTime ranges have the same start or end points
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00Z, 2023-01-01T12:00:00Z]',
+          '[2023-01-01T08:00:00Z, 2023-01-01T14:00:00Z]',
+        ),
+        true,
+      );
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00Z, 2023-01-01T12:00:00Z]',
+          '[2023-01-01T05:00:00Z, 2023-01-01T08:00:00Z]',
+        ),
+        true,
+      );
+
+      // DateTime ranges touch but do not overlap
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00Z, 2023-01-01T12:00:00Z]',
+          '(2023-01-01T12:00:00Z, 2023-01-01T16:00:00Z]',
+        ),
+        false,
+      );
+
+      // DateTime ranges don't overlap
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00Z, 2023-01-01T10:00:00Z]',
+          '[2023-01-01T11:00:00Z, 2023-01-01T15:00:00Z]',
+        ),
+        false,
+      );
+    });
+
+    test('should return true if two timestamptz with tz offset ranges overlap',
+        () {
+      bool checkDateTimeOverlap(String range1, String range2) {
+        final r1 = RangeType.createRange(range: range1);
+        final r2 = RangeType.createRange(range: range2);
+        return r1.overlaps(r2);
+      }
+
+      // DateTime ranges overlap completely
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00-01, 2023-01-01T12:00:00+01]',
+          '[2023-01-01T10:00:00-01, 2023-01-01T15:00:00+01]',
+        ),
+        true,
+      );
+
+      // One DateTime range is completely within the other
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00-01, 2023-01-01T12:00:00+01]',
+          '[2023-01-01T09:00:00-01, 2023-01-01T11:00:00+01]',
+        ),
+        true,
+      );
+
+      // DateTime ranges have the same start or end points
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00-01, 2023-01-01T12:00:00+01]',
+          '[2023-01-01T08:00:00-01, 2023-01-01T14:00:00+01]',
+        ),
+        true,
+      );
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00-01, 2023-01-01T12:00:00+01]',
+          '[2023-01-01T05:00:00+01, 2023-01-01T08:00:00-01]',
+        ),
+        true,
+      );
+
+      // DateTime ranges touch but do not overlap
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00-01, 2023-01-01T12:00:00+01]',
+          '(2023-01-01T12:00:00-01, 2023-01-01T16:00:00+01]',
+        ),
+        false,
+      );
+
+      // DateTime ranges don't overlap
+      expect(
+        checkDateTimeOverlap(
+          '[2023-01-01T08:00:00-01, 2023-01-01T10:00:00+01]',
+          '[2023-01-01T11:00:00-01, 2023-01-01T15:00:00+01]',
+        ),
+        false,
+      );
+    });
+
+    test(
+        'should throw an Exception when checking if two ranges of different type overlap',
+        () {
+      final range1 = RangeType.createRange(
+        range: '[2023-01-01T08:00:00Z, 2023-01-01T10:00:00Z]',
+      );
+      final range2 = RangeType.createRange(
+        range: '[2023-01-01T08:00:00-03, 2023-01-01T10:00:00+05]',
+      );
+      final range3 = RangeType.createRange(range: '[10, 20]');
+
+      expect(() => range1.overlaps(range3), throwsException);
+      expect(() => range2.overlaps(range3), throwsException);
     });
   });
 
