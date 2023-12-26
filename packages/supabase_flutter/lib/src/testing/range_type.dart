@@ -582,17 +582,27 @@ class RangeComparable<T> {
         dateTimeFunc: (
           thisLowerRange,
           otherLowerRange,
-          _,
-          __,
-        ) =>
-            thisLowerRange.isAfter(otherLowerRange),
+          thisUpperRange,
+          otherUpperRange,
+        ) {
+          if (thisLowerRange.isAtSameMomentAs(otherLowerRange)) {
+            return thisUpperRange.isAfter(otherUpperRange);
+          } else {
+            return thisLowerRange.isAfter(otherLowerRange);
+          }
+        },
         compareFunc: (
           thisLowerRange,
           otherLowerRange,
-          _,
-          __,
-        ) =>
-            thisLowerRange > otherLowerRange,
+          thisUpperRange,
+          otherUpperRange,
+        ) {
+          if (thisLowerRange == otherLowerRange) {
+            return thisUpperRange > otherUpperRange;
+          } else {
+            return thisLowerRange > otherLowerRange;
+          }
+        },
       );
 
   bool operator >=(RangeComparable other) => _compare(
@@ -600,18 +610,28 @@ class RangeComparable<T> {
         dateTimeFunc: (
           thisLowerRange,
           otherLowerRange,
-          _,
-          __,
-        ) =>
-            thisLowerRange.isAfter(otherLowerRange) ||
-            thisLowerRange.isAtSameMomentAs(otherLowerRange),
+          thisUpperRange,
+          otherUpperRange,
+        ) {
+          if (thisLowerRange.isAtSameMomentAs(otherLowerRange)) {
+            return thisUpperRange.isAtSameMomentAs(otherUpperRange) ||
+                thisUpperRange.isAfter(otherUpperRange);
+          } else {
+            return thisLowerRange.isAfter(otherLowerRange);
+          }
+        },
         compareFunc: (
           thisLowerRange,
           otherLowerRange,
-          _,
-          __,
-        ) =>
-            thisLowerRange >= otherLowerRange,
+          thisUpperRange,
+          otherUpperRange,
+        ) {
+          if (thisLowerRange == otherLowerRange) {
+            return thisUpperRange >= otherUpperRange;
+          } else {
+            return thisLowerRange > otherLowerRange;
+          }
+        },
       );
 
   bool operator <(RangeComparable other) => _compare(
@@ -619,17 +639,27 @@ class RangeComparable<T> {
         dateTimeFunc: (
           thisLowerRange,
           otherLowerRange,
-          _,
-          __,
-        ) =>
-            thisLowerRange.isBefore(otherLowerRange),
+          thisUpperRange,
+          otherUpperRange,
+        ) {
+          if (thisLowerRange.isAtSameMomentAs(otherLowerRange)) {
+            return thisUpperRange.isBefore(otherUpperRange);
+          } else {
+            return thisLowerRange.isBefore(otherLowerRange);
+          }
+        },
         compareFunc: (
           thisLowerRange,
           otherLowerRange,
-          _,
-          __,
-        ) =>
-            thisLowerRange < otherLowerRange,
+          thisUpperRange,
+          otherUpperRange,
+        ) {
+          if (thisLowerRange == otherLowerRange) {
+            return thisUpperRange < otherUpperRange;
+          } else {
+            return thisLowerRange < otherLowerRange;
+          }
+        },
       );
 
   bool operator <=(RangeComparable other) => _compare(
@@ -637,18 +667,28 @@ class RangeComparable<T> {
         dateTimeFunc: (
           thisLowerRange,
           otherLowerRange,
-          _,
-          __,
-        ) =>
-            thisLowerRange.isBefore(otherLowerRange) ||
-            thisLowerRange.isAtSameMomentAs(otherLowerRange),
+          thisUpperRange,
+          otherUpperRange,
+        ) {
+          if (thisLowerRange.isAtSameMomentAs(otherLowerRange)) {
+            return thisUpperRange.isAtSameMomentAs(otherUpperRange) ||
+                thisUpperRange.isBefore(otherUpperRange);
+          } else {
+            return thisLowerRange.isBefore(otherLowerRange);
+          }
+        },
         compareFunc: (
           thisLowerRange,
           otherLowerRange,
-          _,
-          __,
-        ) =>
-            thisLowerRange <= otherLowerRange,
+          thisUpperRange,
+          otherUpperRange,
+        ) {
+          if (thisLowerRange == otherLowerRange) {
+            return thisUpperRange <= otherUpperRange;
+          } else {
+            return thisLowerRange < otherLowerRange;
+          }
+        },
       );
 
   @override
