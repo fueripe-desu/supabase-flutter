@@ -191,17 +191,18 @@ class IntegerRangeType extends RangeType {
       return false;
     }
 
-    if (rangeDataType == other.rangeDataType) {
-      final otherRange = other as IntegerRangeType;
-
-      // Check if the ranges share a common boundary
-      return (lowerRange == otherRange.upperRange) ||
-          (upperRange == otherRange.lowerRange);
+    if (rangeDataType != other.rangeDataType) {
+      throw Exception(
+        'Cannot check adjacency between two datetimes of different types.',
+      );
     }
 
-    throw Exception(
-      'Cannot check adjacency between two datetimes of different types.',
-    );
+    final thisComparable = getComparable();
+    final otherComparable = other.getComparable();
+
+    // Check for contiguous boundaries
+    return (thisComparable.lowerRange - 1 == otherComparable.upperRange) ||
+        (thisComparable.upperRange + 1 == otherComparable.lowerRange);
   }
 
   @override
@@ -279,17 +280,18 @@ class FloatRangeType extends RangeType {
       return false;
     }
 
-    if (rangeDataType == other.rangeDataType) {
-      final otherRange = other as FloatRangeType;
-
-      // Check if the ranges share a common boundary
-      return (lowerRange == otherRange.upperRange) ||
-          (upperRange == otherRange.lowerRange);
+    if (rangeDataType != other.rangeDataType) {
+      throw Exception(
+        'Cannot check adjacency between two datetimes of different types.',
+      );
     }
 
-    throw Exception(
-      'Cannot check adjacency between two datetimes of different types.',
-    );
+    final thisComparable = getComparable();
+    final otherComparable = other.getComparable();
+
+    // Check for contiguous boundaries
+    return (thisComparable.lowerRange - 0.1 == otherComparable.upperRange) ||
+        (thisComparable.upperRange + 0.1 == otherComparable.lowerRange);
   }
 }
 
@@ -487,29 +489,35 @@ class DateRangeType extends RangeType {
 
   @override
   bool isAdjacent(RangeType other) {
-    // This method does not use comparables, because it is already certain that
-    // all of the ranges are not overlapping, due to the method overlaps(), so
-    // if they use comparables, they will never share a commom boundary because
-    // comparables subtract from exclusive ranges, so when checking for adjacency
-    // between an inclusive and exclusive range, it would return unexpected results,
-    // therefore, comparables should not be used in this occasion.
-
     // If ranges overlap, they cannot be adjacent
     if (overlaps(other)) {
       return false;
     }
 
-    if (rangeDataType == other.rangeDataType) {
-      final otherRange = other as DateRangeType;
-
-      // Check if the ranges share a common boundary
-      return (lowerRange.isAtSameMomentAs(otherRange.upperRange)) ||
-          (upperRange.isAtSameMomentAs(otherRange.lowerRange));
+    if (rangeDataType != other.rangeDataType) {
+      throw Exception(
+        'Cannot check adjacency between two datetimes of different types.',
+      );
     }
 
-    throw Exception(
-      'Cannot check adjacency between two datetimes of different types.',
-    );
+    late final Duration duration;
+
+    if (rangeDataType == RangeDataType.date) {
+      duration = const Duration(days: 1);
+    } else {
+      duration = const Duration(milliseconds: 1);
+    }
+
+    final thisComparable = getComparable();
+    final otherComparable = other.getComparable();
+
+    // Check for contiguous boundaries
+    return (thisComparable.lowerRange
+            .subtract(duration)
+            .isAtSameMomentAs(otherComparable.upperRange)) ||
+        (thisComparable.upperRange
+            .add(duration)
+            .isAtSameMomentAs(otherComparable.lowerRange));
   }
 
   static String _removeTzOffsets(String range) {
