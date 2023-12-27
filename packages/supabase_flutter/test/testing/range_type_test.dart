@@ -171,6 +171,22 @@ void main() {
 
       expect(() => range1.overlaps(range2), throwsException);
     });
+
+    test('should return true if two integer ranges are adjacent', () {
+      bool checkAdjacency(String range1, String range2) {
+        final r1 = RangeType.createRange(range: range1);
+        final r2 = RangeType.createRange(range: range2);
+        return r1.isAdjacent(r2);
+      }
+
+      // Two integer ranges are adjacent
+      expect(checkAdjacency('[1, 10]', '(10, 20)'), true);
+      expect(checkAdjacency('[1, 10]', '[11, 20]'), true);
+
+      // Two integer ranges are not adjacent
+      expect(checkAdjacency('[1, 10]', '[12, 20]'), false);
+      expect(checkAdjacency('[1, 10]', '[21, 30]'), false);
+    });
   });
 
   group('FloatRangeType tests', () {
@@ -291,6 +307,22 @@ void main() {
       final range2 = RangeType.createRange(range: '[10, 20]');
 
       expect(() => range1.overlaps(range2), throwsException);
+    });
+
+    test('should return true if two double ranges are adjacent', () {
+      bool checkAdjacency(String range1, String range2) {
+        final r1 = RangeType.createRange(range: range1);
+        final r2 = RangeType.createRange(range: range2);
+        return r1.isAdjacent(r2);
+      }
+
+      // Two integer ranges are adjacent
+      expect(checkAdjacency('[1.0, 10.0]', '(10.0, 20.0)'), true);
+      expect(checkAdjacency('[1.0, 10.0]', '[10.1, 20.0]'), true);
+
+      // Two integer ranges are not adjacent
+      expect(checkAdjacency('[1.0, 10.0]', '[12.0, 20.0]'), false);
+      expect(checkAdjacency('[1.0, 10.0]', '[21.0, 30.0]'), false);
     });
   });
 
@@ -478,6 +510,46 @@ void main() {
       final range2 = RangeType.createRange(range: '[10, 20]');
 
       expect(() => range1.overlaps(range2), throwsException);
+    });
+
+    test('should return true if two date ranges are adjacent', () {
+      bool checkAdjacency(String range1, String range2) {
+        final r1 = RangeType.createRange(range: range1);
+        final r2 = RangeType.createRange(range: range2);
+        return r1.isAdjacent(r2);
+      }
+
+      // Two integer ranges are adjacent
+      expect(
+        checkAdjacency(
+          '[2023-01-01, 2023-01-10]',
+          '(2023-01-10, 2023-01-20)',
+        ),
+        true,
+      );
+      expect(
+        checkAdjacency(
+          '[2023-01-01, 2023-01-10]',
+          '[2023-01-11, 2023-01-20]',
+        ),
+        true,
+      );
+
+      // Two integer ranges are not adjacent
+      expect(
+        checkAdjacency(
+          '[2023-01-01, 2023-01-10]',
+          '[2023-01-12, 2023-01-20]',
+        ),
+        false,
+      );
+      expect(
+        checkAdjacency(
+          '[2023-01-01, 2023-01-10]',
+          '[2023-01-21, 2023-01-30]',
+        ),
+        false,
+      );
     });
   });
 
@@ -721,6 +793,46 @@ void main() {
       final range2 = RangeType.createRange(range: '[10, 20]');
 
       expect(() => range1.overlaps(range2), throwsException);
+    });
+
+    test('should return true if two timestamp ranges are adjacent', () {
+      bool checkAdjacency(String range1, String range2) {
+        final r1 = RangeType.createRange(range: range1);
+        final r2 = RangeType.createRange(range: range2);
+        return r1.isAdjacent(r2);
+      }
+
+      // Two timestamp ranges are adjacent
+      expect(
+        checkAdjacency(
+          '[2023-01-01T12:00:00, 2023-01-01T15:00:00]',
+          '(2023-01-01T15:00:00, 2023-01-01T20:00:00)',
+        ),
+        true,
+      );
+      expect(
+        checkAdjacency(
+          '[2023-01-01T12:00:00.000, 2023-01-01T15:00:00.000]',
+          '[2023-01-01T15:00:00.001, 2023-01-01T20:00:00.000]',
+        ),
+        true,
+      );
+
+      // Two timestamp ranges are not adjacent
+      expect(
+        checkAdjacency(
+          '[2023-01-01T00:00:00, 2023-01-10T00:00:00]',
+          '[2023-01-12T00:00:00, 2023-01-20T00:00:00]',
+        ),
+        false,
+      );
+      expect(
+        checkAdjacency(
+          '[2023-01-01T00:00:00, 2023-01-10T00:00:00]',
+          '[2023-01-21T00:00:00, 2023-01-30T00:00:00]',
+        ),
+        false,
+      );
     });
   });
 
@@ -1045,6 +1157,88 @@ void main() {
 
       expect(() => range1.overlaps(range3), throwsException);
       expect(() => range2.overlaps(range3), throwsException);
+    });
+
+    test('should return true if two UTC timestamp ranges are adjacent', () {
+      bool checkAdjacency(String range1, String range2) {
+        final r1 = RangeType.createRange(range: range1);
+        final r2 = RangeType.createRange(range: range2);
+        return r1.isAdjacent(r2);
+      }
+
+      // Two timestamp ranges are adjacent
+      expect(
+        checkAdjacency(
+          '[2023-01-01T12:00:00Z, 2023-01-01T15:00:00Z]',
+          '(2023-01-01T15:00:00Z, 2023-01-01T20:00:00Z)',
+        ),
+        true,
+      );
+      expect(
+        checkAdjacency(
+          '[2023-01-01T12:00:00.000Z, 2023-01-01T15:00:00.000Z]',
+          '[2023-01-01T15:00:00.001Z, 2023-01-01T20:00:00.000Z]',
+        ),
+        true,
+      );
+
+      // Two timestamp ranges are not adjacent
+      expect(
+        checkAdjacency(
+          '[2023-01-01T00:00:00Z, 2023-01-10T00:00:00Z]',
+          '[2023-01-12T00:00:00Z, 2023-01-20T00:00:00Z]',
+        ),
+        false,
+      );
+      expect(
+        checkAdjacency(
+          '[2023-01-01T00:00:00Z, 2023-01-10T00:00:00Z]',
+          '[2023-01-21T00:00:00Z, 2023-01-30T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+
+    test(
+        'should return true if two timestamptz with tz offset ranges are adjacent',
+        () {
+      bool checkAdjacency(String range1, String range2) {
+        final r1 = RangeType.createRange(range: range1);
+        final r2 = RangeType.createRange(range: range2);
+        return r1.isAdjacent(r2);
+      }
+
+      // Two timestamp ranges are adjacent
+      expect(
+        checkAdjacency(
+          '[2023-01-01T12:00:00-01, 2023-01-01T15:00:00+01]',
+          '(2023-01-01T15:00:00+01, 2023-01-01T20:00:00-01)',
+        ),
+        true,
+      );
+      expect(
+        checkAdjacency(
+          '[2023-01-01T12:00:00.000-01, 2023-01-01T15:00:00.000+01]',
+          '[2023-01-01T15:00:00.001+01, 2023-01-01T20:00:00.000-01]',
+        ),
+        true,
+      );
+
+      // Two timestamp ranges are not adjacent
+      expect(
+        checkAdjacency(
+          '[2023-01-01T00:00:00-01, 2023-01-10T00:00:00+01]',
+          '[2023-01-12T00:00:00-01, 2023-01-20T00:00:00+01]',
+        ),
+        false,
+      );
+      expect(
+        checkAdjacency(
+          '[2023-01-01T00:00:00-01, 2023-01-10T00:00:00+01]',
+          '[2023-01-21T00:00:00-01, 2023-01-30T00:00:00+01]',
+        ),
+        false,
+      );
     });
   });
 
