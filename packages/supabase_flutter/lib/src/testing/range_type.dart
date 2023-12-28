@@ -8,10 +8,16 @@ abstract class RangeType {
     required this.upperRangeInclusive,
     required this.rangeDataType,
     required this.rawRangeString,
+    required this.isEmpty,
   });
 
-  factory RangeType.createRange({required String range}) {
+  factory RangeType.createRange(
+      {required String range, RangeDataType? forceType}) {
     try {
+      if (range.isEmpty && forceType != null) {
+        return _createRangeFromForceType(range, forceType);
+      }
+
       // Retrives and checks if the range strings have the correct brackets
       final firstBracket = range[0];
       final lastBracket = range[range.length - 1];
@@ -53,6 +59,7 @@ abstract class RangeType {
           upperRangeInclusive: upperRangeInclusive,
           rangeDataType: RangeDataType.integer,
           rawRangeString: range.removeSpaces(),
+          isEmpty: false,
         );
       }
 
@@ -70,6 +77,7 @@ abstract class RangeType {
           upperRangeInclusive: upperRangeInclusive,
           rangeDataType: RangeDataType.float,
           rawRangeString: range.removeSpaces(),
+          isEmpty: false,
         );
       }
 
@@ -114,15 +122,59 @@ abstract class RangeType {
   final RangeDataType rangeDataType;
   final String rawRangeString;
 
+  final bool isEmpty;
+
   bool isInRange(dynamic value);
   bool isAdjacent(RangeType other);
   bool overlaps(RangeType other);
   RangeComparable getComparable();
 
-  bool operator >(RangeType other) => getComparable() > other.getComparable();
-  bool operator >=(RangeType other) => getComparable() >= other.getComparable();
-  bool operator <(RangeType other) => getComparable() < other.getComparable();
-  bool operator <=(RangeType other) => getComparable() <= other.getComparable();
+  bool operator >(RangeType other) => isEmpty || other.isEmpty
+      ? false
+      : getComparable() > other.getComparable();
+  bool operator >=(RangeType other) => isEmpty || other.isEmpty
+      ? false
+      : getComparable() >= other.getComparable();
+  bool operator <(RangeType other) => isEmpty || other.isEmpty
+      ? false
+      : getComparable() < other.getComparable();
+  bool operator <=(RangeType other) => isEmpty || other.isEmpty
+      ? false
+      : getComparable() <= other.getComparable();
+
+  static RangeType _createRangeFromForceType(
+    String range,
+    RangeDataType dataType,
+  ) {
+    switch (dataType) {
+      case RangeDataType.integer:
+        return IntegerRangeType(
+          lowerRangeInclusive: false,
+          upperRangeInclusive: false,
+          rangeDataType: dataType,
+          rawRangeString: range,
+          isEmpty: range.isEmpty,
+        );
+      case RangeDataType.float:
+        return FloatRangeType(
+          lowerRangeInclusive: false,
+          upperRangeInclusive: false,
+          rangeDataType: dataType,
+          rawRangeString: range,
+          isEmpty: range.isEmpty,
+        );
+      case RangeDataType.date:
+      case RangeDataType.timestamp:
+      case RangeDataType.timestamptz:
+        return DateRangeType(
+          lowerRangeInclusive: false,
+          upperRangeInclusive: false,
+          rangeDataType: dataType,
+          rawRangeString: range,
+          isEmpty: range.isEmpty,
+        );
+    }
+  }
 
   static RangeDataType _getDataTypeFromTimestamp(String timestamp) {
     // Matches all characters ignoring digits, this is used with the
@@ -149,43 +201,56 @@ abstract class RangeType {
 
 class IntegerRangeType extends RangeType {
   const IntegerRangeType({
-    required this.upperRange,
-    required this.lowerRange,
+    this.upperRange,
+    this.lowerRange,
     required super.lowerRangeInclusive,
     required super.upperRangeInclusive,
     required super.rangeDataType,
     required super.rawRangeString,
+    required super.isEmpty,
   });
 
-  final int upperRange;
-  final int lowerRange;
+  final int? upperRange;
+  final int? lowerRange;
 
   @override
   bool isInRange(dynamic value) {
+    if (isEmpty) {
+      return false;
+    }
+
     final valueToCheck = value as int;
     final bool inLowerRange = lowerRangeInclusive
-        ? valueToCheck >= lowerRange
-        : valueToCheck > lowerRange;
+        ? valueToCheck >= lowerRange!
+        : valueToCheck > lowerRange!;
     final bool inUpperRange = upperRangeInclusive
-        ? valueToCheck <= upperRange
-        : valueToCheck < upperRange;
+        ? valueToCheck <= upperRange!
+        : valueToCheck < upperRange!;
 
     return inLowerRange && inUpperRange;
   }
 
   @override
   RangeComparable<int> getComparable() {
-    final newLowerRange = lowerRangeInclusive ? lowerRange : lowerRange + 1;
-    final newUpperRange = upperRangeInclusive ? upperRange : upperRange - 1;
+    if (isEmpty) {
+      throw Exception('Cannot get comparable of an empty range.');
+    }
+
+    final newLowerRange = lowerRangeInclusive ? lowerRange : lowerRange! + 1;
+    final newUpperRange = upperRangeInclusive ? upperRange : upperRange! - 1;
 
     return RangeComparable<int>(
-      lowerRange: newLowerRange,
-      upperRange: newUpperRange,
+      lowerRange: newLowerRange!,
+      upperRange: newUpperRange!,
     );
   }
 
   @override
   bool isAdjacent(RangeType other) {
+    if (isEmpty || other.isEmpty) {
+      return false;
+    }
+
     // If ranges overlap, they cannot be adjacent
     if (overlaps(other)) {
       return false;
@@ -207,6 +272,10 @@ class IntegerRangeType extends RangeType {
 
   @override
   bool overlaps(RangeType other) {
+    if (isEmpty || other.isEmpty) {
+      return false;
+    }
+
     if (rangeDataType != other.rangeDataType) {
       throw Exception(
         'Ranges must be of the same type in order to check if they overlap.',
@@ -223,43 +292,54 @@ class IntegerRangeType extends RangeType {
 
 class FloatRangeType extends RangeType {
   const FloatRangeType({
-    required this.upperRange,
-    required this.lowerRange,
+    this.upperRange,
+    this.lowerRange,
     required super.lowerRangeInclusive,
     required super.upperRangeInclusive,
     required super.rangeDataType,
     required super.rawRangeString,
+    required super.isEmpty,
   });
 
-  final double upperRange;
-  final double lowerRange;
+  final double? upperRange;
+  final double? lowerRange;
 
   @override
   bool isInRange(dynamic value) {
+    if (isEmpty) {
+      return false;
+    }
     final valueToCheck = (value is int) ? value.toDouble() : value as double;
     final bool inLowerRange = lowerRangeInclusive
-        ? valueToCheck >= lowerRange
-        : valueToCheck > lowerRange;
+        ? valueToCheck >= lowerRange!
+        : valueToCheck > lowerRange!;
     final bool inUpperRange = upperRangeInclusive
-        ? valueToCheck <= upperRange
-        : valueToCheck < upperRange;
+        ? valueToCheck <= upperRange!
+        : valueToCheck < upperRange!;
 
     return inLowerRange && inUpperRange;
   }
 
   @override
   RangeComparable<double> getComparable() {
-    final newLowerRange = lowerRangeInclusive ? lowerRange : lowerRange + 0.1;
-    final newUpperRange = upperRangeInclusive ? upperRange : upperRange - 0.1;
+    if (isEmpty) {
+      throw Exception('Cannot get comparable of an empty range.');
+    }
+
+    final newLowerRange = lowerRangeInclusive ? lowerRange : lowerRange! + 0.1;
+    final newUpperRange = upperRangeInclusive ? upperRange : upperRange! - 0.1;
 
     return RangeComparable<double>(
-      lowerRange: newLowerRange,
-      upperRange: newUpperRange,
+      lowerRange: newLowerRange!,
+      upperRange: newUpperRange!,
     );
   }
 
   @override
   bool overlaps(RangeType other) {
+    if (isEmpty || other.isEmpty) {
+      return false;
+    }
     if (rangeDataType != other.rangeDataType) {
       throw Exception(
         'Ranges must be of the same type in order to check if they overlap.',
@@ -275,6 +355,9 @@ class FloatRangeType extends RangeType {
 
   @override
   bool isAdjacent(RangeType other) {
+    if (isEmpty || other.isEmpty) {
+      return false;
+    }
     // If ranges overlap, they cannot be adjacent
     if (overlaps(other)) {
       return false;
@@ -297,17 +380,18 @@ class FloatRangeType extends RangeType {
 
 class DateRangeType extends RangeType {
   const DateRangeType({
-    required this.upperRange,
-    required this.lowerRange,
+    this.upperRange,
+    this.lowerRange,
     required super.lowerRangeInclusive,
     required super.upperRangeInclusive,
     required super.rangeDataType,
     required super.rawRangeString,
+    required super.isEmpty,
   });
 
   factory DateRangeType.adjustPrecision({
-    required DateTime upperRange,
-    required DateTime lowerRange,
+    DateTime? upperRange,
+    DateTime? lowerRange,
     required bool lowerRangeInclusive,
     required bool upperRangeInclusive,
     required RangeDataType rangeDataType,
@@ -327,13 +411,13 @@ class DateRangeType extends RangeType {
     // timestamp
     if (rangeDataType == RangeDataType.date) {
       newUpperRange = DateTime.utc(
-        upperRange.year,
+        upperRange!.year,
         upperRange.month,
         upperRange.day,
       );
 
       newLowerRange = DateTime.utc(
-        lowerRange.year,
+        lowerRange!.year,
         lowerRange.month,
         lowerRange.day,
       );
@@ -346,7 +430,7 @@ class DateRangeType extends RangeType {
 
     if (rangeDataType == RangeDataType.timestamp) {
       newUpperRange = DateTime.utc(
-        upperRange.year,
+        upperRange!.year,
         upperRange.month,
         upperRange.day,
         upperRange.hour,
@@ -356,7 +440,7 @@ class DateRangeType extends RangeType {
       );
 
       newLowerRange = DateTime.utc(
-        lowerRange.year,
+        lowerRange!.year,
         lowerRange.month,
         lowerRange.day,
         lowerRange.hour,
@@ -380,8 +464,8 @@ class DateRangeType extends RangeType {
       // ISO 8601 string, then we remove the last 'Z' character that indicates
       // UTC, and replace it with the timezone offset.
 
-      newUpperRange = upperRange;
-      newLowerRange = lowerRange;
+      newUpperRange = upperRange!;
+      newLowerRange = lowerRange!;
 
       final timezoneOffsets = _extractTzOffsets(rawRangeString);
       final timestamps = _removeTzOffsets(rawRangeString);
@@ -430,29 +514,38 @@ class DateRangeType extends RangeType {
       upperRangeInclusive: upperRangeInclusive,
       rangeDataType: rangeDataType,
       rawRangeString: newRawString,
+      isEmpty: false,
     );
   }
 
-  final DateTime upperRange;
-  final DateTime lowerRange;
+  final DateTime? upperRange;
+  final DateTime? lowerRange;
 
   @override
   bool isInRange(dynamic value) {
+    if (isEmpty) {
+      return false;
+    }
+
     final valueToCheck = value as DateTime;
     final inLowerRange = lowerRangeInclusive
-        ? valueToCheck.isAtSameMomentAs(lowerRange) ||
-            valueToCheck.isAfter(lowerRange)
-        : valueToCheck.isAfter(lowerRange);
+        ? valueToCheck.isAtSameMomentAs(lowerRange!) ||
+            valueToCheck.isAfter(lowerRange!)
+        : valueToCheck.isAfter(lowerRange!);
     final inUpperRange = upperRangeInclusive
-        ? valueToCheck.isAtSameMomentAs(upperRange) ||
-            valueToCheck.isBefore(upperRange)
-        : valueToCheck.isBefore(upperRange);
+        ? valueToCheck.isAtSameMomentAs(upperRange!) ||
+            valueToCheck.isBefore(upperRange!)
+        : valueToCheck.isBefore(upperRange!);
 
     return inLowerRange && inUpperRange;
   }
 
   @override
   RangeComparable<DateTime> getComparable() {
+    if (isEmpty) {
+      throw Exception('Cannot get comparable of an empty range.');
+    }
+
     late final Duration duration;
 
     if (rangeDataType == RangeDataType.date) {
@@ -462,18 +555,22 @@ class DateRangeType extends RangeType {
     }
 
     final newLowerRange =
-        lowerRangeInclusive ? lowerRange : lowerRange.add(duration);
+        lowerRangeInclusive ? lowerRange : lowerRange!.add(duration);
     final newUpperRange =
-        upperRangeInclusive ? upperRange : upperRange.subtract(duration);
+        upperRangeInclusive ? upperRange : upperRange!.subtract(duration);
 
     return RangeComparable<DateTime>(
-      lowerRange: newLowerRange,
-      upperRange: newUpperRange,
+      lowerRange: newLowerRange!,
+      upperRange: newUpperRange!,
     );
   }
 
   @override
   bool overlaps(RangeType other) {
+    if (isEmpty || other.isEmpty) {
+      return false;
+    }
+
     if (rangeDataType != other.rangeDataType) {
       throw Exception(
         'Ranges must be of the same type in order to check if they overlap.',
@@ -489,6 +586,10 @@ class DateRangeType extends RangeType {
 
   @override
   bool isAdjacent(RangeType other) {
+    if (isEmpty || other.isEmpty) {
+      return false;
+    }
+
     // If ranges overlap, they cannot be adjacent
     if (overlaps(other)) {
       return false;
