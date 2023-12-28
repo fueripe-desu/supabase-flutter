@@ -1242,6 +1242,394 @@ void main() {
     });
   });
 
+  group('empty range tests', () {
+    test(
+        'should return an exception when trying to create an empty range without forcing the type',
+        () {
+      expect(() => RangeType.createRange(range: ''), throwsException);
+    });
+
+    test('should successfuly create an int empty range', () {
+      final range = RangeType.createRange(
+        range: '',
+        forceType: RangeDataType.integer,
+      );
+
+      expect(range.rangeDataType, RangeDataType.integer);
+      expect(range.lowerRangeInclusive, false);
+      expect(range.upperRangeInclusive, false);
+      expect(range.rawRangeString.isEmpty, true);
+      expect(range.isEmpty, true);
+    });
+
+    test('should successfuly create a float empty range', () {
+      final range = RangeType.createRange(
+        range: '',
+        forceType: RangeDataType.float,
+      );
+
+      expect(range.rangeDataType, RangeDataType.float);
+      expect(range.lowerRangeInclusive, false);
+      expect(range.upperRangeInclusive, false);
+      expect(range.rawRangeString.isEmpty, true);
+      expect(range.isEmpty, true);
+    });
+
+    test('should successfuly create a date empty range', () {
+      final range = RangeType.createRange(
+        range: '',
+        forceType: RangeDataType.date,
+      );
+
+      expect(range.rangeDataType, RangeDataType.date);
+      expect(range.lowerRangeInclusive, false);
+      expect(range.upperRangeInclusive, false);
+      expect(range.rawRangeString.isEmpty, true);
+      expect(range.isEmpty, true);
+    });
+
+    test('should successfuly create a timestamp empty range', () {
+      final range = RangeType.createRange(
+        range: '',
+        forceType: RangeDataType.timestamp,
+      );
+
+      expect(range.rangeDataType, RangeDataType.timestamp);
+      expect(range.lowerRangeInclusive, false);
+      expect(range.upperRangeInclusive, false);
+      expect(range.rawRangeString.isEmpty, true);
+      expect(range.isEmpty, true);
+    });
+
+    test('should successfuly create a timestamptz empty range', () {
+      final range = RangeType.createRange(
+        range: '',
+        forceType: RangeDataType.timestamptz,
+      );
+
+      expect(range.rangeDataType, RangeDataType.timestamptz);
+      expect(range.lowerRangeInclusive, false);
+      expect(range.upperRangeInclusive, false);
+      expect(range.rawRangeString.isEmpty, true);
+      expect(range.isEmpty, true);
+    });
+
+    group('IntegerRangeType empty range tests', () {
+      late final IntegerRangeType emptyRange;
+      late final IntegerRangeType intRange;
+
+      setUpAll(() {
+        emptyRange = RangeType.createRange(
+          range: '',
+          forceType: RangeDataType.integer,
+        ) as IntegerRangeType;
+
+        intRange = RangeType.createRange(
+          range: '[10, 20]',
+        ) as IntegerRangeType;
+      });
+
+      test(
+          'should return false when checking if any value is in range of an empty range',
+          () {
+        expect(emptyRange.isInRange(0), false);
+        expect(emptyRange.isInRange(1), false);
+        expect(emptyRange.isInRange(2), false);
+        expect(emptyRange.isInRange(-1), false);
+      });
+
+      test(
+          'should return false when checking if any other range overlaps an empty range',
+          () {
+        expect(emptyRange.overlaps(intRange), false);
+        expect(intRange.overlaps(emptyRange), false);
+      });
+
+      test(
+          'should return false when checking if any other range is adjacent of an empty range',
+          () {
+        expect(emptyRange.isAdjacent(intRange), false);
+        expect(intRange.isAdjacent(emptyRange), false);
+      });
+
+      test(
+          'should return throw an Exception when trying to get the comparable of an empty range',
+          () {
+        expect(() => emptyRange.getComparable(), throwsException);
+      });
+
+      test(
+          'should return return false when comparing an empty range against any other range',
+          () {
+        // Greater than
+        expect(emptyRange > intRange, false);
+        expect(intRange > emptyRange, false);
+
+        // Less than
+        expect(emptyRange < intRange, false);
+        expect(intRange < emptyRange, false);
+
+        // Greater than or equal to
+        expect(emptyRange >= intRange, false);
+        expect(intRange >= emptyRange, false);
+
+        // Less than or equal to
+        expect(emptyRange <= intRange, false);
+        expect(intRange <= emptyRange, false);
+      });
+    });
+
+    group('FloatRangeType empty range tests', () {
+      late final FloatRangeType emptyRange;
+      late final FloatRangeType floatRange;
+      setUpAll(() {
+        emptyRange = RangeType.createRange(
+          range: '',
+          forceType: RangeDataType.float,
+        ) as FloatRangeType;
+
+        floatRange = RangeType.createRange(
+          range: '[10.0, 20.0]',
+        ) as FloatRangeType;
+      });
+
+      test(
+          'should return false when checking if any value is in range of an empty range',
+          () {
+        expect(emptyRange.isInRange(0.0), false);
+        expect(emptyRange.isInRange(1.0), false);
+        expect(emptyRange.isInRange(2.0), false);
+        expect(emptyRange.isInRange(-1.0), false);
+      });
+
+      test(
+          'should return false when checking if any other range overlaps an empty range',
+          () {
+        expect(emptyRange.overlaps(floatRange), false);
+        expect(floatRange.overlaps(emptyRange), false);
+      });
+
+      test(
+          'should return false when checking if any other range is adjacent of an empty range',
+          () {
+        expect(emptyRange.isAdjacent(floatRange), false);
+        expect(floatRange.isAdjacent(emptyRange), false);
+      });
+
+      test(
+          'should return throw an Exception when trying to get the comparable of an empty range',
+          () {
+        expect(() => emptyRange.getComparable(), throwsException);
+      });
+
+      test(
+          'should return return false when comparing an empty range against any other range',
+          () {
+        // Greater than
+        expect(emptyRange > floatRange, false);
+        expect(floatRange > emptyRange, false);
+
+        // Less than
+        expect(emptyRange < floatRange, false);
+        expect(floatRange < emptyRange, false);
+
+        // Greater than or equal to
+        expect(emptyRange >= floatRange, false);
+        expect(floatRange >= emptyRange, false);
+
+        // Less than or equal to
+        expect(emptyRange <= floatRange, false);
+        expect(floatRange <= emptyRange, false);
+      });
+    });
+
+    group('DateRangeType empty range tests', () {
+      late final DateRangeType emptyRange;
+      late final DateRangeType dateRange;
+
+      setUpAll(() {
+        emptyRange = RangeType.createRange(
+          range: '',
+          forceType: RangeDataType.date,
+        ) as DateRangeType;
+
+        dateRange = RangeType.createRange(
+          range: '[2020-01-01, 2022-12-25]',
+        ) as DateRangeType;
+      });
+
+      test(
+          'should return false when checking if any value is in range of an empty range',
+          () {
+        expect(emptyRange.isInRange(DateTime(2020, 01, 01)), false);
+      });
+
+      test(
+          'should return false when checking if any other range overlaps an empty range',
+          () {
+        expect(emptyRange.overlaps(dateRange), false);
+        expect(dateRange.overlaps(emptyRange), false);
+      });
+
+      test(
+          'should return false when checking if any other range is adjacent of an empty range',
+          () {
+        expect(emptyRange.isAdjacent(dateRange), false);
+        expect(dateRange.isAdjacent(emptyRange), false);
+      });
+
+      test(
+          'should return throw an Exception when trying to get the comparable of an empty range',
+          () {
+        expect(() => emptyRange.getComparable(), throwsException);
+      });
+
+      test(
+          'should return return false when comparing an empty range against any other range',
+          () {
+        // Greater than
+        expect(emptyRange > dateRange, false);
+        expect(dateRange > emptyRange, false);
+
+        // Less than
+        expect(emptyRange < dateRange, false);
+        expect(dateRange < emptyRange, false);
+
+        // Greater than or equal to
+        expect(emptyRange >= dateRange, false);
+        expect(dateRange >= emptyRange, false);
+
+        // Less than or equal to
+        expect(emptyRange <= dateRange, false);
+        expect(dateRange <= emptyRange, false);
+      });
+    });
+
+    group('DateRangeType timestamp without timezone empty range tests', () {
+      late final DateRangeType emptyRange;
+      late final DateRangeType tsRange;
+
+      setUpAll(() {
+        emptyRange = RangeType.createRange(
+          range: '',
+          forceType: RangeDataType.timestamp,
+        ) as DateRangeType;
+
+        tsRange = RangeType.createRange(
+          range: '[2020-01-01T12:00:00, 2022-12-25T15:00:00]',
+        ) as DateRangeType;
+      });
+
+      test(
+          'should return false when checking if any value is in range of an empty range',
+          () {
+        expect(emptyRange.isInRange(DateTime(2020, 1, 1, 12, 0, 0)), false);
+      });
+
+      test(
+          'should return false when checking if any other range overlaps an empty range',
+          () {
+        expect(emptyRange.overlaps(tsRange), false);
+        expect(tsRange.overlaps(emptyRange), false);
+      });
+
+      test(
+          'should return false when checking if any other range is adjacent of an empty range',
+          () {
+        expect(emptyRange.isAdjacent(tsRange), false);
+        expect(tsRange.isAdjacent(emptyRange), false);
+      });
+
+      test(
+          'should return throw an Exception when trying to get the comparable of an empty range',
+          () {
+        expect(() => emptyRange.getComparable(), throwsException);
+      });
+
+      test(
+          'should return return false when comparing an empty range against any other range',
+          () {
+        // Greater than
+        expect(emptyRange > tsRange, false);
+        expect(tsRange > emptyRange, false);
+
+        // Less than
+        expect(emptyRange < tsRange, false);
+        expect(tsRange < emptyRange, false);
+
+        // Greater than or equal to
+        expect(emptyRange >= tsRange, false);
+        expect(tsRange >= emptyRange, false);
+
+        // Less than or equal to
+        expect(emptyRange <= tsRange, false);
+        expect(tsRange <= emptyRange, false);
+      });
+    });
+
+    group('DateRangeType timestamptz empty range tests', () {
+      late final DateRangeType emptyRange;
+      late final DateRangeType tstzRange;
+
+      setUpAll(() {
+        emptyRange = RangeType.createRange(
+          range: '',
+          forceType: RangeDataType.timestamptz,
+        ) as DateRangeType;
+
+        tstzRange = RangeType.createRange(
+          range: '[2020-01-01T12:00:00Z, 2022-12-25T15:00:00Z]',
+        ) as DateRangeType;
+      });
+
+      test(
+          'should return false when checking if any value is in range of an empty range',
+          () {
+        expect(emptyRange.isInRange(DateTime(2020, 1, 1, 12, 0, 0)), false);
+      });
+
+      test(
+          'should return false when checking if any other range overlaps an empty range',
+          () {
+        expect(emptyRange.overlaps(tstzRange), false);
+        expect(tstzRange.overlaps(emptyRange), false);
+      });
+
+      test(
+          'should return false when checking if any other range is adjacent of an empty range',
+          () {
+        expect(emptyRange.isAdjacent(tstzRange), false);
+        expect(tstzRange.isAdjacent(emptyRange), false);
+      });
+
+      test(
+          'should return throw an Exception when trying to get the comparable of an empty range',
+          () {
+        expect(() => emptyRange.getComparable(), throwsException);
+      });
+
+      test(
+          'should return return false when comparing an empty range against any other range',
+          () {
+        // Greater than
+        expect(emptyRange > tstzRange, false);
+        expect(tstzRange > emptyRange, false);
+
+        // Less than
+        expect(emptyRange < tstzRange, false);
+        expect(tstzRange < emptyRange, false);
+
+        // Greater than or equal to
+        expect(emptyRange >= tstzRange, false);
+        expect(tstzRange >= emptyRange, false);
+
+        // Less than or equal to
+        expect(emptyRange <= tstzRange, false);
+        expect(tstzRange <= emptyRange, false);
+      });
+    });
+  });
+
   group('comparable tests', () {
     group('IntegerRangeType comparable tests', () {
       test(
