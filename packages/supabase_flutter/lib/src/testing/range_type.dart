@@ -1,3 +1,6 @@
+// ignore_for_file: library_private_types_in_public_api
+
+import 'package:supabase_flutter/src/testing/range_comparable.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
 
 enum RangeDataType { integer, float, date, timestamp, timestamptz }
@@ -11,107 +14,153 @@ abstract class RangeType {
     required this.isEmpty,
   });
 
+  factory RangeType._createFromDataType({
+    dynamic upperRange,
+    dynamic lowerRange,
+    required bool lowerRangeInclusive,
+    required bool upperRangeInclusive,
+    required RangeDataType rangeDataType,
+    required String rawRangeString,
+    required bool isEmpty,
+  }) {
+    switch (rangeDataType) {
+      case RangeDataType.integer:
+        return IntegerRangeType(
+          lowerRange: lowerRange,
+          upperRange: upperRange,
+          lowerRangeInclusive: lowerRangeInclusive,
+          upperRangeInclusive: upperRangeInclusive,
+          rangeDataType: rangeDataType,
+          rawRangeString: rawRangeString,
+          isEmpty: isEmpty,
+        );
+      case RangeDataType.float:
+        return FloatRangeType(
+          lowerRange: lowerRange,
+          upperRange: upperRange,
+          lowerRangeInclusive: lowerRangeInclusive,
+          upperRangeInclusive: upperRangeInclusive,
+          rangeDataType: rangeDataType,
+          rawRangeString: rawRangeString,
+          isEmpty: isEmpty,
+        );
+      case RangeDataType.date:
+      case RangeDataType.timestamp:
+      case RangeDataType.timestamptz:
+        return DateRangeType.adjustPrecision(
+          lowerRange: lowerRange,
+          upperRange: upperRange,
+          lowerRangeInclusive: lowerRangeInclusive,
+          upperRangeInclusive: upperRangeInclusive,
+          rangeDataType: rangeDataType,
+          rawRangeString: rawRangeString,
+          isEmpty: isEmpty,
+        );
+    }
+  }
+
   factory RangeType.createRange(
       {required String range, RangeDataType? forceType}) {
     try {
-      if (range.isEmpty && forceType != null) {
-        return _createRangeFromForceType(range, forceType);
-      }
+      final (lowerRangeInclusive, upperRangeInclusive) = _getInclusivity(range);
 
-      // Retrives and checks if the range strings have the correct brackets
-      final firstBracket = range[0];
-      final lastBracket = range[range.length - 1];
-
-      if (!['[', '('].contains(firstBracket)) {
-        throw Exception(
-          'Range type string must start with an inclusive \'[\' or exclusive \'(\' range.',
-        );
-      }
-
-      if (![']', ')'].contains(lastBracket)) {
-        throw Exception(
-          'Range type string must start with an inclusive \']\' or exclusive \')\' range.',
-        );
-      }
-
-      final lowerRangeInclusive = firstBracket == '[' ? true : false;
-      final upperRangeInclusive = lastBracket == ']' ? true : false;
-
-      final valuePair = range.removeBrackets().removeSpaces().split(',');
-
-      if (valuePair.length != 2) {
-        throw Exception(
-          'Range type string must have only two values divided by comma: lower range and upper range.',
-        );
-      }
-
-      if (int.tryParse(valuePair[0]) != null) {
-        if (int.tryParse(valuePair[1]) == null) {
-          throw Exception(
-            'Because the lower range is int, upper range must also be int, but instead got: ${valuePair[1]}',
-          );
-        }
-
-        return IntegerRangeType(
-          lowerRange: int.parse(valuePair[0]),
-          upperRange: int.parse(valuePair[1]),
+      if (forceType != null && range.isEmpty) {
+        return RangeType._createFromDataType(
           lowerRangeInclusive: lowerRangeInclusive,
           upperRangeInclusive: upperRangeInclusive,
-          rangeDataType: RangeDataType.integer,
-          rawRangeString: range.removeSpaces(),
-          isEmpty: false,
+          rangeDataType: forceType,
+          rawRangeString: range,
+          isEmpty: true,
         );
       }
 
-      if (double.tryParse(valuePair[0]) != null) {
-        if (double.tryParse(valuePair[1]) == null) {
-          throw Exception(
-            'Because the lower range is double, upper range must also be double, but instead got: ${valuePair[1]}',
-          );
+      final (firstValue, secondValue) = _getValuePair(range);
+      final rawRangeString = range.split(',').trimAll().join(',');
+
+      if (forceType != null) {
+        late final dynamic firstValueParsed;
+        late final dynamic secondValueParsed;
+        late final Function parseFunction;
+
+        switch (forceType) {
+          case RangeDataType.integer:
+            parseFunction = int.parse;
+            break;
+          case RangeDataType.float:
+            parseFunction = double.parse;
+            break;
+          case RangeDataType.date:
+          case RangeDataType.timestamp:
+          case RangeDataType.timestamptz:
+            parseFunction = DateTime.parse;
+            break;
         }
 
-        return FloatRangeType(
-          lowerRange: double.parse(valuePair[0]),
-          upperRange: double.parse(valuePair[1]),
+        firstValueParsed =
+            firstValue.isNotEmpty ? parseFunction(firstValue) : null;
+        secondValueParsed =
+            secondValue.isNotEmpty ? parseFunction(secondValue) : null;
+
+        RangeType._createFromDataType(
+          lowerRange: firstValueParsed,
+          upperRange: secondValueParsed,
           lowerRangeInclusive: lowerRangeInclusive,
           upperRangeInclusive: upperRangeInclusive,
-          rangeDataType: RangeDataType.float,
-          rawRangeString: range.removeSpaces(),
-          isEmpty: false,
+          rangeDataType: forceType,
+          rawRangeString: rawRangeString,
+          isEmpty: range.isEmpty,
         );
       }
 
-      // Reassigns valuePair without removing spaces, because they are needed
-      // in certain circumstances
-      valuePair.clear();
-      valuePair.addAll(range.removeBrackets().split(',').trimAll());
+      final firstType = _inferValueType(firstValue);
+      final secondType = _inferValueType(secondValue);
 
-      if (DateTime.tryParse(valuePair[0]) != null) {
-        if (DateTime.tryParse(valuePair[1]) == null) {
+      if (firstType == null && secondType == null) {
+        throw Exception(
+          'For ranges where both boundaries are null, \'forceType\' must be provided.',
+        );
+      }
+
+      if (firstType != null && secondType != null) {
+        if (firstType.runtimeType != secondType.runtimeType) {
           throw Exception(
-            'Because the lower range is a DateTime, upper range must also be DateTime, but instead got: ${valuePair[1]}',
+            'Because the lower range is ${firstType.runtimeType}, upper range must also be ${firstType.runtimeType}, but instead got: ${secondType.runtimeType}',
           );
         }
+      }
 
-        final dataType1 = _getDataTypeFromTimestamp(valuePair[0]);
-        final dataType2 = _getDataTypeFromTimestamp(valuePair[1]);
+      final typeValue = firstType ?? secondType;
+      late final RangeDataType rangeDataType;
+
+      if (typeValue is int) {
+        rangeDataType = RangeDataType.integer;
+      }
+      if (typeValue is double) {
+        rangeDataType = RangeDataType.float;
+      }
+
+      if (typeValue is DateTime) {
+        final dataType1 = _getDataTypeFromTimestamp(firstValue);
+        final dataType2 = _getDataTypeFromTimestamp(secondValue);
 
         if (dataType1 != dataType2) {
           throw Exception(
-              'Lower range and upper range must be specified with the same precision.');
+            'Lower range and upper range must be specified with the same precision.',
+          );
         }
 
-        return DateRangeType.adjustPrecision(
-          lowerRange: DateTime.parse(valuePair[0]),
-          upperRange: DateTime.parse(valuePair[1]),
-          lowerRangeInclusive: lowerRangeInclusive,
-          upperRangeInclusive: upperRangeInclusive,
-          rangeDataType: dataType1,
-          rawRangeString: range,
-        );
+        rangeDataType = dataType1;
       }
 
-      throw Exception('Invalid range value.');
+      return RangeType._createFromDataType(
+        lowerRange: firstType,
+        upperRange: secondType,
+        lowerRangeInclusive: lowerRangeInclusive,
+        upperRangeInclusive: upperRangeInclusive,
+        rangeDataType: rangeDataType,
+        rawRangeString: rawRangeString,
+        isEmpty: false,
+      );
     } catch (err) {
       throw Exception('Invalid range value.');
     }
@@ -124,10 +173,41 @@ abstract class RangeType {
 
   final bool isEmpty;
 
-  bool isInRange(dynamic value);
-  bool isAdjacent(RangeType other);
-  bool overlaps(RangeType other);
-  RangeComparable getComparable();
+  bool isInRange(dynamic value) {
+    if (isEmpty) {
+      return false;
+    }
+
+    return getComparable().isInRange(value);
+  }
+
+  bool isAdjacent(RangeType other) {
+    if (isEmpty || other.isEmpty) {
+      return false;
+    }
+
+    if (rangeDataType != other.rangeDataType) {
+      throw Exception(
+        'Cannot check adjacency between two datetimes of different types.',
+      );
+    }
+
+    return getComparable().isAdjacent(other.getComparable());
+  }
+
+  bool overlaps(RangeType other) {
+    if (isEmpty || other.isEmpty) {
+      return false;
+    }
+
+    if (rangeDataType != other.rangeDataType) {
+      throw Exception(
+        'Ranges must be of the same type in order to check if they overlap.',
+      );
+    }
+
+    return getComparable().overlaps(other.getComparable());
+  }
 
   bool operator >(RangeType other) => isEmpty || other.isEmpty
       ? false
@@ -142,38 +222,70 @@ abstract class RangeType {
       ? false
       : getComparable() <= other.getComparable();
 
-  static RangeType _createRangeFromForceType(
-    String range,
-    RangeDataType dataType,
-  ) {
-    switch (dataType) {
-      case RangeDataType.integer:
-        return IntegerRangeType(
-          lowerRangeInclusive: false,
-          upperRangeInclusive: false,
-          rangeDataType: dataType,
-          rawRangeString: range,
-          isEmpty: range.isEmpty,
-        );
-      case RangeDataType.float:
-        return FloatRangeType(
-          lowerRangeInclusive: false,
-          upperRangeInclusive: false,
-          rangeDataType: dataType,
-          rawRangeString: range,
-          isEmpty: range.isEmpty,
-        );
-      case RangeDataType.date:
-      case RangeDataType.timestamp:
-      case RangeDataType.timestamptz:
-        return DateRangeType(
-          lowerRangeInclusive: false,
-          upperRangeInclusive: false,
-          rangeDataType: dataType,
-          rawRangeString: range,
-          isEmpty: range.isEmpty,
-        );
+  // This must be implemented in the class, because it's type specific
+  RangeComparable getComparable();
+
+  static (bool, bool) _getInclusivity(String range) {
+    if (range.isEmpty) {
+      return (false, false);
     }
+
+    if (range.length < 2) {
+      throw Exception(
+        'Invalid range, range must have length at least greater than 2.',
+      );
+    }
+
+    // Retrives and checks if the range strings have the correct brackets
+    final firstBracket = range[0];
+    final lastBracket = range[range.length - 1];
+
+    if (!['[', '('].contains(firstBracket)) {
+      throw Exception(
+        'Range type string must start with an inclusive \'[\' or exclusive \'(\' range.',
+      );
+    }
+
+    if (![']', ')'].contains(lastBracket)) {
+      throw Exception(
+        'Range type string must start with an inclusive \']\' or exclusive \')\' range.',
+      );
+    }
+
+    final lowerRangeInclusive = firstBracket == '[' ? true : false;
+    final upperRangeInclusive = lastBracket == ']' ? true : false;
+
+    return (lowerRangeInclusive, upperRangeInclusive);
+  }
+
+  static (String, String) _getValuePair(String range) {
+    final valuePair = range.removeBrackets().split(',').trimAll();
+
+    if (valuePair.length != 2) {
+      throw Exception(
+        'Range type string must have only two values divided by comma: lower range and upper range.',
+      );
+    }
+
+    return (valuePair.first, valuePair.last);
+  }
+
+  static dynamic _inferValueType(String value) {
+    final intParse = int.tryParse(value);
+    final floatParse = double.tryParse(value);
+    final dateParse = DateTime.tryParse(value);
+
+    if (value.isEmpty) {
+      return null;
+    } else if (intParse != null) {
+      return intParse;
+    } else if (floatParse != null) {
+      return floatParse;
+    } else if (dateParse != null) {
+      return dateParse;
+    }
+
+    throw Exception('$value is an invalid value in range.');
   }
 
   static RangeDataType _getDataTypeFromTimestamp(String timestamp) {
@@ -214,23 +326,6 @@ class IntegerRangeType extends RangeType {
   final int? lowerRange;
 
   @override
-  bool isInRange(dynamic value) {
-    if (isEmpty) {
-      return false;
-    }
-
-    final valueToCheck = value as int;
-    final bool inLowerRange = lowerRangeInclusive
-        ? valueToCheck >= lowerRange!
-        : valueToCheck > lowerRange!;
-    final bool inUpperRange = upperRangeInclusive
-        ? valueToCheck <= upperRange!
-        : valueToCheck < upperRange!;
-
-    return inLowerRange && inUpperRange;
-  }
-
-  @override
   RangeComparable<int> getComparable() {
     if (isEmpty) {
       throw Exception('Cannot get comparable of an empty range.');
@@ -242,51 +337,8 @@ class IntegerRangeType extends RangeType {
     return RangeComparable<int>(
       lowerRange: newLowerRange!,
       upperRange: newUpperRange!,
+      rangeType: rangeDataType,
     );
-  }
-
-  @override
-  bool isAdjacent(RangeType other) {
-    if (isEmpty || other.isEmpty) {
-      return false;
-    }
-
-    // If ranges overlap, they cannot be adjacent
-    if (overlaps(other)) {
-      return false;
-    }
-
-    if (rangeDataType != other.rangeDataType) {
-      throw Exception(
-        'Cannot check adjacency between two datetimes of different types.',
-      );
-    }
-
-    final thisComparable = getComparable();
-    final otherComparable = other.getComparable();
-
-    // Check for contiguous boundaries
-    return (thisComparable.lowerRange - 1 == otherComparable.upperRange) ||
-        (thisComparable.upperRange + 1 == otherComparable.lowerRange);
-  }
-
-  @override
-  bool overlaps(RangeType other) {
-    if (isEmpty || other.isEmpty) {
-      return false;
-    }
-
-    if (rangeDataType != other.rangeDataType) {
-      throw Exception(
-        'Ranges must be of the same type in order to check if they overlap.',
-      );
-    }
-
-    final thisComparable = getComparable();
-    final otherComparable = other.getComparable();
-
-    return thisComparable.lowerRange <= otherComparable.upperRange &&
-        thisComparable.upperRange >= otherComparable.lowerRange;
   }
 }
 
@@ -305,22 +357,6 @@ class FloatRangeType extends RangeType {
   final double? lowerRange;
 
   @override
-  bool isInRange(dynamic value) {
-    if (isEmpty) {
-      return false;
-    }
-    final valueToCheck = (value is int) ? value.toDouble() : value as double;
-    final bool inLowerRange = lowerRangeInclusive
-        ? valueToCheck >= lowerRange!
-        : valueToCheck > lowerRange!;
-    final bool inUpperRange = upperRangeInclusive
-        ? valueToCheck <= upperRange!
-        : valueToCheck < upperRange!;
-
-    return inLowerRange && inUpperRange;
-  }
-
-  @override
   RangeComparable<double> getComparable() {
     if (isEmpty) {
       throw Exception('Cannot get comparable of an empty range.');
@@ -332,49 +368,8 @@ class FloatRangeType extends RangeType {
     return RangeComparable<double>(
       lowerRange: newLowerRange!,
       upperRange: newUpperRange!,
+      rangeType: rangeDataType,
     );
-  }
-
-  @override
-  bool overlaps(RangeType other) {
-    if (isEmpty || other.isEmpty) {
-      return false;
-    }
-    if (rangeDataType != other.rangeDataType) {
-      throw Exception(
-        'Ranges must be of the same type in order to check if they overlap.',
-      );
-    }
-
-    final thisComparable = getComparable();
-    final otherComparable = other.getComparable();
-
-    return thisComparable.lowerRange <= otherComparable.upperRange &&
-        thisComparable.upperRange >= otherComparable.lowerRange;
-  }
-
-  @override
-  bool isAdjacent(RangeType other) {
-    if (isEmpty || other.isEmpty) {
-      return false;
-    }
-    // If ranges overlap, they cannot be adjacent
-    if (overlaps(other)) {
-      return false;
-    }
-
-    if (rangeDataType != other.rangeDataType) {
-      throw Exception(
-        'Cannot check adjacency between two datetimes of different types.',
-      );
-    }
-
-    final thisComparable = getComparable();
-    final otherComparable = other.getComparable();
-
-    // Check for contiguous boundaries
-    return (thisComparable.lowerRange - 0.1 == otherComparable.upperRange) ||
-        (thisComparable.upperRange + 0.1 == otherComparable.lowerRange);
   }
 }
 
@@ -396,10 +391,21 @@ class DateRangeType extends RangeType {
     required bool upperRangeInclusive,
     required RangeDataType rangeDataType,
     required String rawRangeString,
+    required bool isEmpty,
   }) {
+    if (isEmpty) {
+      return DateRangeType(
+        lowerRangeInclusive: lowerRangeInclusive,
+        upperRangeInclusive: upperRangeInclusive,
+        rangeDataType: rangeDataType,
+        rawRangeString: rawRangeString,
+        isEmpty: isEmpty,
+      );
+    }
+
     // Every data type except 'timestamptz' must be utc because it ignores timezones
-    late final DateTime newUpperRange;
-    late final DateTime newLowerRange;
+    late final DateTime? newUpperRange;
+    late final DateTime? newLowerRange;
     late final String newRawString;
 
     // Gets the first and last bracket
@@ -410,47 +416,55 @@ class DateRangeType extends RangeType {
     // ignoring time and timezone and standardizes the ISO 8601 string of every
     // timestamp
     if (rangeDataType == RangeDataType.date) {
-      newUpperRange = DateTime.utc(
-        upperRange!.year,
-        upperRange.month,
-        upperRange.day,
-      );
+      if (upperRange != null) {
+        newUpperRange = DateTime.utc(
+          upperRange.year,
+          upperRange.month,
+          upperRange.day,
+        );
+      }
 
-      newLowerRange = DateTime.utc(
-        lowerRange!.year,
-        lowerRange.month,
-        lowerRange.day,
-      );
+      if (lowerRange != null) {
+        newLowerRange = DateTime.utc(
+          lowerRange.year,
+          lowerRange.month,
+          lowerRange.day,
+        );
+      }
 
-      final newIsoString1 = newLowerRange.toIso8601String();
-      final newIsoString2 = newUpperRange.toIso8601String();
+      final newIsoString1 = newLowerRange?.toIso8601String() ?? '';
+      final newIsoString2 = newUpperRange?.toIso8601String() ?? '';
 
       newRawString = "$firstBracket$newIsoString1,$newIsoString2$lastBracket";
     }
 
     if (rangeDataType == RangeDataType.timestamp) {
-      newUpperRange = DateTime.utc(
-        upperRange!.year,
-        upperRange.month,
-        upperRange.day,
-        upperRange.hour,
-        upperRange.minute,
-        upperRange.second,
-        upperRange.millisecond,
-      );
+      if (upperRange != null) {
+        newUpperRange = DateTime.utc(
+          upperRange.year,
+          upperRange.month,
+          upperRange.day,
+          upperRange.hour,
+          upperRange.minute,
+          upperRange.second,
+          upperRange.millisecond,
+        );
+      }
 
-      newLowerRange = DateTime.utc(
-        lowerRange!.year,
-        lowerRange.month,
-        lowerRange.day,
-        lowerRange.hour,
-        lowerRange.minute,
-        lowerRange.second,
-        lowerRange.millisecond,
-      );
+      if (lowerRange != null) {
+        newLowerRange = DateTime.utc(
+          lowerRange.year,
+          lowerRange.month,
+          lowerRange.day,
+          lowerRange.hour,
+          lowerRange.minute,
+          lowerRange.second,
+          lowerRange.millisecond,
+        );
+      }
 
-      final newIsoString1 = newLowerRange.toIso8601String();
-      final newIsoString2 = newUpperRange.toIso8601String();
+      final newIsoString1 = newLowerRange?.toIso8601String() ?? '';
+      final newIsoString2 = newUpperRange?.toIso8601String() ?? '';
 
       newRawString = "$firstBracket$newIsoString1,$newIsoString2$lastBracket";
     }
@@ -464,8 +478,8 @@ class DateRangeType extends RangeType {
       // ISO 8601 string, then we remove the last 'Z' character that indicates
       // UTC, and replace it with the timezone offset.
 
-      newUpperRange = upperRange!;
-      newLowerRange = lowerRange!;
+      newUpperRange = upperRange;
+      newLowerRange = lowerRange;
 
       final timezoneOffsets = _extractTzOffsets(rawRangeString);
       final timestamps = _removeTzOffsets(rawRangeString);
@@ -522,25 +536,6 @@ class DateRangeType extends RangeType {
   final DateTime? lowerRange;
 
   @override
-  bool isInRange(dynamic value) {
-    if (isEmpty) {
-      return false;
-    }
-
-    final valueToCheck = value as DateTime;
-    final inLowerRange = lowerRangeInclusive
-        ? valueToCheck.isAtSameMomentAs(lowerRange!) ||
-            valueToCheck.isAfter(lowerRange!)
-        : valueToCheck.isAfter(lowerRange!);
-    final inUpperRange = upperRangeInclusive
-        ? valueToCheck.isAtSameMomentAs(upperRange!) ||
-            valueToCheck.isBefore(upperRange!)
-        : valueToCheck.isBefore(upperRange!);
-
-    return inLowerRange && inUpperRange;
-  }
-
-  @override
   RangeComparable<DateTime> getComparable() {
     if (isEmpty) {
       throw Exception('Cannot get comparable of an empty range.');
@@ -562,63 +557,8 @@ class DateRangeType extends RangeType {
     return RangeComparable<DateTime>(
       lowerRange: newLowerRange!,
       upperRange: newUpperRange!,
+      rangeType: rangeDataType,
     );
-  }
-
-  @override
-  bool overlaps(RangeType other) {
-    if (isEmpty || other.isEmpty) {
-      return false;
-    }
-
-    if (rangeDataType != other.rangeDataType) {
-      throw Exception(
-        'Ranges must be of the same type in order to check if they overlap.',
-      );
-    }
-
-    final thisComparable = getComparable();
-    final otherComparable = other.getComparable();
-
-    return thisComparable.lowerRange <= otherComparable.upperRange &&
-        thisComparable.upperRange >= otherComparable.lowerRange;
-  }
-
-  @override
-  bool isAdjacent(RangeType other) {
-    if (isEmpty || other.isEmpty) {
-      return false;
-    }
-
-    // If ranges overlap, they cannot be adjacent
-    if (overlaps(other)) {
-      return false;
-    }
-
-    if (rangeDataType != other.rangeDataType) {
-      throw Exception(
-        'Cannot check adjacency between two datetimes of different types.',
-      );
-    }
-
-    late final Duration duration;
-
-    if (rangeDataType == RangeDataType.date) {
-      duration = const Duration(days: 1);
-    } else {
-      duration = const Duration(milliseconds: 1);
-    }
-
-    final thisComparable = getComparable();
-    final otherComparable = other.getComparable();
-
-    // Check for contiguous boundaries
-    return (thisComparable.lowerRange
-            .subtract(duration)
-            .isAtSameMomentAs(otherComparable.upperRange)) ||
-        (thisComparable.upperRange
-            .add(duration)
-            .isAtSameMomentAs(otherComparable.lowerRange));
   }
 
   static String _removeTzOffsets(String range) {
@@ -638,6 +578,10 @@ class DateRangeType extends RangeType {
     final List<String> finalRangeSplit = [];
 
     for (final element in splitRange) {
+      if (element.isEmpty) {
+        finalRangeSplit.add(element);
+      }
+
       // Gets the starting index of the timezone offset in the ISO 8601 string
       final index = element.lastIndexOf(hasTimezoneRegex);
 
@@ -672,6 +616,10 @@ class DateRangeType extends RangeType {
     final List<String> offsets = [];
 
     for (final element in splitRange) {
+      if (element.isEmpty) {
+        offsets.add(element);
+      }
+
       // Gets the starting index of the timezone offset in the ISO 8601 string
       final index = element.lastIndexOf(hasTimezoneRegex);
 
@@ -692,189 +640,5 @@ class DateRangeType extends RangeType {
     }
 
     return offsets;
-  }
-}
-
-class RangeComparable<T> {
-  const RangeComparable({
-    required this.lowerRange,
-    required this.upperRange,
-  });
-
-  final T upperRange;
-  final T lowerRange;
-
-  bool operator >(RangeComparable other) => _compare(
-        other: other,
-        dateTimeFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange.isAtSameMomentAs(otherLowerRange)) {
-            return thisUpperRange.isAfter(otherUpperRange);
-          } else {
-            return thisLowerRange.isAfter(otherLowerRange);
-          }
-        },
-        compareFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange == otherLowerRange) {
-            return thisUpperRange > otherUpperRange;
-          } else {
-            return thisLowerRange > otherLowerRange;
-          }
-        },
-      );
-
-  bool operator >=(RangeComparable other) => _compare(
-        other: other,
-        dateTimeFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange.isAtSameMomentAs(otherLowerRange)) {
-            return thisUpperRange.isAtSameMomentAs(otherUpperRange) ||
-                thisUpperRange.isAfter(otherUpperRange);
-          } else {
-            return thisLowerRange.isAfter(otherLowerRange);
-          }
-        },
-        compareFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange == otherLowerRange) {
-            return thisUpperRange >= otherUpperRange;
-          } else {
-            return thisLowerRange > otherLowerRange;
-          }
-        },
-      );
-
-  bool operator <(RangeComparable other) => _compare(
-        other: other,
-        dateTimeFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange.isAtSameMomentAs(otherLowerRange)) {
-            return thisUpperRange.isBefore(otherUpperRange);
-          } else {
-            return thisLowerRange.isBefore(otherLowerRange);
-          }
-        },
-        compareFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange == otherLowerRange) {
-            return thisUpperRange < otherUpperRange;
-          } else {
-            return thisLowerRange < otherLowerRange;
-          }
-        },
-      );
-
-  bool operator <=(RangeComparable other) => _compare(
-        other: other,
-        dateTimeFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange.isAtSameMomentAs(otherLowerRange)) {
-            return thisUpperRange.isAtSameMomentAs(otherUpperRange) ||
-                thisUpperRange.isBefore(otherUpperRange);
-          } else {
-            return thisLowerRange.isBefore(otherLowerRange);
-          }
-        },
-        compareFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange == otherLowerRange) {
-            return thisUpperRange <= otherUpperRange;
-          } else {
-            return thisLowerRange < otherLowerRange;
-          }
-        },
-      );
-
-  @override
-  bool operator ==(Object other) => _compare(
-        other: other as RangeComparable,
-        dateTimeFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) =>
-            thisLowerRange.isAtSameMomentAs(otherLowerRange) &&
-            thisUpperRange.isAtSameMomentAs(otherUpperRange),
-        compareFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) =>
-            thisLowerRange == otherLowerRange &&
-            thisUpperRange == otherUpperRange,
-      );
-
-  @override
-  int get hashCode => Object.hash(lowerRange, upperRange);
-
-  bool _compare({
-    required RangeComparable other,
-    required bool Function(
-      DateTime thisLowerRange,
-      DateTime otherLowerRange,
-      DateTime thisUpperRange,
-      DateTime otherUpperRange,
-    ) dateTimeFunc,
-    required bool Function(
-      dynamic thisLowerRange,
-      dynamic otherLowerRange,
-      dynamic thisUpperRange,
-      dynamic otherUpperRange,
-    ) compareFunc,
-  }) {
-    if (T == DateTime && other.lowerRange is DateTime) {
-      return dateTimeFunc(
-        this.lowerRange as DateTime,
-        other.lowerRange as DateTime,
-        this.upperRange as DateTime,
-        other.upperRange as DateTime,
-      );
-    } else if (lowerRange.runtimeType == other.lowerRange.runtimeType) {
-      return compareFunc(
-        this.lowerRange,
-        other.lowerRange,
-        this.upperRange,
-        other.upperRange,
-      );
-    }
-
-    throw Exception(
-      'Cannot compare two range types of different types',
-    );
   }
 }

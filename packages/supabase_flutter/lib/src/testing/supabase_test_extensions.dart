@@ -15,11 +15,3 @@ extension MapUtils on Map {
         (element) => containsKey(element.key) && containsValue(element.value),
       );
 }
-
-extension DateComparisons on DateTime {
-  bool operator >(DateTime other) => isAfter(other);
-  bool operator <(DateTime other) => isBefore(other);
-  bool operator >=(DateTime other) => isAtSameMomentAs(other) || isAfter(other);
-  bool operator <=(DateTime other) =>
-      isAtSameMomentAs(other) || isBefore(other);
-}

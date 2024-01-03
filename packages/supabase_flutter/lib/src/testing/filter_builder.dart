@@ -1,3 +1,4 @@
+import 'package:supabase_flutter/src/testing/range_comparable.dart';
 import 'package:supabase_flutter/src/testing/range_type.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
 
