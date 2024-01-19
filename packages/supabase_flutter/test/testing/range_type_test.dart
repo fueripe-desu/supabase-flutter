@@ -55,7 +55,60 @@ void main() {
 
   group('IntegerRangeType tests', () {
     test('should successfuly create a range of integer type', () {
-      RangeType.createRange(range: '[1, 10]');
+      expect(
+        () => RangeType.createRange(range: '[1, 10]'),
+        returnsNormally,
+      );
+
+      expect(
+        RangeType.createRange(range: '[1, 10]'),
+        isA<IntegerRangeType>(),
+      );
+    });
+
+    test(
+        'should throw an Exception if the lower bound is greater than the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[20, 10]'),
+        throwsException,
+      );
+    });
+
+    test(
+        'should throw an Exception if the lower bound is greater than the upper bound with force type',
+        () {
+      expect(
+        () => RangeType.createRange(
+          range: '[20, 10]',
+          forceType: RangeDataType.integer,
+        ),
+        throwsException,
+      );
+    });
+
+    test(
+        'should create a range successfuly if the lower bound is equal to the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[10, 10]'),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(range: '(10, 10]'),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(range: '[10, 10)'),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(range: '(10, 10)'),
+        returnsNormally,
+      );
     });
 
     test('should ensure that range is of integer type', () {
@@ -1738,6 +1791,56 @@ void main() {
     test('should successfuly create a range of float type', () {
       expect(
         () => RangeType.createRange(range: '[1.5, 10.5]'),
+        returnsNormally,
+      );
+
+      expect(
+        RangeType.createRange(range: '[1.5, 10.5]'),
+        isA<FloatRangeType>(),
+      );
+    });
+
+    test(
+        'should throw an Exception if the lower bound is greater than the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[20.5, 10.5]'),
+        throwsException,
+      );
+    });
+
+    test(
+        'should throw an Exception if the lower bound is greater than the upper bound with force type',
+        () {
+      expect(
+        () => RangeType.createRange(
+          range: '[20.5, 10.5]',
+          forceType: RangeDataType.float,
+        ),
+        throwsException,
+      );
+    });
+
+    test(
+        'should create a range successfuly if the lower bound is equal to the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[10.5, 10.5]'),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(range: '(10.5, 10.5]'),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(range: '[10.5, 10.5)'),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(range: '(10.5, 10.5)'),
         returnsNormally,
       );
     });
@@ -3454,6 +3557,56 @@ void main() {
     test('should successfuly create a range of date type', () {
       expect(
         () => RangeType.createRange(range: '[2022-01-01, 2022-12-31]'),
+        returnsNormally,
+      );
+
+      expect(
+        RangeType.createRange(range: '[2022-01-01, 2022-12-31]'),
+        isA<DateRangeType>(),
+      );
+    });
+
+    test(
+        'should throw an Exception if the lower bound is greater than the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[2022-12-31, 2022-01-01]'),
+        throwsException,
+      );
+    });
+
+    test(
+        'should throw an Exception if the lower bound is greater than the upper bound with force type',
+        () {
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-12-31, 2022-01-01]',
+          forceType: RangeDataType.date,
+        ),
+        throwsException,
+      );
+    });
+
+    test(
+        'should create a range successfuly if the lower bound is equal to the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[2022-01-01, 2022-01-01]'),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(range: '(2022-01-01, 2022-01-01]'),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(range: '[2022-01-01, 2022-01-01)'),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(range: '(2022-01-01, 2022-01-01)'),
         returnsNormally,
       );
     });
@@ -5353,6 +5506,68 @@ void main() {
       expect(
         () => RangeType.createRange(
           range: '[2022-01-01T00:00:00.000, 2022-01-01T15:00:00.999]',
+        ),
+        returnsNormally,
+      );
+
+      expect(
+        RangeType.createRange(
+          range: '[2022-01-01T00:00:00.000, 2022-12-31T00:00:00.000]',
+        ),
+        isA<DateRangeType>(),
+      );
+    });
+
+    test(
+        'should throw an Exception if the lower bound is greater than the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-12-31T00:00:00.000, 2022-01-01T00:00:00.000]',
+        ),
+        throwsException,
+      );
+    });
+
+    test(
+        'should throw an Exception if the lower bound is greater than the upper bound with force type',
+        () {
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-12-31T00:00:00.000, 2022-01-01T00:00:00.000]',
+          forceType: RangeDataType.timestamp,
+        ),
+        throwsException,
+      );
+    });
+
+    test(
+        'should create a range successfuly if the lower bound is equal to the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-01-01T00:00:00.000, 2022-01-01T00:00:00.000]',
+        ),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(
+          range: '(2022-01-01T00:00:00.000, 2022-01-01T00:00:00.000]',
+        ),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-01-01T00:00:00.000, 2022-01-01T00:00:00.000)',
+        ),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(
+          range: '(2022-01-01T00:00:00.000, 2022-01-01T00:00:00.000)',
         ),
         returnsNormally,
       );
@@ -8613,6 +8828,68 @@ void main() {
         ),
         returnsNormally,
       );
+
+      expect(
+        RangeType.createRange(
+          range: '[2022-01-01T00:00:00.000Z, 2022-12-31T00:00:00.000Z]',
+        ),
+        isA<DateRangeType>(),
+      );
+    });
+
+    test(
+        'should throw an Exception if the lower bound is greater than the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-12-31T00:00:00.000Z, 2022-01-01T00:00:00.000Z]',
+        ),
+        throwsException,
+      );
+    });
+
+    test(
+        'should throw an Exception if the lower bound is greater than the upper bound with force type',
+        () {
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-12-31T00:00:00.000Z, 2022-01-01T00:00:00.000Z]',
+          forceType: RangeDataType.timestamptz,
+        ),
+        throwsException,
+      );
+    });
+
+    test(
+        'should create a range successfuly if the lower bound is equal to the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-01-01T00:00:00.000Z, 2022-01-01T00:00:00.000Z]',
+        ),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(
+          range: '(2022-01-01T00:00:00.000Z, 2022-01-01T00:00:00.000Z]',
+        ),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-01-01T00:00:00.000Z, 2022-01-01T00:00:00.000Z)',
+        ),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(
+          range: '(2022-01-01T00:00:00.000Z, 2022-01-01T00:00:00.000Z)',
+        ),
+        returnsNormally,
+      );
     });
 
     test('should ensure that range is of UTC timestamptz type', () {
@@ -11651,6 +11928,68 @@ void main() {
       expect(
         () => RangeType.createRange(
           range: '[2022-01-01T00:00:00.000-01, 2022-01-01T15:00:00.999+01]',
+        ),
+        returnsNormally,
+      );
+
+      expect(
+        RangeType.createRange(
+          range: '[2022-01-01T00:00:00.000-01, 2022-12-31T00:00:00.000+01]',
+        ),
+        isA<DateRangeType>(),
+      );
+    });
+
+    test(
+        'should throw an Exception if the lower bound is greater than the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-12-31T00:00:00.000-01, 2022-01-01T00:00:00.000+01]',
+        ),
+        throwsException,
+      );
+    });
+
+    test(
+        'should throw an Exception if the lower bound is greater than the upper bound with force type',
+        () {
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-12-31T00:00:00.000-01, 2022-01-01T00:00:00.000+01]',
+          forceType: RangeDataType.timestamptz,
+        ),
+        throwsException,
+      );
+    });
+
+    test(
+        'should create a range successfuly if the lower bound is equal to the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-01-01T00:00:00.000-01, 2022-01-01T00:00:00.000-01]',
+        ),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(
+          range: '(2022-01-01T00:00:00.000-01, 2022-01-01T00:00:00.000-01]',
+        ),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(
+          range: '[2022-01-01T00:00:00.000-01, 2022-01-01T00:00:00.000-01)',
+        ),
+        returnsNormally,
+      );
+
+      expect(
+        () => RangeType.createRange(
+          range: '(2022-01-01T00:00:00.000-01, 2022-01-01T00:00:00.000-01)',
         ),
         returnsNormally,
       );
