@@ -109,6 +109,12 @@ abstract class RangeType {
         secondValueParsed =
             secondValue.isNotEmpty ? parseFunction(secondValue) : null;
 
+        if (!_isValidRangeBounds(firstValueParsed, secondValueParsed)) {
+          throw Exception(
+            'Lower bound must be less than or equal to the upper bound.',
+          );
+        }
+
         return RangeType._createFromDataType(
           lowerRange: firstValueParsed,
           upperRange: secondValueParsed,
@@ -160,6 +166,12 @@ abstract class RangeType {
         }
 
         rangeDataType = (dataType1 ?? dataType2)!;
+      }
+
+      if (!_isValidRangeBounds(firstType, secondType)) {
+        throw Exception(
+          'Lower bound must be less than or equal to the upper bound.',
+        );
       }
 
       return RangeType._createFromDataType(
@@ -234,6 +246,19 @@ abstract class RangeType {
 
   // This must be implemented in the class, because it's type specific
   RangeComparable getComparable();
+
+  static bool _isValidRangeBounds(dynamic lowerBound, dynamic upperBound) {
+    if (lowerBound == null || upperBound == null) {
+      return true;
+    }
+
+    if (lowerBound is DateTime?) {
+      return lowerBound!.isBefore(upperBound) ||
+          lowerBound.isAtSameMomentAs(upperBound);
+    }
+
+    return lowerBound <= upperBound;
+  }
 
   static (bool, bool) _getInclusivity(
     String range, {
