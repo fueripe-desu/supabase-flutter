@@ -62,20 +62,28 @@ abstract class RangeType {
   factory RangeType.createRange(
       {required String range, RangeDataType? forceType}) {
     try {
-      final (lowerRangeInclusive, upperRangeInclusive) = _getInclusivity(range);
-
       if (forceType != null && range.isEmpty) {
         return RangeType._createFromDataType(
-          lowerRangeInclusive: lowerRangeInclusive,
-          upperRangeInclusive: upperRangeInclusive,
+          lowerRangeInclusive: false,
+          upperRangeInclusive: false,
           rangeDataType: forceType,
-          rawRangeString: range,
+          rawRangeString: '',
           isEmpty: true,
         );
       }
 
       final (firstValue, secondValue) = _getValuePair(range);
-      final rawRangeString = range.split(',').trimAll().join(',');
+      final (lowerRangeInclusive, upperRangeInclusive) = _getInclusivity(
+        range,
+        firstValueNull: firstValue.isEmpty,
+        secondValueNull: secondValue.isEmpty,
+      );
+
+      final firstBracket = lowerRangeInclusive ? '[' : '(';
+      final lastBracket = upperRangeInclusive ? ']' : ')';
+
+      final rawRangeString =
+          "$firstBracket$firstValue,$secondValue$lastBracket";
 
       if (forceType != null) {
         late final dynamic firstValueParsed;
@@ -101,7 +109,7 @@ abstract class RangeType {
         secondValueParsed =
             secondValue.isNotEmpty ? parseFunction(secondValue) : null;
 
-        RangeType._createFromDataType(
+        return RangeType._createFromDataType(
           lowerRange: firstValueParsed,
           upperRange: secondValueParsed,
           lowerRangeInclusive: lowerRangeInclusive,
@@ -143,13 +151,15 @@ abstract class RangeType {
         final dataType1 = _getDataTypeFromTimestamp(firstValue);
         final dataType2 = _getDataTypeFromTimestamp(secondValue);
 
-        if (dataType1 != dataType2) {
-          throw Exception(
-            'Lower range and upper range must be specified with the same precision.',
-          );
+        if (dataType1 != null && dataType2 != null) {
+          if (dataType1 != dataType2) {
+            throw Exception(
+              'Lower range and upper range must be specified with the same precision.',
+            );
+          }
         }
 
-        rangeDataType = dataType1;
+        rangeDataType = (dataType1 ?? dataType2)!;
       }
 
       return RangeType._createFromDataType(
@@ -162,7 +172,7 @@ abstract class RangeType {
         isEmpty: false,
       );
     } catch (err) {
-      throw Exception('Invalid range value.');
+      throw Exception('Invalid range value: $err.');
     }
   }
 
@@ -225,7 +235,11 @@ abstract class RangeType {
   // This must be implemented in the class, because it's type specific
   RangeComparable getComparable();
 
-  static (bool, bool) _getInclusivity(String range) {
+  static (bool, bool) _getInclusivity(
+    String range, {
+    bool firstValueNull = false,
+    bool secondValueNull = false,
+  }) {
     if (range.isEmpty) {
       return (false, false);
     }
@@ -252,8 +266,21 @@ abstract class RangeType {
       );
     }
 
-    final lowerRangeInclusive = firstBracket == '[' ? true : false;
-    final upperRangeInclusive = lastBracket == ']' ? true : false;
+    late final bool lowerRangeInclusive;
+    late final bool upperRangeInclusive;
+
+    // Converts unspecified boundaries to exclusive
+    if (firstValueNull) {
+      lowerRangeInclusive = false;
+    } else {
+      lowerRangeInclusive = firstBracket == '[' ? true : false;
+    }
+
+    if (secondValueNull) {
+      upperRangeInclusive = false;
+    } else {
+      upperRangeInclusive = lastBracket == ']' ? true : false;
+    }
 
     return (lowerRangeInclusive, upperRangeInclusive);
   }
@@ -288,7 +315,11 @@ abstract class RangeType {
     throw Exception('$value is an invalid value in range.');
   }
 
-  static RangeDataType _getDataTypeFromTimestamp(String timestamp) {
+  static RangeDataType? _getDataTypeFromTimestamp(String timestamp) {
+    if (timestamp.isEmpty) {
+      return null;
+    }
+
     // Matches all characters ignoring digits, this is used with the
     // replaceAll() function to remove all characters leaving only digits, e.g.
     // '2023-01-01T12:00:00+05:00' => '202301011200000500'
@@ -331,12 +362,20 @@ class IntegerRangeType extends RangeType {
       throw Exception('Cannot get comparable of an empty range.');
     }
 
-    final newLowerRange = lowerRangeInclusive ? lowerRange : lowerRange! + 1;
-    final newUpperRange = upperRangeInclusive ? upperRange : upperRange! - 1;
+    final newLowerRange = lowerRangeInclusive
+        ? lowerRange
+        : lowerRange == null
+            ? null
+            : lowerRange! + 1;
+    final newUpperRange = upperRangeInclusive
+        ? upperRange
+        : upperRange == null
+            ? null
+            : upperRange! - 1;
 
     return RangeComparable<int>(
-      lowerRange: newLowerRange!,
-      upperRange: newUpperRange!,
+      lowerRange: newLowerRange,
+      upperRange: newUpperRange,
       rangeType: rangeDataType,
     );
   }
@@ -362,12 +401,20 @@ class FloatRangeType extends RangeType {
       throw Exception('Cannot get comparable of an empty range.');
     }
 
-    final newLowerRange = lowerRangeInclusive ? lowerRange : lowerRange! + 0.1;
-    final newUpperRange = upperRangeInclusive ? upperRange : upperRange! - 0.1;
+    final newLowerRange = lowerRangeInclusive
+        ? lowerRange
+        : lowerRange == null
+            ? null
+            : lowerRange! + 0.1;
+    final newUpperRange = upperRangeInclusive
+        ? upperRange
+        : upperRange == null
+            ? null
+            : upperRange! - 0.1;
 
     return RangeComparable<double>(
-      lowerRange: newLowerRange!,
-      upperRange: newUpperRange!,
+      lowerRange: newLowerRange,
+      upperRange: newUpperRange,
       rangeType: rangeDataType,
     );
   }
@@ -422,6 +469,8 @@ class DateRangeType extends RangeType {
           upperRange.month,
           upperRange.day,
         );
+      } else {
+        newUpperRange = null;
       }
 
       if (lowerRange != null) {
@@ -430,10 +479,17 @@ class DateRangeType extends RangeType {
           lowerRange.month,
           lowerRange.day,
         );
+      } else {
+        newLowerRange = null;
       }
 
-      final newIsoString1 = newLowerRange?.toIso8601String() ?? '';
-      final newIsoString2 = newUpperRange?.toIso8601String() ?? '';
+      // These are used to standardize the raw range string
+      // We need to split by 'T' because the first part before T is only the
+      // standardized date
+      final newIsoString1 =
+          newLowerRange?.toIso8601String().split('T')[0] ?? '';
+      final newIsoString2 =
+          newUpperRange?.toIso8601String().split('T')[0] ?? '';
 
       newRawString = "$firstBracket$newIsoString1,$newIsoString2$lastBracket";
     }
@@ -449,6 +505,8 @@ class DateRangeType extends RangeType {
           upperRange.second,
           upperRange.millisecond,
         );
+      } else {
+        newUpperRange = null;
       }
 
       if (lowerRange != null) {
@@ -461,10 +519,16 @@ class DateRangeType extends RangeType {
           lowerRange.second,
           lowerRange.millisecond,
         );
+      } else {
+        newLowerRange = null;
       }
 
-      final newIsoString1 = newLowerRange?.toIso8601String() ?? '';
-      final newIsoString2 = newUpperRange?.toIso8601String() ?? '';
+      // Generates the standardized ISO 8601 string and removes the UTC timezone
+      // 'Z' symbol in the end
+      final newIsoString1 =
+          newLowerRange?.toIso8601String().replaceFirst('Z', '') ?? '';
+      final newIsoString2 =
+          newUpperRange?.toIso8601String().replaceFirst('Z', '') ?? '';
 
       newRawString = "$firstBracket$newIsoString1,$newIsoString2$lastBracket";
     }
@@ -490,33 +554,45 @@ class DateRangeType extends RangeType {
       final List<String> utcTs = [];
 
       for (var element in splitTs) {
+        if (element.isEmpty) {
+          utcTs.add("");
+          continue;
+        }
         utcTs.add('${element}Z');
       }
 
-      final newLowerRangeDt = DateTime.parse(utcTs[0]);
-      final newUpperRangeDt = DateTime.parse(utcTs[1]);
+      final newLowerRangeDt =
+          utcTs[0].isNotEmpty ? DateTime.parse(utcTs[0]) : null;
+      final newUpperRangeDt =
+          utcTs[1].isNotEmpty ? DateTime.parse(utcTs[1]) : null;
 
-      final newIsoString1 = DateTime.utc(
-            newLowerRangeDt.year,
-            newLowerRangeDt.month,
-            newLowerRangeDt.day,
-            newLowerRangeDt.hour,
-            newLowerRangeDt.minute,
-            newLowerRangeDt.second,
-            newLowerRangeDt.millisecond,
-          ).toIso8601String().replaceAll('Z', '') +
-          timezoneOffsets[0];
+      final newIsoString1 = newLowerRangeDt != null
+          ? DateTime(
+                newLowerRangeDt.year,
+                newLowerRangeDt.month,
+                newLowerRangeDt.day,
+                newLowerRangeDt.hour,
+                newLowerRangeDt.minute,
+                newLowerRangeDt.second,
+                newLowerRangeDt.millisecond,
+                newLowerRangeDt.microsecond,
+              ).toIso8601String().replaceAll('Z', '') +
+              timezoneOffsets[0]
+          : "";
 
-      final newIsoString2 = DateTime.utc(
-            newUpperRangeDt.year,
-            newUpperRangeDt.month,
-            newUpperRangeDt.day,
-            newUpperRangeDt.hour,
-            newUpperRangeDt.minute,
-            newUpperRangeDt.second,
-            newUpperRangeDt.millisecond,
-          ).toIso8601String().replaceAll('Z', '') +
-          timezoneOffsets[1];
+      final newIsoString2 = newUpperRangeDt != null
+          ? DateTime(
+                newUpperRangeDt.year,
+                newUpperRangeDt.month,
+                newUpperRangeDt.day,
+                newUpperRangeDt.hour,
+                newUpperRangeDt.minute,
+                newUpperRangeDt.second,
+                newUpperRangeDt.millisecond,
+                newUpperRangeDt.microsecond,
+              ).toIso8601String().replaceAll('Z', '') +
+              timezoneOffsets[1]
+          : "";
 
       newRawString = "$firstBracket$newIsoString1,$newIsoString2$lastBracket";
     }
@@ -549,14 +625,20 @@ class DateRangeType extends RangeType {
       duration = const Duration(milliseconds: 1);
     }
 
-    final newLowerRange =
-        lowerRangeInclusive ? lowerRange : lowerRange!.add(duration);
-    final newUpperRange =
-        upperRangeInclusive ? upperRange : upperRange!.subtract(duration);
+    final newLowerRange = lowerRangeInclusive
+        ? lowerRange
+        : lowerRange == null
+            ? null
+            : lowerRange!.add(duration);
+    final newUpperRange = upperRangeInclusive
+        ? upperRange
+        : upperRange == null
+            ? null
+            : upperRange!.subtract(duration);
 
     return RangeComparable<DateTime>(
-      lowerRange: newLowerRange!,
-      upperRange: newUpperRange!,
+      lowerRange: newLowerRange,
+      upperRange: newUpperRange,
       rangeType: rangeDataType,
     );
   }
@@ -580,6 +662,7 @@ class DateRangeType extends RangeType {
     for (final element in splitRange) {
       if (element.isEmpty) {
         finalRangeSplit.add(element);
+        continue;
       }
 
       // Gets the starting index of the timezone offset in the ISO 8601 string
@@ -618,6 +701,7 @@ class DateRangeType extends RangeType {
     for (final element in splitRange) {
       if (element.isEmpty) {
         offsets.add(element);
+        continue;
       }
 
       // Gets the starting index of the timezone offset in the ISO 8601 string

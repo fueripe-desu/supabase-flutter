@@ -2,269 +2,400 @@ import 'package:supabase_flutter/src/testing/range_type.dart';
 
 class RangeComparable<T> {
   RangeComparable({
-    required this.lowerRange,
-    required this.upperRange,
+    T? lowerRange,
+    T? upperRange,
     required this.rangeType,
-  });
+  })  : _lowerRange = Bound<T>(lowerRange),
+        _upperRange = Bound<T>(upperRange);
 
-  final T upperRange;
-  final T lowerRange;
   final RangeDataType rangeType;
+  final Bound<T> _upperRange;
+  final Bound<T> _lowerRange;
 
-  final List<Type> supportedTypes = [int, double, DateTime];
+  T? get upperRange => _upperRange.bound;
+  T? get lowerRange => _lowerRange.bound;
+  bool get isUnbounded => _upperRange.isUnbounded && _lowerRange.isUnbounded;
+  bool get isBounded => _upperRange.isBounded && _lowerRange.isBounded;
+  bool get hasUnbounded => _upperRange.isUnbounded || _lowerRange.isUnbounded;
 
   bool isInRange(dynamic value) {
     try {
-      if (value is DateTime) {
-        final lr = lowerRange as DateTime;
-        final ur = upperRange as DateTime;
+      late final Bound<T> bound;
 
-        final isInLowerRange = value.isAtSameMomentAs(lr) || value.isAfter(lr);
-        final isInUpperRange = value.isAtSameMomentAs(ur) || value.isBefore(ur);
-
-        return isInLowerRange && isInUpperRange;
+      if (T == double && value is int) {
+        final valueCast = double.parse(value.toString()) as T;
+        bound = Bound<T>(valueCast);
+      } else {
+        bound = Bound<T>(value as T);
       }
 
-      return value >= lowerRange && value <= upperRange;
+      final isInLowerRange =
+          _lowerRange.isUnbounded ? true : _lowerRange <= bound;
+      final isInUpperRange =
+          _upperRange.isUnbounded ? true : _upperRange >= bound;
+
+      return isInLowerRange && isInUpperRange;
     } catch (err) {
       throw Exception('${value.runtimeType} is an unsupported type.');
     }
   }
 
   bool isAdjacent(RangeComparable<T> other) {
+    // If any of the boundaries is null, even though they might logically be
+    // adjacent, PostgreSQL adjacency operator does not treat adjacency between
+    // unbounded ranges, therefore it always returns false
+    if (isUnbounded || other.isUnbounded) {
+      return false;
+    }
+
     // If ranges overlap, they cannot be adjacent
     if (overlaps(other)) {
       return false;
     }
 
-    if (T == double) {
-      final thisCast = this as RangeComparable<double>;
-      final otherCast = other as RangeComparable<double>;
+    late final Object amount;
 
-      return (thisCast.lowerRange - 0.1 == otherCast.upperRange) ||
-          (thisCast.upperRange + 0.1 == otherCast.lowerRange);
+    switch (rangeType) {
+      case RangeDataType.integer:
+      case RangeDataType.timestamp:
+      case RangeDataType.timestamptz:
+        // When the bound is integer, it will count as 1, when the bound is
+        // DateTime it will count as 1 millisecond
+        amount = 1;
+        break;
+      case RangeDataType.float:
+        // When the bound is float, it will count as 0.1
+        amount = 0.1;
+        break;
+      case RangeDataType.date:
+        // Therefore here, we shall calculate milliseconds in a day
+        amount = 24 * 60 * 60 * 1000;
+        break;
     }
 
-    if (T == DateTime) {
-      final thisCast = this as RangeComparable<DateTime>;
-      final otherCast = other as RangeComparable<DateTime>;
-
-      late final Duration duration;
-
-      if (rangeType == RangeDataType.date) {
-        duration = const Duration(days: 1);
-      } else {
-        duration = const Duration(milliseconds: 1);
-      }
-
-      // Check for contiguous boundaries
-      return ((thisCast.lowerRange.subtract(duration))
-              .isAtSameMomentAs(otherCast.upperRange)) ||
-          ((thisCast.upperRange.add(duration))
-              .isAtSameMomentAs(otherCast.lowerRange));
-    }
-
-    final thisCast = this as RangeComparable<int>;
-    final otherCast = other as RangeComparable<int>;
-
-    return (thisCast.lowerRange - 1 == otherCast.upperRange) ||
-        (thisCast.upperRange + 1 == otherCast.lowerRange);
+    return (_lowerRange - amount == Bound<T>(other.upperRange)) ||
+        (_upperRange + amount == Bound<T>(other.lowerRange));
   }
 
   bool overlaps(RangeComparable<T> other) {
-    if (T == DateTime) {
-      final otherCast = other as RangeComparable<DateTime>;
-      final thisCast = this as RangeComparable<DateTime>;
-
-      final lowerOverlaps =
-          thisCast.lowerRange.isAtSameMomentAs(otherCast.upperRange) ||
-              thisCast.lowerRange.isBefore(otherCast.upperRange);
-
-      final upperOverlaps =
-          thisCast.upperRange.isAtSameMomentAs(otherCast.lowerRange) ||
-              thisCast.upperRange.isAfter(otherCast.lowerRange);
-
-      return lowerOverlaps && upperOverlaps;
+    if (isUnbounded || other.isUnbounded) {
+      return true;
     }
 
-    final otherCast = other as RangeComparable<num>;
-    final thisCast = this as RangeComparable<num>;
+    if (_lowerRange.isUnbounded) {
+      return _upperRange > Bound<T>(other.lowerRange);
+    }
 
-    return thisCast.lowerRange <= otherCast.upperRange &&
-        thisCast.upperRange >= otherCast.lowerRange;
+    if (_upperRange.isUnbounded) {
+      return _lowerRange < Bound<T>(other.lowerRange);
+    }
+
+    return _lowerRange <= Bound<T>(other.upperRange) &&
+        _upperRange >= Bound<T>(other.lowerRange);
   }
 
-  bool operator >(RangeComparable other) => _compare(
-        other: other,
-        dateTimeFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange.isAtSameMomentAs(otherLowerRange)) {
-            return thisUpperRange.isAfter(otherUpperRange);
-          } else {
-            return thisLowerRange.isAfter(otherLowerRange);
-          }
-        },
-        compareFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange == otherLowerRange) {
-            return thisUpperRange > otherUpperRange;
-          } else {
-            return thisLowerRange > otherLowerRange;
-          }
-        },
-      );
+  bool operator >(RangeComparable<T> other) => _gt(other);
 
-  bool operator >=(RangeComparable other) => _compare(
-        other: other,
-        dateTimeFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange.isAtSameMomentAs(otherLowerRange)) {
-            return thisUpperRange.isAtSameMomentAs(otherUpperRange) ||
-                thisUpperRange.isAfter(otherUpperRange);
-          } else {
-            return thisLowerRange.isAfter(otherLowerRange);
-          }
-        },
-        compareFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange == otherLowerRange) {
-            return thisUpperRange >= otherUpperRange;
-          } else {
-            return thisLowerRange > otherLowerRange;
-          }
-        },
-      );
+  bool operator >=(RangeComparable<T> other) => _gt(other) || this == other;
 
-  bool operator <(RangeComparable other) => _compare(
-        other: other,
-        dateTimeFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange.isAtSameMomentAs(otherLowerRange)) {
-            return thisUpperRange.isBefore(otherUpperRange);
-          } else {
-            return thisLowerRange.isBefore(otherLowerRange);
-          }
-        },
-        compareFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange == otherLowerRange) {
-            return thisUpperRange < otherUpperRange;
-          } else {
-            return thisLowerRange < otherLowerRange;
-          }
-        },
-      );
+  bool operator <(RangeComparable<T> other) => _lt(other);
 
-  bool operator <=(RangeComparable other) => _compare(
-        other: other,
-        dateTimeFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange.isAtSameMomentAs(otherLowerRange)) {
-            return thisUpperRange.isAtSameMomentAs(otherUpperRange) ||
-                thisUpperRange.isBefore(otherUpperRange);
-          } else {
-            return thisLowerRange.isBefore(otherLowerRange);
-          }
-        },
-        compareFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) {
-          if (thisLowerRange == otherLowerRange) {
-            return thisUpperRange <= otherUpperRange;
-          } else {
-            return thisLowerRange < otherLowerRange;
-          }
-        },
-      );
+  bool operator <=(RangeComparable<T> other) => _lt(other) || this == other;
 
   @override
-  bool operator ==(Object other) => _compare(
-        other: other as RangeComparable,
-        dateTimeFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) =>
-            thisLowerRange.isAtSameMomentAs(otherLowerRange) &&
-            thisUpperRange.isAtSameMomentAs(otherUpperRange),
-        compareFunc: (
-          thisLowerRange,
-          otherLowerRange,
-          thisUpperRange,
-          otherUpperRange,
-        ) =>
-            thisLowerRange == otherLowerRange &&
-            thisUpperRange == otherUpperRange,
-      );
+  bool operator ==(Object other) =>
+      other is RangeComparable &&
+      _lowerRange == Bound<T>(other.lowerRange) &&
+      _upperRange == Bound<T>(other.upperRange);
 
   @override
   int get hashCode => Object.hash(lowerRange, upperRange);
 
-  bool _compare({
-    required RangeComparable other,
-    required bool Function(
-      DateTime thisLowerRange,
-      DateTime otherLowerRange,
-      DateTime thisUpperRange,
-      DateTime otherUpperRange,
-    ) dateTimeFunc,
-    required bool Function(
-      dynamic thisLowerRange,
-      dynamic otherLowerRange,
-      dynamic thisUpperRange,
-      dynamic otherUpperRange,
-    ) compareFunc,
-  }) {
-    if (T == DateTime && other.lowerRange is DateTime) {
-      return dateTimeFunc(
-        this.lowerRange as DateTime,
-        other.lowerRange as DateTime,
-        this.upperRange as DateTime,
-        other.upperRange as DateTime,
+  bool _gt(RangeComparable<T> other) {
+    if (rangeType != other.rangeType) {
+      throw Exception(
+        'Cannot compare two range types of different types',
       );
-    } else if (lowerRange.runtimeType == other.lowerRange.runtimeType) {
-      return compareFunc(
-        this.lowerRange,
-        other.lowerRange,
-        this.upperRange,
-        other.upperRange,
+    }
+    // According to the PostgreSQL behavior, when a [,] range is compared
+    // against any other, it returns false. e.g.
+    //
+    // [,] > [5,15] -> false
+    // [,] > [10,] -> false
+    // [,] > [,] -> false
+    //
+    // The only exception is when a [,] range is compared against a [,n]
+    // range, when the lower bound is not specified but only a upper bound
+    // then PostgreSQL returns true. e.g.
+    //
+    // [,] > [,20] -> true
+    //
+    if (isUnbounded) {
+      return other.hasUnbounded && other.upperRange != null;
+    }
+
+    // According to the PostgreSQL behavior, when any range that is not
+    // completely unbounded is compared against any other [,] range, it
+    // returns true. e.g.
+    //
+    // [3,] > [,] -> true
+    // [3,20] > [,] -> true
+    // [3,] > [,] -> true
+    //
+    // The only exception is when a [,n] range is compared against a [,]
+    // range, when the lower bound is not specified but only a upper bound
+    // then PostgreSQL returns true. e.g.
+    //
+    // [,7] > [,] -> false
+    //
+    if (other.isUnbounded) {
+      return _lowerRange.isBounded;
+    }
+
+    // According to the PostgreSQL behavior, when any [,n] range
+    // is compared against any other range, it returns false. e.g.
+    //
+    // [,7] > [2,6] -> false
+    // [,7] > [2,] -> false
+    // [,7] > [,] -> false
+    //
+    // The only exception is when a [,n] range is compared against a [,n]
+    // range, when this happens, PostgreSQL actually performs the
+    // operation. e.g.
+    //
+    // [,7] > [,6] -> true -- because 7 > 6
+    // [,7] > [,7] -> false
+    // [,7] > [,8] -> false
+    //
+    if (hasUnbounded && _upperRange.isBounded) {
+      if (other.hasUnbounded && other.upperRange != null) {
+        return _upperRange > Bound<T>(other.upperRange);
+      }
+      return false;
+    }
+
+    // According to the PostgreSQL behavior, when any [n,] is compared against
+    // a [n,n] range, PostgreSQL will perform a greater than or equal to
+    // operation on both lower bounds. e.g.
+    //
+    // [3,] > [2,15] -> true
+    // [3,] > [3,15] -> true
+    // [3,] > [4,15] -> false
+    //
+    if (hasUnbounded && _lowerRange.isBounded && other.isBounded) {
+      return _lowerRange >= Bound<T>(other.lowerRange);
+    }
+
+    return _lowerRange == Bound<T>(other.lowerRange)
+        ? _upperRange > Bound<T>(other.upperRange)
+        : _lowerRange > Bound<T>(other.lowerRange);
+  }
+
+  bool _lt(RangeComparable other) {
+    if (rangeType != other.rangeType) {
+      throw Exception(
+        'Cannot compare two range types of different types',
       );
     }
 
-    throw Exception(
-      'Cannot compare two range types of different types',
-    );
+    // According to the PostgreSQL behavior, when a [,] range is compared
+    // against any other [b,b] or [b,] range, it returns true. e.g.
+    //
+    // [,] < [5,15] -> true
+    // [,] < [10,] -> true
+    //
+    // An exception is when a [,] range is compared against a [,b]
+    // range, when the lower bound is not specified but only a upper bound,
+    // or if ranges are equal, then PostgreSQL returns false. e.g.
+    //
+    // [,] < [,20] -> false
+    // [,] < [,] -> false
+    //
+
+    if (isUnbounded) {
+      if (other.isUnbounded) {
+        return false;
+      }
+
+      if (other.hasUnbounded && other.upperRange != null) {
+        return false;
+      }
+
+      return true;
+    }
+
+    // According to the PostgreSQL behavior, when a [b,] range is compared
+    // against any other [,b] or [,] range, it returns false. e.g.
+    //
+    // [3,] < [,2] -> false
+    // [3,] < [,3] -> false
+    // [3,] < [,4] -> false
+    // [3,] < [,] -> false
+    //
+    if (hasUnbounded && _lowerRange.isBounded) {
+      // According to the PostgreSQL behavior, when a [b,] range is compared
+      // against any other [b,] or [b,b] range, because they have a
+      // lower bound specified, then PostgreSQL actually performs the operation,
+      // comparing both lower bounds. e.g.
+      //
+      // [3,] < [2,15] -> false
+      // [3,] < [3,15] -> false
+      // [3,] < [4,15] -> true
+      // [3,] < [2,] -> false
+      // [3,] < [3,] -> false
+      // [3,] < [4,] -> true
+      //
+      if (other.lowerRange != null) {
+        return _lowerRange < Bound<T>(other.lowerRange);
+      }
+      return false;
+    }
+
+    // According to the PostgreSQL behavior, when a [,b] range is compared
+    // against any other range, it returns true. e.g.
+    //
+    // [,7] < [4,6] -> true
+    // [,7] < [4,7] -> true
+    // [,7] < [4,8] -> true
+    // [,7] < [6,20] -> true
+    // [,7] < [7,20] -> true
+    // [,7] < [8,20] -> true
+    // [,7] < [6,] -> true
+    // [,7] < [7,] -> true
+    // [,7] < [8,] -> true
+    // [,7] < [,] -> true
+    //
+    // The only exception is when it is compared against a [,b] range, when
+    // the lower bound is unspecified and the upper bound is specified, then
+    // PostgreSQL will actually perform the operation, comparing both upper
+    // bound. e.g.
+    //
+    // [,7] < [,6] -> false
+    // [,7] < [,7] -> false
+    // [,7] < [,8] -> true
+    //
+    if (hasUnbounded && _upperRange.isBounded) {
+      if (other.hasUnbounded && other.upperRange != null) {
+        return _upperRange < Bound<T>(other.upperRange);
+      }
+      return true;
+    }
+
+    return _lowerRange == Bound<T>(other.lowerRange)
+        ? _upperRange < Bound<T>(other.upperRange)
+        : _lowerRange < Bound<T>(other.lowerRange);
   }
+}
+
+class Bound<T> {
+  const Bound(this.bound);
+
+  final T? bound;
+
+  bool get isBounded => bound != null;
+  bool get isUnbounded => bound == null;
+
+  @override
+  bool operator ==(Object other) {
+    if (other is Bound<T>) {
+      if (T == DateTime) {
+        final thisCast = bound as DateTime?;
+        final otherCast = other.bound as DateTime?;
+
+        // If any of them are unbounded, then it will compare nullability
+        // rather than DateTime values
+        if (isUnbounded || other.isUnbounded) {
+          return thisCast == otherCast;
+        }
+
+        return thisCast!.isAtSameMomentAs(otherCast!);
+      }
+
+      return bound == other.bound;
+    }
+
+    return false;
+  }
+
+  bool operator >(Bound<T> other) {
+    if (this == other) {
+      return false;
+    }
+
+    if (isUnbounded && other.isBounded) {
+      return false;
+    }
+
+    if (isBounded && other.isUnbounded) {
+      return true;
+    }
+
+    if (T == DateTime) {
+      final thisCast = bound as DateTime?;
+      final otherCast = other.bound as DateTime?;
+
+      return thisCast!.isAfter(otherCast!);
+    }
+
+    return (bound as dynamic) > other.bound;
+  }
+
+  bool operator <(Bound<T> other) {
+    if (this == other) {
+      return false;
+    }
+
+    if (isUnbounded && other.isBounded) {
+      return true;
+    }
+
+    if (isBounded && other.isUnbounded) {
+      return false;
+    }
+
+    if (T == DateTime) {
+      final thisCast = bound as DateTime?;
+      final otherCast = other.bound as DateTime?;
+
+      return thisCast!.isBefore(otherCast!);
+    }
+
+    return (bound as dynamic) < other.bound;
+  }
+
+  bool operator >=(Bound<T> other) => this > other || this == other;
+  bool operator <=(Bound<T> other) => this < other || this == other;
+
+  Bound<T> operator +(Object other) {
+    if (bound == null) {
+      return this;
+    }
+
+    if (T == DateTime) {
+      final duration = Duration(milliseconds: other as int);
+      final boundCast = bound as DateTime;
+
+      return Bound<T>(boundCast.add(duration) as T);
+    }
+
+    return Bound<T>((bound as dynamic) + other);
+  }
+
+  Bound<T> operator -(Object other) {
+    if (bound == null) {
+      return this;
+    }
+
+    if (T == DateTime) {
+      final duration = Duration(milliseconds: other as int);
+      final boundCast = bound as DateTime;
+
+      return Bound<T>(boundCast.subtract(duration) as T);
+    }
+
+    return Bound<T>((bound as dynamic) - other);
+  }
+
+  @override
+  int get hashCode => Object.hashAll([bound]);
 }
