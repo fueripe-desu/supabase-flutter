@@ -9,6 +9,8 @@ abstract class RangeType {
   const RangeType({
     required this.lowerRangeInclusive,
     required this.upperRangeInclusive,
+    required this.isLowerBoundInfinite,
+    required this.isUpperBoundInfinite,
     required this.rangeDataType,
     required this.rawRangeString,
     required this.isEmpty,
@@ -19,6 +21,8 @@ abstract class RangeType {
     dynamic lowerRange,
     required bool lowerRangeInclusive,
     required bool upperRangeInclusive,
+    required bool isLowerBoundInfinite,
+    required bool isUpperBoundInfinite,
     required RangeDataType rangeDataType,
     required String rawRangeString,
     required bool isEmpty,
@@ -30,6 +34,8 @@ abstract class RangeType {
           upperRange: upperRange,
           lowerRangeInclusive: lowerRangeInclusive,
           upperRangeInclusive: upperRangeInclusive,
+          isLowerBoundInfinite: isLowerBoundInfinite,
+          isUpperBoundInfinite: isUpperBoundInfinite,
           rangeDataType: rangeDataType,
           rawRangeString: rawRangeString,
           isEmpty: isEmpty,
@@ -40,6 +46,8 @@ abstract class RangeType {
           upperRange: upperRange,
           lowerRangeInclusive: lowerRangeInclusive,
           upperRangeInclusive: upperRangeInclusive,
+          isLowerBoundInfinite: isLowerBoundInfinite,
+          isUpperBoundInfinite: isUpperBoundInfinite,
           rangeDataType: rangeDataType,
           rawRangeString: rawRangeString,
           isEmpty: isEmpty,
@@ -52,6 +60,8 @@ abstract class RangeType {
           upperRange: upperRange,
           lowerRangeInclusive: lowerRangeInclusive,
           upperRangeInclusive: upperRangeInclusive,
+          isLowerBoundInfinite: isLowerBoundInfinite,
+          isUpperBoundInfinite: isUpperBoundInfinite,
           rangeDataType: rangeDataType,
           rawRangeString: rawRangeString,
           isEmpty: isEmpty,
@@ -66,6 +76,8 @@ abstract class RangeType {
         return RangeType._createFromDataType(
           lowerRangeInclusive: false,
           upperRangeInclusive: false,
+          isLowerBoundInfinite: false,
+          isUpperBoundInfinite: false,
           rangeDataType: forceType,
           rawRangeString: '',
           isEmpty: true,
@@ -73,6 +85,9 @@ abstract class RangeType {
       }
 
       final (firstValue, secondValue) = _getValuePair(range);
+      final (isLowerBoundInfinite, isUpperBoundInfinite) = _areBoundsInfinite(
+        range,
+      );
       final (lowerRangeInclusive, upperRangeInclusive) = _getInclusivity(
         range,
         firstValueNull: firstValue.isEmpty,
@@ -82,8 +97,14 @@ abstract class RangeType {
       final firstBracket = lowerRangeInclusive ? '[' : '(';
       final lastBracket = upperRangeInclusive ? ']' : ')';
 
+      // This needs to be done, because the _getValuePair() method returns
+      // infinity as if it was null, therefore we need to convert it back
+      // in the rawRangeString
+      final rawLowerBound = isLowerBoundInfinite ? '-infinity' : firstValue;
+      final rawUpperBound = isUpperBoundInfinite ? 'infinity' : secondValue;
+
       final rawRangeString =
-          "$firstBracket$firstValue,$secondValue$lastBracket";
+          "$firstBracket$rawLowerBound,$rawUpperBound$lastBracket";
 
       if (forceType != null) {
         late final dynamic firstValueParsed;
@@ -120,6 +141,8 @@ abstract class RangeType {
           upperRange: secondValueParsed,
           lowerRangeInclusive: lowerRangeInclusive,
           upperRangeInclusive: upperRangeInclusive,
+          isLowerBoundInfinite: isLowerBoundInfinite,
+          isUpperBoundInfinite: isUpperBoundInfinite,
           rangeDataType: forceType,
           rawRangeString: rawRangeString,
           isEmpty: range.isEmpty,
@@ -132,6 +155,12 @@ abstract class RangeType {
       if (firstType == null && secondType == null) {
         throw Exception(
           'For ranges where both boundaries are null, \'forceType\' must be provided.',
+        );
+      }
+
+      if (isLowerBoundInfinite && isUpperBoundInfinite) {
+        throw Exception(
+          'For ranges where both boundaries are infinite, \'forceType\' must be provided.',
         );
       }
 
@@ -179,6 +208,8 @@ abstract class RangeType {
         upperRange: secondType,
         lowerRangeInclusive: lowerRangeInclusive,
         upperRangeInclusive: upperRangeInclusive,
+        isLowerBoundInfinite: isLowerBoundInfinite,
+        isUpperBoundInfinite: isUpperBoundInfinite,
         rangeDataType: rangeDataType,
         rawRangeString: rawRangeString,
         isEmpty: false,
@@ -190,6 +221,8 @@ abstract class RangeType {
 
   final bool lowerRangeInclusive;
   final bool upperRangeInclusive;
+  final bool isLowerBoundInfinite;
+  final bool isUpperBoundInfinite;
   final RangeDataType rangeDataType;
   final String rawRangeString;
 
@@ -319,7 +352,15 @@ abstract class RangeType {
       );
     }
 
-    return (valuePair.first, valuePair.last);
+    // Returns as if it was null, in case one of the values is infinity
+    // because infinity is treated the same as an unspecified bound
+    // the only thing that changes is when you directly compare one range
+    // to the other, because infinity != null, infinity is treated later
+    // by the _areBoundsInfinite() method
+    final lowerValue = valuePair.first == '-infinity' ? '' : valuePair.first;
+    final upperValue = valuePair.last == 'infinity' ? '' : valuePair.last;
+
+    return (lowerValue, upperValue);
   }
 
   static dynamic _inferValueType(String value) {
@@ -338,6 +379,33 @@ abstract class RangeType {
     }
 
     throw Exception('$value is an invalid value in range.');
+  }
+
+  static (bool, bool) _areBoundsInfinite(String range) {
+    final valuePair = range.removeBrackets().split(',').trimAll();
+
+    if (valuePair.length != 2) {
+      throw Exception(
+        'Range type string must have only two values divided by comma: lower range and upper range.',
+      );
+    }
+
+    if (valuePair.first == 'infinity') {
+      throw Exception(
+        'The lower bound cannot be \'infinity\' but only \'-infinity\'.',
+      );
+    }
+
+    if (valuePair.last == '-infinity') {
+      throw Exception(
+        'The upper bound cannot be \'-infinity\' but only \'infinity\'.',
+      );
+    }
+
+    final isLowerBoundInfinite = valuePair.first == '-infinity';
+    final isUpperBoundInfinite = valuePair.last == 'infinity';
+
+    return (isLowerBoundInfinite, isUpperBoundInfinite);
   }
 
   static RangeDataType? _getDataTypeFromTimestamp(String timestamp) {
@@ -373,6 +441,8 @@ class IntegerRangeType extends RangeType {
     this.lowerRange,
     required super.lowerRangeInclusive,
     required super.upperRangeInclusive,
+    required super.isLowerBoundInfinite,
+    required super.isUpperBoundInfinite,
     required super.rangeDataType,
     required super.rawRangeString,
     required super.isEmpty,
@@ -412,6 +482,8 @@ class FloatRangeType extends RangeType {
     this.lowerRange,
     required super.lowerRangeInclusive,
     required super.upperRangeInclusive,
+    required super.isLowerBoundInfinite,
+    required super.isUpperBoundInfinite,
     required super.rangeDataType,
     required super.rawRangeString,
     required super.isEmpty,
@@ -451,6 +523,8 @@ class DateRangeType extends RangeType {
     this.lowerRange,
     required super.lowerRangeInclusive,
     required super.upperRangeInclusive,
+    required super.isLowerBoundInfinite,
+    required super.isUpperBoundInfinite,
     required super.rangeDataType,
     required super.rawRangeString,
     required super.isEmpty,
@@ -461,6 +535,8 @@ class DateRangeType extends RangeType {
     DateTime? lowerRange,
     required bool lowerRangeInclusive,
     required bool upperRangeInclusive,
+    required bool isUpperBoundInfinite,
+    required bool isLowerBoundInfinite,
     required RangeDataType rangeDataType,
     required String rawRangeString,
     required bool isEmpty,
@@ -469,6 +545,8 @@ class DateRangeType extends RangeType {
       return DateRangeType(
         lowerRangeInclusive: lowerRangeInclusive,
         upperRangeInclusive: upperRangeInclusive,
+        isLowerBoundInfinite: isLowerBoundInfinite,
+        isUpperBoundInfinite: isUpperBoundInfinite,
         rangeDataType: rangeDataType,
         rawRangeString: rawRangeString,
         isEmpty: isEmpty,
@@ -570,8 +648,14 @@ class DateRangeType extends RangeType {
       newUpperRange = upperRange;
       newLowerRange = lowerRange;
 
-      final timezoneOffsets = _extractTzOffsets(rawRangeString);
-      final timestamps = _removeTzOffsets(rawRangeString);
+      // Removes the infinity value so it can be treated as unspecified
+      final editedRangeString = rawRangeString.replaceAll(
+        RegExp(r'-?infinity'),
+        '',
+      );
+
+      final timezoneOffsets = _extractTzOffsets(editedRangeString);
+      final timestamps = _removeTzOffsets(editedRangeString);
 
       final splitTs = timestamps.removeBrackets().split(',');
 
@@ -603,7 +687,9 @@ class DateRangeType extends RangeType {
                 newLowerRangeDt.microsecond,
               ).toIso8601String().replaceAll('Z', '') +
               timezoneOffsets[0]
-          : "";
+          : isLowerBoundInfinite
+              ? "-infinity"
+              : "";
 
       final newIsoString2 = newUpperRangeDt != null
           ? DateTime(
@@ -617,7 +703,9 @@ class DateRangeType extends RangeType {
                 newUpperRangeDt.microsecond,
               ).toIso8601String().replaceAll('Z', '') +
               timezoneOffsets[1]
-          : "";
+          : isUpperBoundInfinite
+              ? "infinity"
+              : "";
 
       newRawString = "$firstBracket$newIsoString1,$newIsoString2$lastBracket";
     }
@@ -627,6 +715,8 @@ class DateRangeType extends RangeType {
       lowerRange: newLowerRange,
       lowerRangeInclusive: lowerRangeInclusive,
       upperRangeInclusive: upperRangeInclusive,
+      isLowerBoundInfinite: isLowerBoundInfinite,
+      isUpperBoundInfinite: isUpperBoundInfinite,
       rangeDataType: rangeDataType,
       rawRangeString: newRawString,
       isEmpty: false,
