@@ -688,6 +688,7 @@ void main() {
       late final bool Function(String range1, String range2) gte;
       late final bool Function(String range1, String range2) lt;
       late final bool Function(String range1, String range2) lte;
+      late final bool Function(String range1, String range2) eq;
       late final bool Function(String range1, String range2) ceq;
 
       setUpAll(() {
@@ -717,6 +718,11 @@ void main() {
         lte = (range1, range2) {
           final (c1, c2) = getRangePair(range1, range2);
           return c1 <= c2;
+        };
+
+        eq = (range1, range2) {
+          final (c1, c2) = getRangePair(range1, range2);
+          return c1 == c2;
         };
 
         ceq = (range1, range2) {
@@ -909,6 +915,158 @@ void main() {
         });
       });
 
+      group('range equality', () {
+        late final bool Function(String range1, String range2) forceEq;
+        late final bool Function(String range1, String range2) dynamicEq;
+
+        setUpAll(() {
+          forceEq = (range1, range2) {
+            final r1 = RangeType.createRange(
+              range: range1,
+              forceType: RangeDataType.integer,
+            );
+            final r2 = RangeType.createRange(
+              range: range2,
+              forceType: RangeDataType.integer,
+            );
+
+            return r1 == r2;
+          };
+
+          dynamicEq = (range1, range2) {
+            final r1 = RangeType.createRange(range: range1);
+            final r2 = RangeType.createRange(range: range2);
+
+            return r1 == r2;
+          };
+        });
+
+        test('should return true if ranges are completely equal', () {
+          expect(eq('[1, 10]', '[1, 10]'), true);
+          expect(eq('(1, 10]', '(1, 10]'), true);
+          expect(eq('[1, 10)', '[1, 10)'), true);
+          expect(eq('(1, 10)', '(1, 10)'), true);
+        });
+
+        test('should return false if ranges have different values', () {
+          expect(eq('[1, 10]', '[5, 20]'), false);
+          expect(eq('(1, 10]', '(5, 20]'), false);
+          expect(eq('[1, 10)', '[5, 20)'), false);
+          expect(eq('(1, 10)', '(5, 20)'), false);
+        });
+
+        test(
+            'should return false if ranges have the same lower bound but a different upper bound',
+            () {
+          expect(eq('[1, 10]', '[1, 20]'), false);
+          expect(eq('(1, 10]', '(1, 20]'), false);
+          expect(eq('[1, 10)', '[1, 20)'), false);
+          expect(eq('(1, 10)', '(1, 20)'), false);
+        });
+
+        test(
+            'should return false if ranges have the same upper bound but a different lower bound',
+            () {
+          expect(eq('[1, 20]', '[5, 20]'), false);
+          expect(eq('(1, 20]', '(5, 20]'), false);
+          expect(eq('[1, 20)', '[5, 20)'), false);
+          expect(eq('(1, 20)', '(5, 20)'), false);
+        });
+
+        test(
+            'should return false if ranges cover the same values but are not the same',
+            () {
+          expect(eq('(1, 10)', '[2, 9]'), false);
+        });
+
+        test('should return true if ranges have the same infinity values', () {
+          expect(forceEq('[-infinity, 20]', '[-infinity, 20]'), true);
+          expect(forceEq('[10, infinity]', '[10, infinity]'), true);
+          expect(
+            forceEq('[-infinity, infinity]', '[-infinity, infinity]'),
+            true,
+          );
+        });
+
+        test('should return false if ranges have different infinity values',
+            () {
+          expect(forceEq('[-infinity, 20]', '[10, infinity]'), false);
+          expect(forceEq('[-infinity, 20]', '[-infinity, infinity]'), false);
+
+          expect(forceEq('[10, infinity]', '[-infinity, 20]'), false);
+          expect(forceEq('[10, infinity]', '[-infinity, infinity]'), false);
+
+          expect(forceEq('[-infinity, infinity]', '[10, infinity]'), false);
+          expect(forceEq('[-infinity, infinity]', '[-infinity, 20]'), false);
+        });
+
+        test('should return false if ranges have a different inclusivity', () {
+          expect(eq('[1, 10]', '(1, 10]'), false);
+          expect(eq('[1, 10]', '[1, 10)'), false);
+          expect(eq('[1, 10]', '(1, 10)'), false);
+
+          expect(eq('(1, 10]', '[1, 10]'), false);
+          expect(eq('(1, 10]', '[1, 10)'), false);
+          expect(eq('(1, 10]', '(1, 10)'), false);
+
+          expect(eq('[1, 10)', '[1, 10]'), false);
+          expect(eq('[1, 10)', '(1, 10]'), false);
+          expect(eq('[1, 10)', '(1, 10)'), false);
+
+          expect(eq('(1, 10)', '[1, 10]'), false);
+          expect(eq('(1, 10)', '[1, 10)'), false);
+          expect(eq('(1, 10)', '(1, 10]'), false);
+        });
+
+        test('should return false if ranges are of different types', () {
+          // Integer != Float
+          expect(dynamicEq('[1, 10]', '[1.5, 10.5]'), false);
+
+          // Integer != Date
+          expect(dynamicEq('[1, 10]', '[2022-01-01, 2022-12-31]'), false);
+
+          // Integer != Timestamp
+          expect(
+            dynamicEq(
+              '[1, 10]',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+
+          // Integer != UTC Timestamptz
+          expect(
+            dynamicEq(
+              '[1, 10]',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+
+          // Integer != Timestamptz
+          expect(
+            dynamicEq(
+              '[1, 10]',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00+01]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if both ranges are empty', () {
+          expect(forceEq('', ''), true);
+        });
+
+        test(
+            'should return false if any range is compared against an empty range',
+            () {
+          expect(forceEq('[1, 20]', ''), false);
+          expect(forceEq('(1, 20]', ''), false);
+          expect(forceEq('[1, 20)', ''), false);
+          expect(forceEq('(1, 20)', ''), false);
+        });
+      });
+
       group('comparable equality', () {
         test('should return true if ranges are equal', () {
           // Values are equal
@@ -935,6 +1093,7 @@ void main() {
       late final bool Function(String range1, String range2) gte;
       late final bool Function(String range1, String range2) lt;
       late final bool Function(String range1, String range2) lte;
+      late final bool Function(String range1, String range2) eq;
       late final bool Function(String range1, String range2) ceq;
 
       setUpAll(() {
@@ -970,6 +1129,11 @@ void main() {
         lte = (range1, range2) {
           final (c1, c2) = getRangePair(range1, range2);
           return c1 <= c2;
+        };
+
+        eq = (range1, range2) {
+          final (c1, c2) = getRangePair(range1, range2);
+          return c1 == c2;
         };
 
         ceq = (range1, range2) {
@@ -1724,6 +1888,85 @@ void main() {
         });
       });
 
+      group('range equality', () {
+        test('should return true if the ranges have the same values', () {
+          expect(eq('[1,]', '[1,]'), true);
+          expect(eq('(1,]', '(1,]'), true);
+          expect(eq('[1,)', '[1,)'), true);
+          expect(eq('(1,)', '(1,)'), true);
+
+          expect(eq('[,10]', '[,10]'), true);
+          expect(eq('(,10]', '(,10]'), true);
+          expect(eq('[,10)', '[,10)'), true);
+          expect(eq('(,10)', '(,10)'), true);
+
+          expect(eq('[,]', '[,]'), true);
+          expect(eq('(,]', '(,]'), true);
+          expect(eq('[,)', '[,)'), true);
+          expect(eq('(,)', '(,)'), true);
+
+          expect(eq('[1,]', '[1,)'), true);
+          expect(eq('[,10]', '(,10]'), true);
+
+          expect(eq('[,]', '(,)'), true);
+          expect(eq('[,]', '(,]'), true);
+          expect(eq('[,]', '[,)'), true);
+        });
+
+        test('should return false if the ranges have different values', () {
+          expect(eq('[1,]', '[10,]'), false);
+          expect(eq('[1,]', '[,10]'), false);
+          expect(eq('[1,]', '[,]'), false);
+
+          expect(eq('[,10]', '[1,]'), false);
+          expect(eq('[,10]', '[,1]'), false);
+          expect(eq('[,10]', '[,]'), false);
+
+          expect(eq('[,]', '[1,]'), false);
+          expect(eq('[,]', '[,10]'), false);
+        });
+
+        test(
+            'should return false if values are equal but the inclusivity is different',
+            () {
+          expect(eq('[1,]', '(1,]'), false);
+          expect(eq('[1,]', '(1,)'), false);
+
+          expect(eq('[,10]', '[,10)'), false);
+          expect(eq('[,10]', '(,10)'), false);
+        });
+
+        test(
+            'should return false if ranges cover the same values but are not the same',
+            () {
+          expect(eq('(1,)', '[2,]'), false);
+
+          expect(eq('(,10)', '[,9]'), false);
+        });
+
+        test('should return true if ranges have the same infinity values', () {
+          expect(eq('[-infinity,]', '[-infinity,]'), true);
+          expect(eq('[,infinity]', '[,infinity]'), true);
+        });
+
+        test('should return false if ranges have different infinity values',
+            () {
+          expect(eq('[1,]', '[-infinity,]'), false);
+          expect(eq('[1,]', '[,infinity]'), false);
+
+          expect(eq('[,10]', '[-infinity,]'), false);
+          expect(eq('[,10]', '[,infinity]'), false);
+        });
+
+        test(
+            'should return false if any range is compared against an empty range',
+            () {
+          expect(eq('[1,]', ''), false);
+          expect(eq('[,10]', ''), false);
+          expect(eq('[,]', ''), false);
+        });
+      });
+
       group('comparable equality', () {
         test('should return true if ranges are equal with the same inclusivity',
             () {
@@ -2422,6 +2665,7 @@ void main() {
       late final bool Function(String range1, String range2) gte;
       late final bool Function(String range1, String range2) lt;
       late final bool Function(String range1, String range2) lte;
+      late final bool Function(String range1, String range2) eq;
       late final bool Function(String range1, String range2) ceq;
 
       setUpAll(() {
@@ -2451,6 +2695,11 @@ void main() {
         lte = (range1, range2) {
           final (c1, c2) = getRangePair(range1, range2);
           return c1 <= c2;
+        };
+
+        eq = (range1, range2) {
+          final (c1, c2) = getRangePair(range1, range2);
+          return c1 == c2;
         };
 
         ceq = (range1, range2) {
@@ -2643,6 +2892,158 @@ void main() {
         });
       });
 
+      group('range equality', () {
+        late final bool Function(String range1, String range2) forceEq;
+        late final bool Function(String range1, String range2) dynamicEq;
+
+        setUpAll(() {
+          forceEq = (range1, range2) {
+            final r1 = RangeType.createRange(
+              range: range1,
+              forceType: RangeDataType.float,
+            );
+            final r2 = RangeType.createRange(
+              range: range2,
+              forceType: RangeDataType.float,
+            );
+
+            return r1 == r2;
+          };
+
+          dynamicEq = (range1, range2) {
+            final r1 = RangeType.createRange(range: range1);
+            final r2 = RangeType.createRange(range: range2);
+
+            return r1 == r2;
+          };
+        });
+
+        test('should return true if ranges are completely equal', () {
+          expect(eq('[1.5, 10.5]', '[1.5, 10.5]'), true);
+          expect(eq('(1.5, 10.5]', '(1.5, 10.5]'), true);
+          expect(eq('[1.5, 10.5)', '[1.5, 10.5)'), true);
+          expect(eq('(1.5, 10.5)', '(1.5, 10.5)'), true);
+        });
+
+        test('should return false if ranges have different values', () {
+          expect(eq('[1.5, 10.5]', '[5.5, 20.5]'), false);
+          expect(eq('(1.5, 10.5]', '(5.5, 20.5]'), false);
+          expect(eq('[1.5, 10.5)', '[5.5, 20.5)'), false);
+          expect(eq('(1.5, 10.5)', '(5.5, 20.5)'), false);
+        });
+
+        test(
+            'should return false if ranges have the same lower bound but a different upper bound',
+            () {
+          expect(eq('[1.5, 10.5]', '[1.5, 20.5]'), false);
+          expect(eq('(1.5, 10.5]', '(1.5, 20.5]'), false);
+          expect(eq('[1.5, 10.5)', '[1.5, 20.5)'), false);
+          expect(eq('(1.5, 10.5)', '(1.5, 20.5)'), false);
+        });
+
+        test(
+            'should return false if ranges have the same upper bound but a different lower bound',
+            () {
+          expect(eq('[1.5, 20.5]', '[5.5, 20.5]'), false);
+          expect(eq('(1.5, 20.5]', '(5.5, 20.5]'), false);
+          expect(eq('[1.5, 20.5)', '[5.5, 20.5)'), false);
+          expect(eq('(1.5, 20.5)', '(5.5, 20.5)'), false);
+        });
+
+        test(
+            'should return false if ranges cover the same values but are not the same',
+            () {
+          expect(eq('(1.0, 10.0)', '[1.1, 9.9]'), false);
+        });
+
+        test('should return true if ranges have the same infinity values', () {
+          expect(forceEq('[-infinity, 20.5]', '[-infinity, 20.5]'), true);
+          expect(forceEq('[10.5, infinity]', '[10.5, infinity]'), true);
+          expect(
+            forceEq('[-infinity, infinity]', '[-infinity, infinity]'),
+            true,
+          );
+        });
+
+        test('should return false if ranges have different infinity values',
+            () {
+          expect(forceEq('[-infinity, 20.5]', '[10.5, infinity]'), false);
+          expect(forceEq('[-infinity, 20.5]', '[-infinity, infinity]'), false);
+
+          expect(forceEq('[10.5, infinity]', '[-infinity, 20.5]'), false);
+          expect(forceEq('[10.5, infinity]', '[-infinity, infinity]'), false);
+
+          expect(forceEq('[-infinity, infinity]', '[10.5, infinity]'), false);
+          expect(forceEq('[-infinity, infinity]', '[-infinity, 20.5]'), false);
+        });
+
+        test('should return false if ranges have a different inclusivity', () {
+          expect(eq('[1.5, 10.5]', '(1.5, 10.5]'), false);
+          expect(eq('[1.5, 10.5]', '[1.5, 10.5)'), false);
+          expect(eq('[1.5, 10.5]', '(1.5, 10.5)'), false);
+
+          expect(eq('(1.5, 10.5]', '[1.5, 10.5]'), false);
+          expect(eq('(1.5, 10.5]', '[1.5, 10.5)'), false);
+          expect(eq('(1.5, 10.5]', '(1.5, 10.5)'), false);
+
+          expect(eq('[1.5, 10.5)', '[1.5, 10.5]'), false);
+          expect(eq('[1.5, 10.5)', '(1.5, 10.5]'), false);
+          expect(eq('[1.5, 10.5)', '(1.5, 10.5)'), false);
+
+          expect(eq('(1.5, 10.5)', '[1.5, 10.5]'), false);
+          expect(eq('(1.5, 10.5)', '[1.5, 10.5)'), false);
+          expect(eq('(1.5, 10.5)', '(1.5, 10.5]'), false);
+        });
+
+        test('should return false if ranges are of different types', () {
+          // Float != Integer
+          expect(dynamicEq('[1.5, 10.5]', '[1, 10]'), false);
+
+          // Float != Date
+          expect(dynamicEq('[1.5, 10.5]', '[2022-01-01, 2022-12-31]'), false);
+
+          // Float != Timestamp
+          expect(
+            dynamicEq(
+              '[1.5, 10.5]',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+
+          // Float != UTC Timestamptz
+          expect(
+            dynamicEq(
+              '[1.5, 10.5]',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+
+          // Float != Timestamptz
+          expect(
+            dynamicEq(
+              '[1.5, 10.5]',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00+01]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if both ranges are empty', () {
+          expect(forceEq('', ''), true);
+        });
+
+        test(
+            'should return false if any range is compared against an empty range',
+            () {
+          expect(forceEq('[1.5, 20.5]', ''), false);
+          expect(forceEq('(1.5, 20.5]', ''), false);
+          expect(forceEq('[1.5, 20.5)', ''), false);
+          expect(forceEq('(1.5, 20.5)', ''), false);
+        });
+      });
+
       group('comparable equality', () {
         test('should return true if ranges are equal', () {
           // Values are equal
@@ -2669,6 +3070,7 @@ void main() {
       late final bool Function(String range1, String range2) gte;
       late final bool Function(String range1, String range2) lt;
       late final bool Function(String range1, String range2) lte;
+      late final bool Function(String range1, String range2) eq;
       late final bool Function(String range1, String range2) ceq;
 
       setUpAll(() {
@@ -2704,6 +3106,11 @@ void main() {
         lte = (range1, range2) {
           final (c1, c2) = getRangePair(range1, range2);
           return c1 <= c2;
+        };
+
+        eq = (range1, range2) {
+          final (c1, c2) = getRangePair(range1, range2);
+          return c1 == c2;
         };
 
         ceq = (range1, range2) {
@@ -3455,6 +3862,85 @@ void main() {
             () {
           // Less than because [,b] is not greater than [,]
           expect(lte('[,7.0]', '[,]'), true);
+        });
+      });
+
+      group('range equality', () {
+        test('should return true if the ranges have the same values', () {
+          expect(eq('[1.5,]', '[1.5,]'), true);
+          expect(eq('(1.5,]', '(1.5,]'), true);
+          expect(eq('[1.5,)', '[1.5,)'), true);
+          expect(eq('(1.5,)', '(1.5,)'), true);
+
+          expect(eq('[,10.5]', '[,10.5]'), true);
+          expect(eq('(,10.5]', '(,10.5]'), true);
+          expect(eq('[,10.5)', '[,10.5)'), true);
+          expect(eq('(,10.5)', '(,10.5)'), true);
+
+          expect(eq('[,]', '[,]'), true);
+          expect(eq('(,]', '(,]'), true);
+          expect(eq('[,)', '[,)'), true);
+          expect(eq('(,)', '(,)'), true);
+
+          expect(eq('[1.5,]', '[1.5,)'), true);
+          expect(eq('[,10.5]', '(,10.5]'), true);
+
+          expect(eq('[,]', '(,)'), true);
+          expect(eq('[,]', '(,]'), true);
+          expect(eq('[,]', '[,)'), true);
+        });
+
+        test('should return false if the ranges have different values', () {
+          expect(eq('[1.5,]', '[10.5,]'), false);
+          expect(eq('[1.5,]', '[,10.5]'), false);
+          expect(eq('[1.5,]', '[,]'), false);
+
+          expect(eq('[,10.5]', '[1.5,]'), false);
+          expect(eq('[,10.5]', '[,1.5]'), false);
+          expect(eq('[,10.5]', '[,]'), false);
+
+          expect(eq('[,]', '[1.5,]'), false);
+          expect(eq('[,]', '[,10.5]'), false);
+        });
+
+        test(
+            'should return false if values are equal but the inclusivity is different',
+            () {
+          expect(eq('[1.5,]', '(1.5,]'), false);
+          expect(eq('[1.5,]', '(1.5,)'), false);
+
+          expect(eq('[,10.5]', '[,10.5)'), false);
+          expect(eq('[,10.5]', '(,10.5)'), false);
+        });
+
+        test(
+            'should return false if ranges cover the same values but are not the same',
+            () {
+          expect(eq('(1.0,)', '[1.1,]'), false);
+
+          expect(eq('(,10.0)', '[,9.9]'), false);
+        });
+
+        test('should return true if ranges have the same infinity values', () {
+          expect(eq('[-infinity,]', '[-infinity,]'), true);
+          expect(eq('[,infinity]', '[,infinity]'), true);
+        });
+
+        test('should return false if ranges have different infinity values',
+            () {
+          expect(eq('[1.5,]', '[-infinity,]'), false);
+          expect(eq('[1.5,]', '[,infinity]'), false);
+
+          expect(eq('[,10.5]', '[-infinity,]'), false);
+          expect(eq('[,10.5]', '[,infinity]'), false);
+        });
+
+        test(
+            'should return false if any range is compared against an empty range',
+            () {
+          expect(eq('[1.5,]', ''), false);
+          expect(eq('[,10.5]', ''), false);
+          expect(eq('[,]', ''), false);
         });
       });
 
@@ -4238,6 +4724,7 @@ void main() {
       late final bool Function(String range1, String range2) gte;
       late final bool Function(String range1, String range2) lt;
       late final bool Function(String range1, String range2) lte;
+      late final bool Function(String range1, String range2) eq;
       late final bool Function(String range1, String range2) ceq;
 
       setUpAll(() {
@@ -4267,6 +4754,11 @@ void main() {
         lte = (range1, range2) {
           final (c1, c2) = getRangePair(range1, range2);
           return c1 <= c2;
+        };
+
+        eq = (range1, range2) {
+          final (c1, c2) = getRangePair(range1, range2);
+          return c1 == c2;
         };
 
         ceq = (range1, range2) {
@@ -4603,6 +5095,401 @@ void main() {
         });
       });
 
+      group('range equality', () {
+        late final bool Function(String range1, String range2) forceEq;
+        late final bool Function(String range1, String range2) dynamicEq;
+
+        setUpAll(() {
+          forceEq = (range1, range2) {
+            final r1 = RangeType.createRange(
+              range: range1,
+              forceType: RangeDataType.date,
+            );
+            final r2 = RangeType.createRange(
+              range: range2,
+              forceType: RangeDataType.date,
+            );
+
+            return r1 == r2;
+          };
+
+          dynamicEq = (range1, range2) {
+            final r1 = RangeType.createRange(range: range1);
+            final r2 = RangeType.createRange(range: range2);
+
+            return r1 == r2;
+          };
+        });
+
+        test('should return true if ranges are completely equal', () {
+          expect(
+            eq(
+              '[2022-01-01, 2022-12-31]',
+              '[2022-01-01, 2022-12-31]',
+            ),
+            true,
+          );
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31]',
+              '(2022-01-01, 2022-12-31]',
+            ),
+            true,
+          );
+          expect(
+            eq(
+              '[2022-01-01, 2022-12-31)',
+              '[2022-01-01, 2022-12-31)',
+            ),
+            true,
+          );
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31)',
+              '(2022-01-01, 2022-12-31)',
+            ),
+            true,
+          );
+        });
+
+        test('should return false if ranges have different values', () {
+          expect(
+            eq(
+              '[2022-01-01, 2022-12-31]',
+              '[2023-01-01, 2023-12-31]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31]',
+              '(2023-01-01, 2023-12-31]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01, 2022-12-31)',
+              '[2023-01-01, 2023-12-31)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31)',
+              '(2023-01-01, 2023-12-31)',
+            ),
+            false,
+          );
+        });
+
+        test(
+            'should return false if ranges have the same lower bound but a different upper bound',
+            () {
+          expect(
+            eq(
+              '[2022-01-01, 2022-12-31]',
+              '[2022-01-01, 2023-12-31]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31]',
+              '(2022-01-01, 2023-12-31]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01, 2022-12-31)',
+              '[2022-01-01, 2023-12-31)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31)',
+              '(2022-01-01, 2023-12-31)',
+            ),
+            false,
+          );
+        });
+
+        test(
+            'should return false if ranges have the same upper bound but a different lower bound',
+            () {
+          expect(
+            eq(
+              '[2022-01-01, 2023-12-31]',
+              '[2023-01-01, 2023-12-31]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01, 2023-12-31]',
+              '(2023-01-01, 2023-12-31]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01, 2023-12-31)',
+              '[2023-01-01, 2023-12-31)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01, 2023-12-31)',
+              '(2023-01-01, 2023-12-31)',
+            ),
+            false,
+          );
+        });
+
+        test(
+            'should return false if ranges cover the same values but are not the same',
+            () {
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31)',
+              '[2022-01-02, 2022-12-30]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if ranges have the same infinity values', () {
+          expect(
+            forceEq(
+              '[-infinity, 2022-12-31]',
+              '[-infinity, 2022-12-31]',
+            ),
+            true,
+          );
+          expect(
+            forceEq(
+              '[2022-01-01, infinity]',
+              '[2022-01-01, infinity]',
+            ),
+            true,
+          );
+          expect(
+            forceEq(
+              '[-infinity, infinity]',
+              '[-infinity, infinity]',
+            ),
+            true,
+          );
+        });
+
+        test('should return false if ranges have different infinity values',
+            () {
+          expect(
+            forceEq('[-infinity, 2022-12-31]', '[2022-01-01, infinity]'),
+            false,
+          );
+          expect(
+            forceEq('[-infinity, 2022-12-31]', '[-infinity, infinity]'),
+            false,
+          );
+
+          expect(
+            forceEq('[2022-01-01, infinity]', '[-infinity, 2022-12-31]'),
+            false,
+          );
+          expect(
+            forceEq('[2022-01-01, infinity]', '[-infinity, infinity]'),
+            false,
+          );
+
+          expect(
+            forceEq('[-infinity, infinity]', '[2022-01-01, infinity]'),
+            false,
+          );
+          expect(
+            forceEq('[-infinity, infinity]', '[-infinity, 2022-12-31]'),
+            false,
+          );
+        });
+
+        test('should return false if ranges have a different inclusivity', () {
+          expect(
+            eq(
+              '[2022-01-01, 2022-12-31]',
+              '(2022-01-01, 2022-12-31]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01, 2022-12-31]',
+              '[2022-01-01, 2022-12-31)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01, 2022-12-31]',
+              '(2022-01-01, 2022-12-31)',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31]',
+              '[2022-01-01, 2022-12-31]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31]',
+              '[2022-01-01, 2022-12-31)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31]',
+              '(2022-01-01, 2022-12-31)',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '[2022-01-01, 2022-12-31)',
+              '[2022-01-01, 2022-12-31]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01, 2022-12-31)',
+              '(2022-01-01, 2022-12-31]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01, 2022-12-31)',
+              '(2022-01-01, 2022-12-31)',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31)',
+              '[2022-01-01, 2022-12-31]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31)',
+              '[2022-01-01, 2022-12-31)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01, 2022-12-31)',
+              '(2022-01-01, 2022-12-31]',
+            ),
+            false,
+          );
+        });
+
+        test('should return false if ranges are of different types', () {
+          // Date != Integer
+          expect(
+            dynamicEq(
+              '[2022-01-01, 2022-12-31]',
+              '[1, 10]',
+            ),
+            false,
+          );
+
+          // Date != Float
+          expect(
+            dynamicEq(
+              '[2022-01-01, 2022-12-31]',
+              '[1.5, 10.5]',
+            ),
+            false,
+          );
+
+          // Date != Timestamp
+          expect(
+            dynamicEq(
+              '[2022-01-01, 2022-12-31]',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+
+          // Date != UTC Timestamptz
+          expect(
+            dynamicEq(
+              '[2022-01-01, 2022-12-31]',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+
+          // Date != Timestamptz
+          expect(
+            dynamicEq(
+              '[2022-01-01, 2022-12-31]',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00+01]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if both ranges are empty', () {
+          expect(forceEq('', ''), true);
+        });
+
+        test(
+            'should return false if any range is compared against an empty range',
+            () {
+          expect(
+            forceEq(
+              '[2022-01-01, 2022-12-31]',
+              '',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '(2022-01-01, 2022-12-31]',
+              '',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[2022-01-01, 2022-12-31)',
+              '',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '(2022-01-01, 2022-12-31)',
+              '',
+            ),
+            false,
+          );
+        });
+      });
+
       group('comparable equality', () {
         test('should return true if ranges are equal', () {
           // Values are equal
@@ -4647,6 +5534,7 @@ void main() {
       late final bool Function(String range1, String range2) gte;
       late final bool Function(String range1, String range2) lt;
       late final bool Function(String range1, String range2) lte;
+      late final bool Function(String range1, String range2) eq;
       late final bool Function(String range1, String range2) ceq;
 
       setUpAll(() {
@@ -4682,6 +5570,11 @@ void main() {
         lte = (range1, range2) {
           final (c1, c2) = getRangePair(range1, range2);
           return c1 <= c2;
+        };
+
+        eq = (range1, range2) {
+          final (c1, c2) = getRangePair(range1, range2);
+          return c1 == c2;
         };
 
         ceq = (range1, range2) {
@@ -5433,6 +6326,85 @@ void main() {
             () {
           // Less than because [,b] is not greater than [,]
           expect(lte('[,2023-01-01]', '[,]'), true);
+        });
+      });
+
+      group('range equality', () {
+        test('should return true if the ranges have the same values', () {
+          expect(eq('[2022-01-01,]', '[2022-01-01,]'), true);
+          expect(eq('(2022-01-01,]', '(2022-01-01,]'), true);
+          expect(eq('[2022-01-01,)', '[2022-01-01,)'), true);
+          expect(eq('(2022-01-01,)', '(2022-01-01,)'), true);
+
+          expect(eq('[,2022-12-31]', '[,2022-12-31]'), true);
+          expect(eq('(,2022-12-31]', '(,2022-12-31]'), true);
+          expect(eq('[,2022-12-31)', '[,2022-12-31)'), true);
+          expect(eq('(,2022-12-31)', '(,2022-12-31)'), true);
+
+          expect(eq('[,]', '[,]'), true);
+          expect(eq('(,]', '(,]'), true);
+          expect(eq('[,)', '[,)'), true);
+          expect(eq('(,)', '(,)'), true);
+
+          expect(eq('[2022-01-01,]', '[2022-01-01,)'), true);
+          expect(eq('[,2022-12-31]', '(,2022-12-31]'), true);
+
+          expect(eq('[,]', '(,)'), true);
+          expect(eq('[,]', '(,]'), true);
+          expect(eq('[,]', '[,)'), true);
+        });
+
+        test('should return false if the ranges have different values', () {
+          expect(eq('[2022-01-01,]', '[2022-12-31,]'), false);
+          expect(eq('[2022-01-01,]', '[,2022-12-31]'), false);
+          expect(eq('[2022-01-01,]', '[,]'), false);
+
+          expect(eq('[,2022-12-31]', '[2022-01-01,]'), false);
+          expect(eq('[,2022-12-31]', '[,2022-01-01]'), false);
+          expect(eq('[,2022-12-31]', '[,]'), false);
+
+          expect(eq('[,]', '[2022-01-01,]'), false);
+          expect(eq('[,]', '[,2022-12-31]'), false);
+        });
+
+        test(
+            'should return false if values are equal but the inclusivity is different',
+            () {
+          expect(eq('[2022-01-01,]', '(2022-01-01,]'), false);
+          expect(eq('[2022-01-01,]', '(2022-01-01,)'), false);
+
+          expect(eq('[,2022-12-31]', '[,2022-12-31)'), false);
+          expect(eq('[,2022-12-31]', '(,2022-12-31)'), false);
+        });
+
+        test(
+            'should return false if ranges cover the same values but are not the same',
+            () {
+          expect(eq('(2022-01-01,)', '[2022-01-02,]'), false);
+
+          expect(eq('(,2022-12-31)', '[,2022-12-30]'), false);
+        });
+
+        test('should return true if ranges have the same infinity values', () {
+          expect(eq('[-infinity,]', '[-infinity,]'), true);
+          expect(eq('[,infinity]', '[,infinity]'), true);
+        });
+
+        test('should return false if ranges have different infinity values',
+            () {
+          expect(eq('[2022-01-01,]', '[-infinity,]'), false);
+          expect(eq('[2022-01-01,]', '[,infinity]'), false);
+
+          expect(eq('[,2022-12-31]', '[-infinity,]'), false);
+          expect(eq('[,2022-12-31]', '[,infinity]'), false);
+        });
+
+        test(
+            'should return false if any range is compared against an empty range',
+            () {
+          expect(eq('[2022-01-01,]', ''), false);
+          expect(eq('[,2022-12-31]', ''), false);
+          expect(eq('[,]', ''), false);
         });
       });
 
@@ -6629,6 +7601,7 @@ void main() {
       late final bool Function(String range1, String range2) gte;
       late final bool Function(String range1, String range2) lt;
       late final bool Function(String range1, String range2) lte;
+      late final bool Function(String range1, String range2) eq;
       late final bool Function(String range1, String range2) ceq;
 
       setUpAll(() {
@@ -6658,6 +7631,11 @@ void main() {
         lte = (range1, range2) {
           final (c1, c2) = getRangePair(range1, range2);
           return c1 <= c2;
+        };
+
+        eq = (range1, range2) {
+          final (c1, c2) = getRangePair(range1, range2);
+          return c1 == c2;
         };
 
         ceq = (range1, range2) {
@@ -7138,6 +8116,419 @@ void main() {
         });
       });
 
+      group('range equality', () {
+        late final bool Function(String range1, String range2) forceEq;
+        late final bool Function(String range1, String range2) dynamicEq;
+
+        setUpAll(() {
+          forceEq = (range1, range2) {
+            final r1 = RangeType.createRange(
+              range: range1,
+              forceType: RangeDataType.timestamp,
+            );
+            final r2 = RangeType.createRange(
+              range: range2,
+              forceType: RangeDataType.timestamp,
+            );
+
+            return r1 == r2;
+          };
+
+          dynamicEq = (range1, range2) {
+            final r1 = RangeType.createRange(range: range1);
+            final r2 = RangeType.createRange(range: range2);
+
+            return r1 == r2;
+          };
+        });
+
+        test('should return true if ranges are completely equal', () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            true,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            true,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+            ),
+            true,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+            ),
+            true,
+          );
+        });
+
+        test('should return false if ranges have different values', () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '[2023-01-01T00:00:00, 2023-12-31T00:00:00]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '(2023-01-01T00:00:00, 2023-12-31T00:00:00]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '[2023-01-01T00:00:00, 2023-12-31T00:00:00)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '(2023-01-01T00:00:00, 2023-12-31T00:00:00)',
+            ),
+            false,
+          );
+        });
+
+        test(
+            'should return false if ranges have the same lower bound but a different upper bound',
+            () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '[2022-01-01T00:00:00, 2023-12-31T00:00:00]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '(2022-01-01T00:00:00, 2023-12-31T00:00:00]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '[2022-01-01T00:00:00, 2023-12-31T00:00:00)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '(2022-01-01T00:00:00, 2023-12-31T00:00:00)',
+            ),
+            false,
+          );
+        });
+
+        test(
+            'should return false if ranges have the same upper bound but a different lower bound',
+            () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2023-12-31T00:00:00]',
+              '[2023-01-01T00:00:00, 2023-12-31T00:00:00]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2023-12-31T00:00:00]',
+              '(2023-01-01T00:00:00, 2023-12-31T00:00:00]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2023-12-31T00:00:00)',
+              '[2023-01-01T00:00:00, 2023-12-31T00:00:00)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2023-12-31T00:00:00)',
+              '(2023-01-01T00:00:00, 2023-12-31T00:00:00)',
+            ),
+            false,
+          );
+        });
+
+        test(
+            'should return false if ranges cover the same values but are not the same',
+            () {
+          expect(
+            eq(
+              '(2022-01-01T00:00:00.000, 2022-12-31T00:00:00.999)',
+              '[2022-01-01T00:00:00.001, 2022-12-31T00:00:00.998]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if ranges have the same infinity values', () {
+          expect(
+            forceEq(
+              '[-infinity, 2022-12-31T00:00:00]',
+              '[-infinity, 2022-12-31T00:00:00]',
+            ),
+            true,
+          );
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00, infinity]',
+              '[2022-01-01T00:00:00, infinity]',
+            ),
+            true,
+          );
+          expect(
+            forceEq(
+              '[-infinity, infinity]',
+              '[-infinity, infinity]',
+            ),
+            true,
+          );
+        });
+
+        test('should return false if ranges have different infinity values',
+            () {
+          expect(
+            forceEq(
+              '[-infinity, 2022-12-31T00:00:00]',
+              '[2022-01-01T00:00:00, infinity]',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[-infinity, 2022-12-31T00:00:00]',
+              '[-infinity, infinity]',
+            ),
+            false,
+          );
+
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00, infinity]',
+              '[-infinity, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00, infinity]',
+              '[-infinity, infinity]',
+            ),
+            false,
+          );
+
+          expect(
+            forceEq(
+              '[-infinity, infinity]',
+              '[2022-01-01T00:00:00, infinity]',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[-infinity, infinity]',
+              '[-infinity, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+        });
+
+        test('should return false if ranges have a different inclusivity', () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+        });
+
+        test('should return false if ranges are of different types', () {
+          // Timestamp != Integer
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '[1, 10]',
+            ),
+            false,
+          );
+
+          // Timestamp != Float
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '[1.5, 10.5]',
+            ),
+            false,
+          );
+
+          // Timestamp != Date
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '[2022-01-01, 2022-12-31]',
+            ),
+            false,
+          );
+
+          // Timestamp != UTC Timestamptz
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+
+          // Timestamp != Timestamptz
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00+01]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if both ranges are empty', () {
+          expect(forceEq('', ''), true);
+        });
+
+        test(
+            'should return false if any range is compared against an empty range',
+            () {
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+              '',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '(2022-01-01T00:00:00, 2022-12-31T00:00:00)',
+              '',
+            ),
+            false,
+          );
+        });
+      });
+
       group('comparable equality', () {
         test('should return true if ranges are equal', () {
           // Values are equal
@@ -7200,6 +8591,7 @@ void main() {
       late final bool Function(String range1, String range2) gte;
       late final bool Function(String range1, String range2) lt;
       late final bool Function(String range1, String range2) lte;
+      late final bool Function(String range1, String range2) eq;
       late final bool Function(String range1, String range2) ceq;
 
       setUpAll(() {
@@ -7235,6 +8627,11 @@ void main() {
         lte = (range1, range2) {
           final (c1, c2) = getRangePair(range1, range2);
           return c1 <= c2;
+        };
+
+        eq = (range1, range2) {
+          final (c1, c2) = getRangePair(range1, range2);
+          return c1 == c2;
         };
 
         ceq = (range1, range2) {
@@ -8637,6 +10034,97 @@ void main() {
         });
       });
 
+      group('range equality', () {
+        test('should return true if the ranges have the same values', () {
+          expect(eq('[2022-01-01T00:00:00,]', '[2022-01-01T00:00:00,]'), true);
+          expect(eq('(2022-01-01T00:00:00,]', '(2022-01-01T00:00:00,]'), true);
+          expect(eq('[2022-01-01T00:00:00,)', '[2022-01-01T00:00:00,)'), true);
+          expect(eq('(2022-01-01T00:00:00,)', '(2022-01-01T00:00:00,)'), true);
+
+          expect(eq('[,2022-12-31T00:00:00]', '[,2022-12-31T00:00:00]'), true);
+          expect(eq('(,2022-12-31T00:00:00]', '(,2022-12-31T00:00:00]'), true);
+          expect(eq('[,2022-12-31T00:00:00)', '[,2022-12-31T00:00:00)'), true);
+          expect(eq('(,2022-12-31T00:00:00)', '(,2022-12-31T00:00:00)'), true);
+
+          expect(eq('[,]', '[,]'), true);
+          expect(eq('(,]', '(,]'), true);
+          expect(eq('[,)', '[,)'), true);
+          expect(eq('(,)', '(,)'), true);
+
+          expect(eq('[2022-01-01T00:00:00,]', '[2022-01-01T00:00:00,)'), true);
+          expect(eq('[,2022-12-31T00:00:00]', '(,2022-12-31T00:00:00]'), true);
+
+          expect(eq('[,]', '(,)'), true);
+          expect(eq('[,]', '(,]'), true);
+          expect(eq('[,]', '[,)'), true);
+        });
+
+        test('should return false if the ranges have different values', () {
+          expect(eq('[2022-01-01T00:00:00,]', '[2022-12-31T00:00:00,]'), false);
+          expect(eq('[2022-01-01T00:00:00,]', '[,2022-12-31T00:00:00]'), false);
+          expect(eq('[2022-01-01T00:00:00,]', '[,]'), false);
+
+          expect(eq('[,2022-12-31T00:00:00]', '[2022-01-01T00:00:00,]'), false);
+          expect(eq('[,2022-12-31T00:00:00]', '[,2022-01-01T00:00:00]'), false);
+          expect(eq('[,2022-12-31T00:00:00]', '[,]'), false);
+
+          expect(eq('[,]', '[2022-01-01T00:00:00,]'), false);
+          expect(eq('[,]', '[,2022-12-31T00:00:00]'), false);
+        });
+
+        test(
+            'should return false if values are equal but the inclusivity is different',
+            () {
+          expect(eq('[2022-01-01T00:00:00,]', '(2022-01-01T00:00:00,]'), false);
+          expect(eq('[2022-01-01T00:00:00,]', '(2022-01-01T00:00:00,)'), false);
+
+          expect(eq('[,2022-12-31T00:00:00]', '[,2022-12-31T00:00:00)'), false);
+          expect(eq('[,2022-12-31T00:00:00]', '(,2022-12-31T00:00:00)'), false);
+        });
+
+        test(
+            'should return false if ranges cover the same values but are not the same',
+            () {
+          expect(
+            eq(
+              '(2022-01-01T00:00:00.000,)',
+              '[2022-01-01T00:00:00.001,]',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '(,2022-12-31T00:00:00.999)',
+              '[,2022-12-31T00:00:00.999]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if ranges have the same infinity values', () {
+          expect(eq('[-infinity,]', '[-infinity,]'), true);
+          expect(eq('[,infinity]', '[,infinity]'), true);
+        });
+
+        test('should return false if ranges have different infinity values',
+            () {
+          expect(eq('[2022-01-01T00:00:00,]', '[-infinity,]'), false);
+          expect(eq('[2022-01-01T00:00:00,]', '[,infinity]'), false);
+
+          expect(eq('[,2022-12-31T00:00:00]', '[-infinity,]'), false);
+          expect(eq('[,2022-12-31T00:00:00]', '[,infinity]'), false);
+        });
+
+        test(
+            'should return false if any range is compared against an empty range',
+            () {
+          expect(eq('[2022-01-01T00:00:00,]', ''), false);
+          expect(eq('[,2022-12-31T00:00:00]', ''), false);
+          expect(eq('[,]', ''), false);
+        });
+      });
+
       group('comparable equality', () {
         test('should return true if ranges are equal with the same inclusivity',
             () {
@@ -9732,6 +11220,7 @@ void main() {
       late final bool Function(String range1, String range2) gte;
       late final bool Function(String range1, String range2) lt;
       late final bool Function(String range1, String range2) lte;
+      late final bool Function(String range1, String range2) eq;
       late final bool Function(String range1, String range2) ceq;
 
       setUpAll(() {
@@ -9761,6 +11250,11 @@ void main() {
         lte = (range1, range2) {
           final (c1, c2) = getRangePair(range1, range2);
           return c1 <= c2;
+        };
+
+        eq = (range1, range2) {
+          final (c1, c2) = getRangePair(range1, range2);
+          return c1 == c2;
         };
 
         ceq = (range1, range2) {
@@ -10241,6 +11735,419 @@ void main() {
         });
       });
 
+      group('range equality', () {
+        late final bool Function(String range1, String range2) forceEq;
+        late final bool Function(String range1, String range2) dynamicEq;
+
+        setUpAll(() {
+          forceEq = (range1, range2) {
+            final r1 = RangeType.createRange(
+              range: range1,
+              forceType: RangeDataType.timestamptz,
+            );
+            final r2 = RangeType.createRange(
+              range: range2,
+              forceType: RangeDataType.timestamptz,
+            );
+
+            return r1 == r2;
+          };
+
+          dynamicEq = (range1, range2) {
+            final r1 = RangeType.createRange(range: range1);
+            final r2 = RangeType.createRange(range: range2);
+
+            return r1 == r2;
+          };
+        });
+
+        test('should return true if ranges are completely equal', () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            true,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            true,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+            ),
+            true,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+            ),
+            true,
+          );
+        });
+
+        test('should return false if ranges have different values', () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '(2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '[2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '(2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z)',
+            ),
+            false,
+          );
+        });
+
+        test(
+            'should return false if ranges have the same lower bound but a different upper bound',
+            () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '[2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '(2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '[2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '(2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z)',
+            ),
+            false,
+          );
+        });
+
+        test(
+            'should return false if ranges have the same upper bound but a different lower bound',
+            () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+              '[2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+              '(2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z)',
+              '[2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z)',
+              '(2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z)',
+            ),
+            false,
+          );
+        });
+
+        test(
+            'should return false if ranges cover the same values but are not the same',
+            () {
+          expect(
+            eq(
+              '(2022-01-01T00:00:00.000Z, 2022-12-31T00:00:00.999Z)',
+              '[2022-01-01T00:00:00.001Z, 2022-12-31T00:00:00.998Z]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if ranges have the same infinity values', () {
+          expect(
+            forceEq(
+              '[-infinity, 2022-12-31T00:00:00Z]',
+              '[-infinity, 2022-12-31T00:00:00Z]',
+            ),
+            true,
+          );
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00Z, infinity]',
+              '[2022-01-01T00:00:00Z, infinity]',
+            ),
+            true,
+          );
+          expect(
+            forceEq(
+              '[-infinity, infinity]',
+              '[-infinity, infinity]',
+            ),
+            true,
+          );
+        });
+
+        test('should return false if ranges have different infinity values',
+            () {
+          expect(
+            forceEq(
+              '[-infinity, 2022-12-31T00:00:00Z]',
+              '[2022-01-01T00:00:00Z, infinity]',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[-infinity, 2022-12-31T00:00:00Z]',
+              '[-infinity, infinity]',
+            ),
+            false,
+          );
+
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00Z, infinity]',
+              '[-infinity, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00Z, infinity]',
+              '[-infinity, infinity]',
+            ),
+            false,
+          );
+
+          expect(
+            forceEq(
+              '[-infinity, infinity]',
+              '[2022-01-01T00:00:00Z, infinity]',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[-infinity, infinity]',
+              '[-infinity, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+        });
+
+        test('should return false if ranges have a different inclusivity', () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+        });
+
+        test('should return false if ranges are of different types', () {
+          // UTC Timestamptz != Integer
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '[1, 10]',
+            ),
+            false,
+          );
+
+          // UTC Timestamptz != Float
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '[1.5, 10.5]',
+            ),
+            false,
+          );
+
+          // UTC Timestamptz != Date
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '[2022-01-01, 2022-12-31]',
+            ),
+            false,
+          );
+
+          // Timestamptz != Timestamp
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+
+          // UTC Timestamptz != Timestamptz
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00+01]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if both ranges are empty', () {
+          expect(forceEq('', ''), true);
+        });
+
+        test(
+            'should return false if any range is compared against an empty range',
+            () {
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+              '',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '(2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z)',
+              '',
+            ),
+            false,
+          );
+        });
+      });
+
       group('comparable equality', () {
         test('should return true if ranges are equal', () {
           // Values are equal
@@ -10303,6 +12210,7 @@ void main() {
       late final bool Function(String range1, String range2) gte;
       late final bool Function(String range1, String range2) lt;
       late final bool Function(String range1, String range2) lte;
+      late final bool Function(String range1, String range2) eq;
       late final bool Function(String range1, String range2) ceq;
 
       setUpAll(() {
@@ -10338,6 +12246,11 @@ void main() {
         lte = (range1, range2) {
           final (c1, c2) = getRangePair(range1, range2);
           return c1 <= c2;
+        };
+
+        eq = (range1, range2) {
+          final (c1, c2) = getRangePair(range1, range2);
+          return c1 == c2;
         };
 
         ceq = (range1, range2) {
@@ -11740,6 +13653,115 @@ void main() {
         });
       });
 
+      group('range equality', () {
+        test('should return true if the ranges have the same values', () {
+          expect(
+              eq('[2022-01-01T00:00:00Z,]', '[2022-01-01T00:00:00Z,]'), true);
+          expect(
+              eq('(2022-01-01T00:00:00Z,]', '(2022-01-01T00:00:00Z,]'), true);
+          expect(
+              eq('[2022-01-01T00:00:00Z,)', '[2022-01-01T00:00:00Z,)'), true);
+          expect(
+              eq('(2022-01-01T00:00:00Z,)', '(2022-01-01T00:00:00Z,)'), true);
+
+          expect(
+              eq('[,2022-12-31T00:00:00Z]', '[,2022-12-31T00:00:00Z]'), true);
+          expect(
+              eq('(,2022-12-31T00:00:00Z]', '(,2022-12-31T00:00:00Z]'), true);
+          expect(
+              eq('[,2022-12-31T00:00:00Z)', '[,2022-12-31T00:00:00Z)'), true);
+          expect(
+              eq('(,2022-12-31T00:00:00Z)', '(,2022-12-31T00:00:00Z)'), true);
+
+          expect(eq('[,]', '[,]'), true);
+          expect(eq('(,]', '(,]'), true);
+          expect(eq('[,)', '[,)'), true);
+          expect(eq('(,)', '(,)'), true);
+
+          expect(
+              eq('[2022-01-01T00:00:00Z,]', '[2022-01-01T00:00:00Z,)'), true);
+          expect(
+              eq('[,2022-12-31T00:00:00Z]', '(,2022-12-31T00:00:00Z]'), true);
+
+          expect(eq('[,]', '(,)'), true);
+          expect(eq('[,]', '(,]'), true);
+          expect(eq('[,]', '[,)'), true);
+        });
+
+        test('should return false if the ranges have different values', () {
+          expect(
+              eq('[2022-01-01T00:00:00Z,]', '[2022-12-31T00:00:00Z,]'), false);
+          expect(
+              eq('[2022-01-01T00:00:00Z,]', '[,2022-12-31T00:00:00Z]'), false);
+          expect(eq('[2022-01-01T00:00:00Z,]', '[,]'), false);
+
+          expect(
+              eq('[,2022-12-31T00:00:00Z]', '[2022-01-01T00:00:00Z,]'), false);
+          expect(
+              eq('[,2022-12-31T00:00:00Z]', '[,2022-01-01T00:00:00Z]'), false);
+          expect(eq('[,2022-12-31T00:00:00Z]', '[,]'), false);
+
+          expect(eq('[,]', '[2022-01-01T00:00:00Z,]'), false);
+          expect(eq('[,]', '[,2022-12-31T00:00:00Z]'), false);
+        });
+
+        test(
+            'should return false if values are equal but the inclusivity is different',
+            () {
+          expect(
+              eq('[2022-01-01T00:00:00Z,]', '(2022-01-01T00:00:00Z,]'), false);
+          expect(
+              eq('[2022-01-01T00:00:00Z,]', '(2022-01-01T00:00:00Z,)'), false);
+
+          expect(
+              eq('[,2022-12-31T00:00:00Z]', '[,2022-12-31T00:00:00Z)'), false);
+          expect(
+              eq('[,2022-12-31T00:00:00Z]', '(,2022-12-31T00:00:00Z)'), false);
+        });
+
+        test(
+            'should return false if ranges cover the same values but are not the same',
+            () {
+          expect(
+            eq(
+              '(2022-01-01T00:00:00.000Z,)',
+              '[2022-01-01T00:00:00.001Z,]',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '(,2022-12-31T00:00:00.999Z)',
+              '[,2022-12-31T00:00:00.999Z]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if ranges have the same infinity values', () {
+          expect(eq('[-infinity,]', '[-infinity,]'), true);
+          expect(eq('[,infinity]', '[,infinity]'), true);
+        });
+
+        test('should return false if ranges have different infinity values',
+            () {
+          expect(eq('[2022-01-01T00:00:00Z,]', '[-infinity,]'), false);
+          expect(eq('[2022-01-01T00:00:00Z,]', '[,infinity]'), false);
+
+          expect(eq('[,2022-12-31T00:00:00Z]', '[-infinity,]'), false);
+          expect(eq('[,2022-12-31T00:00:00Z]', '[,infinity]'), false);
+        });
+
+        test(
+            'should return false if any range is compared against an empty range',
+            () {
+          expect(eq('[2022-01-01T00:00:00Z,]', ''), false);
+          expect(eq('[,2022-12-31T00:00:00Z]', ''), false);
+          expect(eq('[,]', ''), false);
+        });
+      });
+
       group('comparable equality', () {
         test('should return true if ranges are equal with the same inclusivity',
             () {
@@ -12837,6 +14859,7 @@ void main() {
       late final bool Function(String range1, String range2) gte;
       late final bool Function(String range1, String range2) lt;
       late final bool Function(String range1, String range2) lte;
+      late final bool Function(String range1, String range2) eq;
       late final bool Function(String range1, String range2) ceq;
 
       setUpAll(() {
@@ -12866,6 +14889,11 @@ void main() {
         lte = (range1, range2) {
           final (c1, c2) = getRangePair(range1, range2);
           return c1 <= c2;
+        };
+
+        eq = (range1, range2) {
+          final (c1, c2) = getRangePair(range1, range2);
+          return c1 == c2;
         };
 
         ceq = (range1, range2) {
@@ -13346,6 +15374,419 @@ void main() {
         });
       });
 
+      group('range equality', () {
+        late final bool Function(String range1, String range2) forceEq;
+        late final bool Function(String range1, String range2) dynamicEq;
+
+        setUpAll(() {
+          forceEq = (range1, range2) {
+            final r1 = RangeType.createRange(
+              range: range1,
+              forceType: RangeDataType.timestamptz,
+            );
+            final r2 = RangeType.createRange(
+              range: range2,
+              forceType: RangeDataType.timestamptz,
+            );
+
+            return r1 == r2;
+          };
+
+          dynamicEq = (range1, range2) {
+            final r1 = RangeType.createRange(range: range1);
+            final r2 = RangeType.createRange(range: range2);
+
+            return r1 == r2;
+          };
+        });
+
+        test('should return true if ranges are completely equal', () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+            ),
+            true,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+            ),
+            true,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+            ),
+            true,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+            ),
+            true,
+          );
+        });
+
+        test('should return false if ranges have different values', () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '[2023-01-01T00:00:00-01, 2023-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '(2023-01-01T00:00:00-01, 2023-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '[2023-01-01T00:00:00-01, 2023-12-31T00:00:00-01)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '(2023-01-01T00:00:00-01, 2023-12-31T00:00:00-01)',
+            ),
+            false,
+          );
+        });
+
+        test(
+            'should return false if ranges have the same lower bound but a different upper bound',
+            () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '[2022-01-01T00:00:00-01, 2023-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '(2022-01-01T00:00:00-01, 2023-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '[2022-01-01T00:00:00-01, 2023-12-31T00:00:00-01)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '(2022-01-01T00:00:00-01, 2023-12-31T00:00:00-01)',
+            ),
+            false,
+          );
+        });
+
+        test(
+            'should return false if ranges have the same upper bound but a different lower bound',
+            () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2023-12-31T00:00:00-01]',
+              '[2023-01-01T00:00:00-01, 2023-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2023-12-31T00:00:00-01]',
+              '(2023-01-01T00:00:00-01, 2023-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2023-12-31T00:00:00-01)',
+              '[2023-01-01T00:00:00-01, 2023-12-31T00:00:00-01)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2023-12-31T00:00:00-01)',
+              '(2023-01-01T00:00:00-01, 2023-12-31T00:00:00-01)',
+            ),
+            false,
+          );
+        });
+
+        test(
+            'should return false if ranges cover the same values but are not the same',
+            () {
+          expect(
+            eq(
+              '(2022-01-01T00:00:00.000-01, 2022-12-31T00:00:00.999-01)',
+              '[2022-01-01T00:00:00.001-01, 2022-12-31T00:00:00.998-01]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if ranges have the same infinity values', () {
+          expect(
+            forceEq(
+              '[-infinity, 2022-12-31T00:00:00-01]',
+              '[-infinity, 2022-12-31T00:00:00-01]',
+            ),
+            true,
+          );
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00-01, infinity]',
+              '[2022-01-01T00:00:00-01, infinity]',
+            ),
+            true,
+          );
+          expect(
+            forceEq(
+              '[-infinity, infinity]',
+              '[-infinity, infinity]',
+            ),
+            true,
+          );
+        });
+
+        test('should return false if ranges have different infinity values',
+            () {
+          expect(
+            forceEq(
+              '[-infinity, 2022-12-31T00:00:00-01]',
+              '[2022-01-01T00:00:00-01, infinity]',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[-infinity, 2022-12-31T00:00:00-01]',
+              '[-infinity, infinity]',
+            ),
+            false,
+          );
+
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00-01, infinity]',
+              '[-infinity, 2022-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00-01, infinity]',
+              '[-infinity, infinity]',
+            ),
+            false,
+          );
+
+          expect(
+            forceEq(
+              '[-infinity, infinity]',
+              '[2022-01-01T00:00:00-01, infinity]',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[-infinity, infinity]',
+              '[-infinity, 2022-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+        });
+
+        test('should return false if ranges have a different inclusivity', () {
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+            ),
+            false,
+          );
+          expect(
+            eq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+            ),
+            false,
+          );
+        });
+
+        test('should return false if ranges are of different types', () {
+          // Timestamptz != Integer
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '[1, 10]',
+            ),
+            false,
+          );
+
+          // Timestamptz != Float
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '[1.5, 10.5]',
+            ),
+            false,
+          );
+
+          // Timestamptz != Date
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '[2022-01-01, 2022-12-31]',
+            ),
+            false,
+          );
+
+          // Timestamptz != Timestamp
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '[2022-01-01T00:00:00, 2022-12-31T00:00:00]',
+            ),
+            false,
+          );
+
+          // Timestamptz != UTC Timestamptz
+          expect(
+            dynamicEq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if both ranges are empty', () {
+          expect(forceEq('', ''), true);
+        });
+
+        test(
+            'should return false if any range is compared against an empty range',
+            () {
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01]',
+              '',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '[2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '',
+            ),
+            false,
+          );
+          expect(
+            forceEq(
+              '(2022-01-01T00:00:00-01, 2022-12-31T00:00:00-01)',
+              '',
+            ),
+            false,
+          );
+        });
+      });
+
       group('comparable equality', () {
         test('should return true if ranges are equal', () {
           // Values are equal
@@ -13408,6 +15849,7 @@ void main() {
       late final bool Function(String range1, String range2) gte;
       late final bool Function(String range1, String range2) lt;
       late final bool Function(String range1, String range2) lte;
+      late final bool Function(String range1, String range2) eq;
       late final bool Function(String range1, String range2) ceq;
 
       setUpAll(() {
@@ -13443,6 +15885,11 @@ void main() {
         lte = (range1, range2) {
           final (c1, c2) = getRangePair(range1, range2);
           return c1 <= c2;
+        };
+
+        eq = (range1, range2) {
+          final (c1, c2) = getRangePair(range1, range2);
+          return c1 == c2;
         };
 
         ceq = (range1, range2) {
@@ -14842,6 +17289,115 @@ void main() {
             ),
             true,
           );
+        });
+      });
+
+      group('range equality', () {
+        test('should return true if the ranges have the same values', () {
+          expect(eq('[2022-01-01T00:00:00-01,]', '[2022-01-01T00:00:00-01,]'),
+              true);
+          expect(eq('(2022-01-01T00:00:00-01,]', '(2022-01-01T00:00:00-01,]'),
+              true);
+          expect(eq('[2022-01-01T00:00:00-01,)', '[2022-01-01T00:00:00-01,)'),
+              true);
+          expect(eq('(2022-01-01T00:00:00-01,)', '(2022-01-01T00:00:00-01,)'),
+              true);
+
+          expect(eq('[,2022-12-31T00:00:00-01]', '[,2022-12-31T00:00:00-01]'),
+              true);
+          expect(eq('(,2022-12-31T00:00:00-01]', '(,2022-12-31T00:00:00-01]'),
+              true);
+          expect(eq('[,2022-12-31T00:00:00-01)', '[,2022-12-31T00:00:00-01)'),
+              true);
+          expect(eq('(,2022-12-31T00:00:00-01)', '(,2022-12-31T00:00:00-01)'),
+              true);
+
+          expect(eq('[,]', '[,]'), true);
+          expect(eq('(,]', '(,]'), true);
+          expect(eq('[,)', '[,)'), true);
+          expect(eq('(,)', '(,)'), true);
+
+          expect(eq('[2022-01-01T00:00:00-01,]', '[2022-01-01T00:00:00-01,)'),
+              true);
+          expect(eq('[,2022-12-31T00:00:00-01]', '(,2022-12-31T00:00:00-01]'),
+              true);
+
+          expect(eq('[,]', '(,)'), true);
+          expect(eq('[,]', '(,]'), true);
+          expect(eq('[,]', '[,)'), true);
+        });
+
+        test('should return false if the ranges have different values', () {
+          expect(eq('[2022-01-01T00:00:00-01,]', '[2022-12-31T00:00:00-01,]'),
+              false);
+          expect(eq('[2022-01-01T00:00:00-01,]', '[,2022-12-31T00:00:00-01]'),
+              false);
+          expect(eq('[2022-01-01T00:00:00-01,]', '[,]'), false);
+
+          expect(eq('[,2022-12-31T00:00:00-01]', '[2022-01-01T00:00:00-01,]'),
+              false);
+          expect(eq('[,2022-12-31T00:00:00-01]', '[,2022-01-01T00:00:00-01]'),
+              false);
+          expect(eq('[,2022-12-31T00:00:00-01]', '[,]'), false);
+
+          expect(eq('[,]', '[2022-01-01T00:00:00-01,]'), false);
+          expect(eq('[,]', '[,2022-12-31T00:00:00-01]'), false);
+        });
+
+        test(
+            'should return false if values are equal but the inclusivity is different',
+            () {
+          expect(eq('[2022-01-01T00:00:00-01,]', '(2022-01-01T00:00:00-01,]'),
+              false);
+          expect(eq('[2022-01-01T00:00:00-01,]', '(2022-01-01T00:00:00-01,)'),
+              false);
+
+          expect(eq('[,2022-12-31T00:00:00-01]', '[,2022-12-31T00:00:00-01)'),
+              false);
+          expect(eq('[,2022-12-31T00:00:00-01]', '(,2022-12-31T00:00:00-01)'),
+              false);
+        });
+
+        test(
+            'should return false if ranges cover the same values but are not the same',
+            () {
+          expect(
+            eq(
+              '(2022-01-01T00:00:00.000-01,)',
+              '[2022-01-01T00:00:00.001-01,]',
+            ),
+            false,
+          );
+
+          expect(
+            eq(
+              '(,2022-12-31T00:00:00.999-01)',
+              '[,2022-12-31T00:00:00.999-01]',
+            ),
+            false,
+          );
+        });
+
+        test('should return true if ranges have the same infinity values', () {
+          expect(eq('[-infinity,]', '[-infinity,]'), true);
+          expect(eq('[,infinity]', '[,infinity]'), true);
+        });
+
+        test('should return false if ranges have different infinity values',
+            () {
+          expect(eq('[2022-01-01T00:00:00-01,]', '[-infinity,]'), false);
+          expect(eq('[2022-01-01T00:00:00-01,]', '[,infinity]'), false);
+
+          expect(eq('[,2022-12-31T00:00:00-01]', '[-infinity,]'), false);
+          expect(eq('[,2022-12-31T00:00:00-01]', '[,infinity]'), false);
+        });
+
+        test(
+            'should return false if any range is compared against an empty range',
+            () {
+          expect(eq('[2022-01-01T00:00:00-01,]', ''), false);
+          expect(eq('[,2022-12-31T00:00:00-01]', ''), false);
+          expect(eq('[,]', ''), false);
         });
       });
 
