@@ -1,6 +1,8 @@
 // ignore_for_file: library_private_types_in_public_api
 
 import 'package:supabase_flutter/src/testing/range_comparable.dart';
+import 'package:supabase_flutter/src/testing/supabase_test_error_messages.dart';
+import 'package:supabase_flutter/src/testing/supabase_test_exceptions.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
 
 enum RangeDataType { integer, float, date, timestamp, timestamptz }
@@ -131,8 +133,8 @@ abstract class RangeType {
             secondValue.isNotEmpty ? parseFunction(secondValue) : null;
 
         if (!_isValidRangeBounds(firstValueParsed, secondValueParsed)) {
-          throw Exception(
-            'Lower bound must be less than or equal to the upper bound.',
+          throw RangeTypeException(
+            RangeTypeErrors.invalidBoundError,
           );
         }
 
@@ -153,21 +155,24 @@ abstract class RangeType {
       final secondType = _inferValueType(secondValue);
 
       if (firstType == null && secondType == null) {
-        throw Exception(
-          'For ranges where both boundaries are null, \'forceType\' must be provided.',
+        throw RangeTypeException(
+          RangeTypeErrors.bothBoundsNullError,
         );
       }
 
       if (isLowerBoundInfinite && isUpperBoundInfinite) {
-        throw Exception(
-          'For ranges where both boundaries are infinite, \'forceType\' must be provided.',
+        throw RangeTypeException(
+          RangeTypeErrors.bothBoundsInfiniteError,
         );
       }
 
       if (firstType != null && secondType != null) {
         if (firstType.runtimeType != secondType.runtimeType) {
-          throw Exception(
-            'Because the lower range is ${firstType.runtimeType}, upper range must also be ${firstType.runtimeType}, but instead got: ${secondType.runtimeType}',
+          throw RangeTypeException(
+            RangeTypeErrors.typeMismatchError(
+              firstType.runtimeType,
+              secondType.runtimeType,
+            ),
           );
         }
       }
@@ -188,8 +193,8 @@ abstract class RangeType {
 
         if (dataType1 != null && dataType2 != null) {
           if (dataType1 != dataType2) {
-            throw Exception(
-              'Lower range and upper range must be specified with the same precision.',
+            throw RangeTypeException(
+              RangeTypeErrors.datetimePrecisionError,
             );
           }
         }
@@ -198,8 +203,8 @@ abstract class RangeType {
       }
 
       if (!_isValidRangeBounds(firstType, secondType)) {
-        throw Exception(
-          'Lower bound must be less than or equal to the upper bound.',
+        throw RangeTypeException(
+          RangeTypeErrors.invalidBoundError,
         );
       }
 
@@ -215,7 +220,7 @@ abstract class RangeType {
         isEmpty: false,
       );
     } catch (err) {
-      throw Exception('Invalid range value: $err.');
+      rethrow;
     }
   }
 
@@ -242,8 +247,8 @@ abstract class RangeType {
     }
 
     if (rangeDataType != other.rangeDataType) {
-      throw Exception(
-        'Cannot check adjacency between two datetimes of different types.',
+      throw RangeTypeException(
+        RangeTypeErrors.adjacencyTypeError,
       );
     }
 
@@ -256,8 +261,8 @@ abstract class RangeType {
     }
 
     if (rangeDataType != other.rangeDataType) {
-      throw Exception(
-        'Ranges must be of the same type in order to check if they overlap.',
+      throw RangeTypeException(
+        RangeTypeErrors.overlapTypeError,
       );
     }
 
@@ -309,8 +314,8 @@ abstract class RangeType {
     }
 
     if (range.length < 2) {
-      throw Exception(
-        'Invalid range, range must have length at least greater than 2.',
+      throw RangeTypeException(
+        RangeTypeErrors.rangeLengthError,
       );
     }
 
@@ -319,14 +324,14 @@ abstract class RangeType {
     final lastBracket = range[range.length - 1];
 
     if (!['[', '('].contains(firstBracket)) {
-      throw Exception(
-        'Range type string must start with an inclusive \'[\' or exclusive \'(\' range.',
+      throw RangeTypeException(
+        RangeTypeErrors.firstBracketError,
       );
     }
 
     if (![']', ')'].contains(lastBracket)) {
-      throw Exception(
-        'Range type string must start with an inclusive \']\' or exclusive \')\' range.',
+      throw RangeTypeException(
+        RangeTypeErrors.lastBracketError,
       );
     }
 
@@ -353,8 +358,8 @@ abstract class RangeType {
     final valuePair = range.removeBrackets().split(',').trimAll();
 
     if (valuePair.length != 2) {
-      throw Exception(
-        'Range type string must have only two values divided by comma: lower range and upper range.',
+      throw RangeTypeException(
+        RangeTypeErrors.thirdBoundError,
       );
     }
 
@@ -384,27 +389,29 @@ abstract class RangeType {
       return dateParse;
     }
 
-    throw Exception('$value is an invalid value in range.');
+    throw RangeTypeException(
+      RangeTypeErrors.inferenceInvalidType(value),
+    );
   }
 
   static (bool, bool) _areBoundsInfinite(String range) {
     final valuePair = range.removeBrackets().split(',').trimAll();
 
     if (valuePair.length != 2) {
-      throw Exception(
-        'Range type string must have only two values divided by comma: lower range and upper range.',
+      throw RangeTypeException(
+        RangeTypeErrors.thirdBoundError,
       );
     }
 
     if (valuePair.first == 'infinity') {
-      throw Exception(
-        'The lower bound cannot be \'infinity\' but only \'-infinity\'.',
+      throw RangeTypeException(
+        RangeTypeErrors.invalidUseOfInfinityError,
       );
     }
 
     if (valuePair.last == '-infinity') {
-      throw Exception(
-        'The upper bound cannot be \'-infinity\' but only \'infinity\'.',
+      throw RangeTypeException(
+        RangeTypeErrors.invalidUseOfNegativeInfinityError,
       );
     }
 
@@ -460,7 +467,9 @@ class IntegerRangeType extends RangeType {
   @override
   RangeComparable<int> getComparable() {
     if (isEmpty) {
-      throw Exception('Cannot get comparable of an empty range.');
+      throw RangeTypeException(
+        RangeTypeErrors.emptyRangeComparableError,
+      );
     }
 
     final newLowerRange = lowerRangeInclusive
@@ -527,7 +536,9 @@ class FloatRangeType extends RangeType {
   @override
   RangeComparable<double> getComparable() {
     if (isEmpty) {
-      throw Exception('Cannot get comparable of an empty range.');
+      throw RangeTypeException(
+        RangeTypeErrors.emptyRangeComparableError,
+      );
     }
 
     final newLowerRange = lowerRangeInclusive
@@ -787,7 +798,9 @@ class DateRangeType extends RangeType {
   @override
   RangeComparable<DateTime> getComparable() {
     if (isEmpty) {
-      throw Exception('Cannot get comparable of an empty range.');
+      throw RangeTypeException(
+        RangeTypeErrors.emptyRangeComparableError,
+      );
     }
 
     late final Duration duration;
