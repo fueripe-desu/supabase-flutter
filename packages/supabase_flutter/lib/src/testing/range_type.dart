@@ -280,6 +280,12 @@ abstract class RangeType {
   // This must be implemented in the class, because it's type specific
   RangeComparable getComparable();
 
+  @override
+  bool operator ==(Object other);
+
+  @override
+  int get hashCode;
+
   static bool _isValidRangeBounds(dynamic lowerBound, dynamic upperBound) {
     if (lowerBound == null || upperBound == null) {
       return true;
@@ -474,6 +480,32 @@ class IntegerRangeType extends RangeType {
       rangeType: rangeDataType,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is IntegerRangeType &&
+      lowerRange == other.lowerRange &&
+      upperRange == other.upperRange &&
+      lowerRangeInclusive == other.lowerRangeInclusive &&
+      upperRangeInclusive == other.upperRangeInclusive &&
+      isLowerBoundInfinite == other.isLowerBoundInfinite &&
+      isUpperBoundInfinite == other.isUpperBoundInfinite &&
+      rangeDataType == other.rangeDataType &&
+      rawRangeString == other.rawRangeString &&
+      isEmpty == other.isEmpty;
+
+  @override
+  int get hashCode => Object.hashAll([
+        lowerRange,
+        upperRange,
+        lowerRangeInclusive,
+        upperRangeInclusive,
+        isLowerBoundInfinite,
+        isUpperBoundInfinite,
+        rangeDataType,
+        rawRangeString,
+        isEmpty,
+      ]);
 }
 
 class FloatRangeType extends RangeType {
@@ -515,6 +547,32 @@ class FloatRangeType extends RangeType {
       rangeType: rangeDataType,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is FloatRangeType &&
+      lowerRange == other.lowerRange &&
+      upperRange == other.upperRange &&
+      lowerRangeInclusive == other.lowerRangeInclusive &&
+      upperRangeInclusive == other.upperRangeInclusive &&
+      isLowerBoundInfinite == other.isLowerBoundInfinite &&
+      isUpperBoundInfinite == other.isUpperBoundInfinite &&
+      rangeDataType == other.rangeDataType &&
+      rawRangeString == other.rawRangeString &&
+      isEmpty == other.isEmpty;
+
+  @override
+  int get hashCode => Object.hashAll([
+        lowerRange,
+        upperRange,
+        lowerRangeInclusive,
+        upperRangeInclusive,
+        isLowerBoundInfinite,
+        isUpperBoundInfinite,
+        rangeDataType,
+        rawRangeString,
+        isEmpty,
+      ]);
 }
 
 class DateRangeType extends RangeType {
@@ -840,4 +898,30 @@ class DateRangeType extends RangeType {
 
     return offsets;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is DateRangeType &&
+      lowerRange == other.lowerRange &&
+      upperRange == other.upperRange &&
+      lowerRangeInclusive == other.lowerRangeInclusive &&
+      upperRangeInclusive == other.upperRangeInclusive &&
+      isLowerBoundInfinite == other.isLowerBoundInfinite &&
+      isUpperBoundInfinite == other.isUpperBoundInfinite &&
+      rangeDataType == other.rangeDataType &&
+      rawRangeString == other.rawRangeString &&
+      isEmpty == other.isEmpty;
+
+  @override
+  int get hashCode => Object.hashAll([
+        lowerRange,
+        upperRange,
+        lowerRangeInclusive,
+        upperRangeInclusive,
+        isLowerBoundInfinite,
+        isUpperBoundInfinite,
+        rangeDataType,
+        rawRangeString,
+        isEmpty,
+      ]);
 }
