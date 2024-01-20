@@ -16033,4 +16033,379 @@ void main() {
       });
     });
   });
+
+  group('infinite range tests', () {
+    test(
+        'should throw an Exception when both bounds are infinite without a force type',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[-infinity, infinity]'),
+        throwsException,
+      );
+    });
+
+    test(
+        'should throw an Exception when the lower bound is infinite and the upper bound is unbounded without force type',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[-infinity,]'),
+        throwsException,
+      );
+    });
+
+    test(
+        'should throw an Exception when the lower bound is unbounded and the upper bound is infinite without force type',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[,infinity]'),
+        throwsException,
+      );
+    });
+
+    test(
+        'should throw an Exception when trying to create a range with \'infinity\' in the lower bound',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[infinity,]'),
+        throwsException,
+      );
+    });
+
+    test(
+        'should throw an Exception when trying to create a range with \'-infinity\' in the upper bound',
+        () {
+      expect(
+        () => RangeType.createRange(range: '[,-infinity]'),
+        throwsException,
+      );
+    });
+
+    group('infinite ranges', () {
+      late final IntegerRangeType Function(String range) createRange;
+
+      setUpAll(() {
+        createRange = (String rangeString) {
+          return RangeType.createRange(
+            range: rangeString,
+            forceType: RangeDataType.integer,
+          ) as IntegerRangeType;
+        };
+      });
+
+      test('should be able to create an infinte range', () {
+        expect(() => createRange('[-infinity, infinity]'), returnsNormally);
+      });
+
+      test('should ensure that the infinite range is of integer type', () {
+        final range = createRange('[-infinity, infinity]');
+        expect(range.rangeDataType, RangeDataType.integer);
+      });
+
+      test('should be created with the correct inclusivity', () {
+        final range = createRange('[-infinity, infinity]');
+        expect(range.lowerRangeInclusive, false);
+        expect(range.upperRangeInclusive, false);
+      });
+
+      test('should be created with the lower and upper bound values', () {
+        final range = createRange('[-infinity, infinity]');
+        expect(range.lowerRange, null);
+        expect(range.upperRange, null);
+      });
+
+      test('should return true when checking if a bound is infinite', () {
+        final range = createRange('[-infinity, infinity]');
+        expect(range.isLowerBoundInfinite, true);
+        expect(range.isUpperBoundInfinite, true);
+      });
+
+      test('should return false when checking if an infinite range is empty',
+          () {
+        final range = createRange('[-infinity, infinity]');
+        expect(range.isEmpty, false);
+      });
+
+      test('should return the correct raw range string', () {
+        final range = createRange('[-infinity, infinity]');
+        expect(range.rawRangeString, '(-infinity,infinity)');
+      });
+
+      test('should return the correct comparable', () {
+        final comparable = createRange('[-infinity, infinity]').getComparable();
+        expect(comparable.lowerRange, null);
+        expect(comparable.upperRange, null);
+        expect(comparable.rangeType, RangeDataType.integer);
+      });
+    });
+
+    group('IntegerRangeType tests', () {
+      late final IntegerRangeType Function(String range) createRange;
+
+      setUpAll(() {
+        createRange = (String rangeString) {
+          return RangeType.createRange(
+            range: rangeString,
+          ) as IntegerRangeType;
+        };
+      });
+
+      test('should be able to create a [b,i] range', () {
+        expect(() => createRange('[10, infinity]'), returnsNormally);
+      });
+
+      test('should ensure that a [b,i] range is of integer type', () {
+        final range = createRange('[10, infinity]');
+        expect(range.rangeDataType, RangeDataType.integer);
+      });
+
+      test('should be able to create a [i,b] range', () {
+        expect(() => createRange('[-infinity, 20]'), returnsNormally);
+      });
+
+      test('should ensure that a [b,i] range is of integer type', () {
+        final range = createRange('[-infinity, 20]');
+        expect(range.rangeDataType, RangeDataType.integer);
+      });
+
+      test('should be able to create a [i,i] range', () {
+        expect(
+          () => RangeType.createRange(
+            range: '[-infinity, infinity]',
+            forceType: RangeDataType.integer,
+          ),
+          returnsNormally,
+        );
+      });
+    });
+
+    group('FloatRangeType tests', () {
+      late final FloatRangeType Function(String range) createRange;
+
+      setUpAll(() {
+        createRange = (String rangeString) {
+          return RangeType.createRange(
+            range: rangeString,
+          ) as FloatRangeType;
+        };
+      });
+
+      test('should be able to create a [b,i] range', () {
+        expect(() => createRange('[10.5, infinity]'), returnsNormally);
+      });
+
+      test('should ensure that a [b,i] range is of float type', () {
+        final range = createRange('[10.5, infinity]');
+        expect(range.rangeDataType, RangeDataType.float);
+      });
+
+      test('should be able to create a [i,b] range', () {
+        expect(() => createRange('[-infinity, 20.5]'), returnsNormally);
+      });
+
+      test('should ensure that a [i,b] range is of float type', () {
+        final range = createRange('[-infinity, 20.5]');
+        expect(range.rangeDataType, RangeDataType.float);
+      });
+
+      test('should be able to create a [i,i] range', () {
+        expect(
+          () => RangeType.createRange(
+            range: '[-infinity, infinity]',
+            forceType: RangeDataType.float,
+          ),
+          returnsNormally,
+        );
+      });
+    });
+
+    group('DateRangeType tests', () {
+      late final DateRangeType Function(String range) createRange;
+
+      setUpAll(() {
+        createRange = (String rangeString) {
+          return RangeType.createRange(
+            range: rangeString,
+          ) as DateRangeType;
+        };
+      });
+
+      test('should be able to create a [b,i] range', () {
+        expect(() => createRange('[2022-01-01, infinity]'), returnsNormally);
+      });
+
+      test('should ensure that a [b,i] range is of date type', () {
+        final range = createRange('[2022-01-01, infinity]');
+        expect(range.rangeDataType, RangeDataType.date);
+      });
+
+      test('should be able to create a [i,b] range', () {
+        expect(() => createRange('[-infinity, 2022-12-31]'), returnsNormally);
+      });
+
+      test('should ensure that a [i,b] range is of date type', () {
+        final range = createRange('[-infinity, 2022-12-31]');
+        expect(range.rangeDataType, RangeDataType.date);
+      });
+
+      test('should be able to create a [i,i] range', () {
+        expect(
+          () => RangeType.createRange(
+            range: '[-infinity, infinity]',
+            forceType: RangeDataType.date,
+          ),
+          returnsNormally,
+        );
+      });
+    });
+
+    group('DateRangeType timestamp tests', () {
+      late final DateRangeType Function(String range) createRange;
+
+      setUpAll(() {
+        createRange = (String rangeString) {
+          return RangeType.createRange(
+            range: rangeString,
+          ) as DateRangeType;
+        };
+      });
+
+      test('should be able to create a [b,i] range', () {
+        expect(
+          () => createRange('[2022-01-01T00:00:00, infinity]'),
+          returnsNormally,
+        );
+      });
+
+      test('should ensure that a [b,i] range is of timestamp type', () {
+        final range = createRange(
+          '[2022-01-01T00:00:00, infinity]',
+        );
+        expect(range.rangeDataType, RangeDataType.timestamp);
+      });
+
+      test('should be able to create a [i,b] range', () {
+        expect(
+          () => createRange('[-infinity, 2022-12-31T00:00:00]'),
+          returnsNormally,
+        );
+      });
+
+      test('should ensure that a [i,b] range is of timestamp type', () {
+        final range = createRange(
+          '[-infinity, 2022-12-31T00:00:00]',
+        );
+        expect(range.rangeDataType, RangeDataType.timestamp);
+      });
+
+      test('should be able to create a [i,i] range', () {
+        expect(
+          () => RangeType.createRange(
+            range: '[-infinity, infinity]',
+            forceType: RangeDataType.timestamp,
+          ),
+          returnsNormally,
+        );
+      });
+    });
+
+    group('DateRangeType UTC timestamptz tests', () {
+      late final DateRangeType Function(String range) createRange;
+
+      setUpAll(() {
+        createRange = (String rangeString) {
+          return RangeType.createRange(
+            range: rangeString,
+          ) as DateRangeType;
+        };
+      });
+
+      test('should be able to create a [b,i] range', () {
+        expect(
+          () => createRange('[2022-01-01T00:00:00Z, infinity]'),
+          returnsNormally,
+        );
+      });
+
+      test('should ensure that a [b,i] range is of timestamp type', () {
+        final range = createRange(
+          '[2022-01-01T00:00:00Z, infinity]',
+        );
+        expect(range.rangeDataType, RangeDataType.timestamptz);
+      });
+
+      test('should be able to create a [i,b] range', () {
+        expect(
+          () => createRange('[-infinity, 2022-12-31T00:00:00Z]'),
+          returnsNormally,
+        );
+      });
+
+      test('should ensure that a [i,b] range is of timestamp type', () {
+        final range = createRange(
+          '[-infinity, 2022-12-31T00:00:00Z]',
+        );
+        expect(range.rangeDataType, RangeDataType.timestamptz);
+      });
+
+      test('should be able to create a [i,i] range', () {
+        expect(
+          () => RangeType.createRange(
+            range: '[-infinity, infinity]',
+            forceType: RangeDataType.timestamptz,
+          ),
+          returnsNormally,
+        );
+      });
+    });
+
+    group('DateRangeType timestamptz with timezone offset tests', () {
+      late final DateRangeType Function(String range) createRange;
+
+      setUpAll(() {
+        createRange = (String rangeString) {
+          return RangeType.createRange(
+            range: rangeString,
+          ) as DateRangeType;
+        };
+      });
+
+      test('should be able to create a [b,i] range', () {
+        expect(
+          () => createRange('[2022-01-01T00:00:00-01, infinity]'),
+          returnsNormally,
+        );
+      });
+
+      test('should ensure that a [b,i] range is of timestamp type', () {
+        final range = createRange(
+          '[2022-01-01T00:00:00-01, infinity]',
+        );
+        expect(range.rangeDataType, RangeDataType.timestamptz);
+      });
+
+      test('should be able to create a [i,b] range', () {
+        expect(
+          () => createRange('[-infinity, 2022-12-31T00:00:00+01]'),
+          returnsNormally,
+        );
+      });
+
+      test('should ensure that a [i,b] range is of timestamp type', () {
+        final range = createRange(
+          '[-infinity, 2022-12-31T00:00:00+01]',
+        );
+        expect(range.rangeDataType, RangeDataType.timestamptz);
+      });
+
+      test('should be able to create a [i,i] range', () {
+        expect(
+          () => RangeType.createRange(
+            range: '[-infinity, infinity]',
+            forceType: RangeDataType.timestamptz,
+          ),
+          returnsNormally,
+        );
+      });
+    });
+  });
 }
