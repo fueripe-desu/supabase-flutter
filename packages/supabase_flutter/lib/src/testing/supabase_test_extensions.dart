@@ -4,10 +4,30 @@ extension RangeTypeExtension on String {
 
 extension StringUtils on String {
   String removeSpaces() => replaceAll(' ', '');
+  String removeExtraSpaces() => replaceAll(RegExp(r'\s+'), ' ');
+
+  bool endsWithEither(List<String> endings) {
+    for (final ending in endings) {
+      if (endsWith(ending)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }
 
 extension ListStringUtils on List<String> {
   List<String> trimAll() => map((e) => e.trim()).toList();
+  List<String> sublistAndRemove(int start, int end) {
+    final extractedList = sublist(start, end);
+    removeRange(start, end);
+    return extractedList;
+  }
+
+  int count(String element) {
+    return where((item) => item == element).length;
+  }
 }
 
 extension MapUtils on Map {
