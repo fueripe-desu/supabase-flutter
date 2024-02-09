@@ -17588,7 +17588,7 @@ void main() {
     test(
         'should throw an Exception when trying to create a range without a force type',
         () {
-      expect(() => RangeType.createRange(range: ''), throwsException);
+      expect(() => RangeType.createRange(range: ''), throwsRangeError);
     });
 
     group('IntegerRangeType tests', () {
