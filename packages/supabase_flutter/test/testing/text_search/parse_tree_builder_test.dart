@@ -10,10 +10,8 @@ import 'package:supabase_flutter/src/testing/text_search/token_validator.dart';
 import 'package:supabase_flutter/src/testing/text_search/ts_vector.dart';
 
 void main() {
-  late final List<String> Function(
-    String query,
-    TextSearchDictionary dict,
-  ) parseExpression;
+  late final List<String> Function(String query, TextSearchDictionary dict,
+      {bool optimize}) parseExpression;
 
   late final TextSearchDictionary Function(
     String dictName,
@@ -25,13 +23,16 @@ void main() {
   ) buildTree;
 
   setUpAll(() {
-    parseExpression = (query, dict) {
+    parseExpression = (query, dict, {optimize = true}) {
       final parser = TextSearchParser();
+      final optimizer = QueryOptimizer();
       final tokenValidator = TokenValidator();
       final stemmer = SnowballStemmer();
 
-      final tokens = parser.parseExpression(query, dict);
-      final validationResult = tokenValidator.validateTokens(tokens);
+      final tokens = parser.parseExpression(query);
+      final optimizedTokens =
+          optimize ? optimizer.optimize(tokens, dict) : tokens;
+      final validationResult = tokenValidator.validateTokens(optimizedTokens);
 
       if (!validationResult.isValid) {
         throw TextSearchException(validationResult.message!);
@@ -377,6 +378,36 @@ void main() {
               operand: OperandNode(value: 'lion'),
             ),
           ),
+        ),
+      );
+    });
+  });
+
+  group('unoptimized query tests', () {
+    late final TextSearchNode Function(
+      String expression,
+      TextSearchDictionary dict,
+    ) buildUnomptimized;
+
+    setUpAll(() {
+      buildUnomptimized = (query, dict) {
+        final tokens = parseExpression(query, dict, optimize: false);
+        final builder = ParseTreeBuilder();
+        return builder.buildTree(tokens);
+      };
+    });
+
+    test(
+        'should be able to create a tree without removing unnecessary parantheses',
+        () {
+      final tree = buildUnomptimized('cat & (dog)', loadDict('english'));
+
+      expect(
+        tree,
+        OperatorNode(
+          operation: TextSearchOperation.and,
+          left: OperandNode(value: 'cat'),
+          right: OperandNode(value: 'dog'),
         ),
       );
     });

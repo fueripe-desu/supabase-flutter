@@ -24,10 +24,12 @@ void main() {
 
     validate = (expression) {
       final parser = TextSearchParser();
+      final optimizer = QueryOptimizer();
       final validator = TokenValidator();
 
-      final tokens = parser.parseExpression(expression, loadDict('english'));
-      final validation = validator.validateTokens(tokens);
+      final tokens = parser.parseExpression(expression);
+      final optimizedTokens = optimizer.optimize(tokens, loadDict('english'));
+      final validation = validator.validateTokens(optimizedTokens);
 
       print(validation.message);
       return validation.isValid;
