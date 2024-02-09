@@ -17,6 +17,7 @@ import 'package:supabase_flutter/src/testing/text_search/parse_tree_builder.dart
 import 'package:supabase_flutter/src/testing/text_search/text_search_parser.dart';
 import 'package:supabase_flutter/src/testing/text_search/token_validator.dart';
 import 'package:supabase_flutter/src/testing/text_search/ts_vector.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum TextSearchOperation {
   subExpression(
@@ -117,13 +118,25 @@ class TextSearch {
     String column,
     String query, {
     String? config,
-    String? type,
+    TextSearchType? type,
   }) {
     // Loads the dictionary with the chosen config
     final dict = _loadDictionary(config ?? 'english');
 
     final doc = _toTsVector(column, dict);
-    final parseTree = _toTsQuery(query, dict);
+
+    late final TextSearchNode parseTree;
+
+    if (type == TextSearchType.plain) {
+      parseTree = _plainToTsQuery(query, dict);
+    } else if (type == TextSearchType.phrase) {
+      parseTree = _phraseToTsQuery(query, dict);
+    } else if (type == TextSearchType.websearch) {
+      parseTree = _webSearchToTsQuery(query, dict);
+    } else {
+      parseTree = _toTsQuery(query, dict);
+    }
+
     final eval = _evaluate(doc, parseTree);
 
     return _filterData(eval);
@@ -166,27 +179,47 @@ class TextSearch {
     return tsVectorBuilder.toTsVector(columnData, dict);
   }
 
-  TextSearchNode _toTsQuery(
-    String query,
-    TextSearchDictionary dict,
-  ) {
+  TextSearchNode _toTsQuery(String query, TextSearchDictionary dict) {
     final parser = TextSearchParser();
+    final optimizer = QueryOptimizer();
     final tokenValidator = TokenValidator();
     final stemmer = SnowballStemmer();
 
-    final tokens = parser.parseExpression(query, dict);
-    final validationResult = tokenValidator.validateTokens(tokens);
+    final tokens = parser.parseExpression(query);
+    final optimizedTokens = optimizer.optimize(tokens, dict);
+    final validationResult = tokenValidator.validateTokens(optimizedTokens);
 
     if (!validationResult.isValid) {
       throw TextSearchException(validationResult.message!);
     }
 
-    final stemmedTokens = tokens.map((e) => stemmer.stem(e)).toList();
+    final stemmedTokens = optimizedTokens.map((e) => stemmer.stem(e)).toList();
 
     final builder = ParseTreeBuilder();
     final parseTree = builder.buildTree(stemmedTokens);
 
     return parseTree;
+  }
+
+  TextSearchNode _plainToTsQuery(String query, TextSearchDictionary dict) {
+    final plainConverter = PlainTextSearchConverter();
+    final tsQuery = plainConverter.convertToTsQuery(query);
+
+    return _toTsQuery(tsQuery, dict);
+  }
+
+  TextSearchNode _phraseToTsQuery(String query, TextSearchDictionary dict) {
+    final phraseConverter = PhraseTextSearchConverter();
+    final tsQuery = phraseConverter.convertToTsQuery(query);
+
+    return _toTsQuery(tsQuery, dict);
+  }
+
+  TextSearchNode _webSearchToTsQuery(String query, TextSearchDictionary dict) {
+    final webSearchConverter = WebSearchTextSearchConverter();
+    final tsQuery = webSearchConverter.convertToTsQuery(query);
+
+    return _toTsQuery(tsQuery, dict);
   }
 
   TextSearchDictionary _loadDictionary(String dictName) {

@@ -185,7 +185,8 @@ class TsVectorBuilder {
 
     final Map<int, String> tsVector = {};
 
-    final rawToken = token.replaceAll(regex, '');
+    final withoutDashes = token.replaceAll('-', ' ');
+    final rawToken = withoutDashes.replaceAll(regex, '');
     final splitDoc = rawToken.trim().split(' ');
 
     for (int i = 0; i < splitDoc.length; i++) {

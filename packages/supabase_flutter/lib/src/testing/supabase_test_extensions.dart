@@ -15,6 +15,12 @@ extension StringUtils on String {
 
     return false;
   }
+
+  int count(String element) {
+    return split('').where((item) => item == element).length;
+  }
+
+  String last() => isEmpty ? '' : this[length - 1];
 }
 
 extension ListStringUtils on List<String> {

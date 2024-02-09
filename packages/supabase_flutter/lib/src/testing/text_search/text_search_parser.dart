@@ -2,61 +2,171 @@ import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
 import 'package:supabase_flutter/src/testing/text_search/text_search.dart';
 
 class TextSearchParser {
-  List<String> parseExpression(String expression, TextSearchDictionary dict) {
-    final List<String> result = [];
+  int _index = 0;
+  String _current = '';
+  String _expression = '';
 
-    // Matches everything wrapped in single quotes as a single expression,
-    // and matches individual words that are not wrapped in quotes, this is
-    // used to parse the terms in the text search query. e.g.
-    // "'red flower'" -> ["red flower"]
-    // "black hair" -> ["black", "hair"]
-    final regex = RegExp(r"[^\s']+|'[^']+'");
+  final List<String> _tokens = [];
 
-    // We need to remove the extra spaces in order to parse the expression
-    // correctly.
-    final formattedExp = expression.removeExtraSpaces();
+  List<String> parseExpression(String expression) {
+    final lowerCaseExp = expression.toLowerCase();
+    final handledHyphens = _handleHyphens(lowerCaseExp);
+    final handledApostrophes = _handleApostrophes(handledHyphens);
+    final spacedAngleBrackets = _spaceOutAngleBrackets(handledApostrophes);
+    final removedExtraSpaces = spacedAngleBrackets.removeExtraSpaces();
 
-    final matches = regex.allMatches(formattedExp);
+    _expression = removedExtraSpaces;
 
-    for (final match in matches) {
-      result.add(match.group(0)!);
+    final processedExpression = _processExpression();
+    _cleanParsingCache();
+    return processedExpression;
+  }
+
+  List<String> _processExpression() {
+    if (_expression.isEmpty) {
+      return [];
     }
 
-    // After parsing, we need to remove the single quotes that surrounds
-    // expressions, or we will end up getting results like:
-    //
-    // ['\'big foot\'', '&', '\'little\'']
-    //
-    // Because the single quotes will be considered and not removed
-    // automatically, so we need to remove them by using the
-    // _removeSingleQuotes() method.
-    final removedSingleQuotes = _removeSingleQuotes(result);
+    _consume();
 
-    // We need to separate parentheses from tokens due to the main
-    // flaw of this regex, it is going to separate words by its characters,
-    // and it is going to count the parentheses as part of the characters of
-    // the word instead of treating them as individual characters, so instead
-    // of generating outputs like: ['((sample))))'], we get the expected
-    // output: ['(', '(', 'sample', ')', ')', ')', ')']
-    final separatedTokens = _separateParenthesesFromTokens(removedSingleQuotes);
+    while (_index < _expression.length) {
+      if (_current == '\'') {
+        final element = _consumeWhile(() => _current != '\'');
+        final filteredElement = _removeOperators(element);
+        final addedApos = filteredElement.replaceAll('AA', '\'');
+        final addedPhrase = _addPhraseBetweenOperands(addedApos);
 
-    // After separating tokens from parethenses, we need to treat the negation
-    // operator (!), because in certain cases, when it appears before the word
-    // it can be blended in with the binary operator, so instead of getting:
-    //
-    // ['big foot', '&', '!', 'little']
-    //
-    // The following incorrect output is returned:
-    //
-    // ['big foot', '&!', 'little']
-    //
-    final separatedNot = _separateNotOperator(separatedTokens);
+        if (_tokens.isNotEmpty && _tokens.last == '!') {
+          addedPhrase.insert(0, '(');
+          addedPhrase.add(')');
+        }
 
-    // After separating not operators from binary operators, we need to remove
-    // useless sub expressions, because when using the shunting-yard algorithm
-    // later to create the parse tree, it does required for all operations
-    // inside the parenthesis to be cleaned up, so instead of returning the
-    // incorrect output:
+        if (filteredElement.isNotEmpty) {
+          _tokens.addAll([...addedPhrase]);
+        }
+      } else if (_isAlphanumeric(_current)) {
+        final element = _consumeWhile(() => _isAlphanumeric(_current));
+        _tokens.add(element);
+
+        // We need this continue so it does not exclude the index where
+        // _consumeWhile() stopped
+        continue;
+      } else if (_current == '<') {
+        final element = _consumeWhile(() => _current != '>' && _current != ' ');
+        final correctedElement = _current == '>' ? '$element>' : element;
+        final removedSpace = correctedElement.removeSpaces();
+        _tokens.add(removedSpace);
+      } else {
+        if (_current != ' ') {
+          _tokens.add(_current);
+        }
+      }
+
+      _consume();
+    }
+
+    return List.from(_tokens);
+  }
+
+  List<String> _addPhraseBetweenOperands(String expression) =>
+      expression.trim().replaceAll(' ', ' <-> ').split(' ');
+
+  String _removeOperators(String expression) => expression
+      .replaceAll(RegExp(r'<(\d+)>'), '')
+      .replaceAll(RegExp(r'[^a-zA-Z0-9\s]'), ' ')
+      .removeExtraSpaces()
+      .trim();
+
+  String _handleHyphens(String expression) {
+    // Matches all "-" that the character before is different from "<"
+    // and the character after is different from ">", the purpose of
+    // doing this is so it won't match the dash inside the phrase
+    // operator, but only hyphens that appear in words
+    return expression.replaceAll(RegExp(r'(?<!<)-(?!\>)'), ' ');
+  }
+
+  String _handleApostrophes(String expression) =>
+      expression.replaceAll('\'\'', 'AA');
+
+  String _spaceOutAngleBrackets(String expression) {
+    final regex = RegExp(r'<[^<>]*>');
+
+    String result = expression.replaceAll('<', ' < ').replaceAll('>', ' > ');
+
+    if (regex.hasMatch(result)) {
+      final matches = regex.allMatches(result);
+      int offset = 0;
+
+      for (RegExpMatch match in matches) {
+        final element = result.substring(
+          match.start - offset,
+          match.end - offset,
+        );
+        final spaceCount = element.count(' ');
+        final removedSpaces = element.removeSpaces();
+        result = result.replaceRange(
+          match.start - offset,
+          match.end - offset,
+          removedSpaces,
+        );
+        offset += spaceCount;
+      }
+    }
+
+    return result;
+  }
+
+  bool _isAlphanumeric(String char) => RegExp(r'[^\W\s]+').hasMatch(char);
+
+  bool _consume() {
+    // If _current is not empty, then it is not the first time you are
+    // calling _consume(), in the first time we just assign the already
+    // defined index to the _current variable.
+    if (_current.isNotEmpty) {
+      _index++;
+    }
+
+    // Index out of range
+    if (_index >= _expression.length) {
+      return false;
+    }
+
+    _current = _expression[_index];
+    return true;
+  }
+
+  String _consumeWhile(bool Function() testFunc) {
+    String buffer = '';
+
+    do {
+      if (_current.isNotEmpty) {
+        buffer += _current;
+      }
+
+      if (!_consume()) {
+        break;
+      }
+    } while (testFunc());
+
+    return buffer;
+  }
+
+  void _cleanParsingCache() {
+    _index = 0;
+    _current = '';
+    _expression = '';
+    _tokens.clear();
+  }
+}
+
+class QueryOptimizer {
+  final List<String> _tokens = [];
+
+  List<String> optimize(List<String> tokens, TextSearchDictionary dict) {
+    _tokens.addAll(tokens);
+
+    // First, we need to remove useless sub expressions, because when using
+    // so instead of returning the incorrect output:
     //
     // ['(', 'sample', '<->', '(', 'string', ')', ')']
     //
@@ -64,7 +174,7 @@ class TextSearchParser {
     //
     // ['(', 'sample', '<->', 'string', ')']
     //
-    final removedUnnecessary = _removeUnnecessaryParentheses(separatedNot);
+    _removeUnnecessaryParentheses();
 
     // After removing unncessary subexpressions, we need to remove stop words
     // from the query, and also remove the operators of the stop words that
@@ -80,19 +190,22 @@ class TextSearchParser {
     // ['the' & 'cat'] -> ['cat']
     // [!'the' & 'cat'] -> ['cat']
     //
-    return _removeStopWords(removedUnnecessary, dict);
+    final optimizedTokens = [..._removeStopWords(dict)];
+    clearCache();
+
+    return optimizedTokens;
   }
 
-  List<String> _removeUnnecessaryParentheses(List<String> tokens) {
+  List<String> _removeUnnecessaryParentheses() {
     // Stack to keep track of opening parentheses positions
     final List<int> stack = [];
     // Set to keep track of parentheses positions to remove
     final Set<int> toRemove = {};
 
-    for (int i = 0; i < tokens.length; i++) {
-      if (tokens[i] == '(') {
+    for (int i = 0; i < _tokens.length; i++) {
+      if (_tokens[i] == '(') {
         stack.add(i);
-      } else if (tokens[i] == ')') {
+      } else if (_tokens[i] == ')') {
         if (stack.isNotEmpty) {
           final startIndex = stack.removeLast();
           // Check if there is only one element between the parentheses
@@ -106,111 +219,256 @@ class TextSearchParser {
 
     // Create a new list excluding the unnecessary parentheses
     final List<String> newTokens = [];
-    for (int i = 0; i < tokens.length; i++) {
+    for (int i = 0; i < _tokens.length; i++) {
       if (!toRemove.contains(i)) {
-        newTokens.add(tokens[i]);
+        newTokens.add(_tokens[i]);
       }
     }
 
     return newTokens;
   }
 
-  List<String> _separateNotOperator(List<String> tokens) {
+  List<String> _removeStopWords(TextSearchDictionary dict) {
     final List<String> newTokens = [];
+    final List<String> stopWordStack = [];
+    final List<String> operatorStack = [];
 
-    for (final token in tokens) {
-      // Separates the negation operator when it is blended in with the
-      // binary operator
-      if (token.length > 1 && token.endsWithEither(['&!', '|!', '>!'])) {
-        newTokens.add(token.substring(0, token.length - 1));
-        newTokens.add('!');
-        continue;
-      }
-
-      // Separates the negation operator when a word without single quotes
-      // is preceded by it. e.g. "!black cat & 'dog'", and it also
-      // separates the negation operator even when it is inside the single
-      // quotes. e.g. "'!black cat' & 'dog'", so this way, no word can start
-      // with a negation operator
-      if (token.length > 1 && token.startsWith('!')) {
-        newTokens.add('!');
-        newTokens.add(token.substring(1));
-        continue;
-      }
-
-      newTokens.add(token);
-    }
-
-    return newTokens;
-  }
-
-  List<String> _removeStopWords(
-      List<String> tokens, TextSearchDictionary dict) {
-    final List<String> newTokens = [];
-
-    for (int i = 0; i < tokens.length; i++) {
-      final current = tokens[i];
-      final last = i > 0 ? tokens[i - 1] : null;
-      final next = i < (tokens.length - 1) ? tokens[i + 1] : null;
-
-      if (dict.containsStopWord(current)) {
-        if (last != null) {
-          if (TextSearchOperation.isStringUnaryOperator(last)) {
-            newTokens.removeLast();
+    for (final token in _tokens) {
+      if (dict.containsStopWord(token)) {
+        stopWordStack.add(token);
+      } else if (token == '(') {
+        if (operatorStack.isNotEmpty) {
+          if (newTokens.isNotEmpty) {
+            operatorStack.add(newTokens.removeLast());
           }
-        }
-        if (next != null) {
-          if (TextSearchOperation.isStringBinaryOperator(next)) {
-            i++;
-            continue;
+          final highestOperator = _findLowestPrecedenceOperator(operatorStack);
+          final operation =
+              TextSearchOperation.fromStringToOperation(highestOperator);
+
+          late final String operatorToAdd;
+
+          if (operation == TextSearchOperation.phrase) {
+            operatorToAdd = '<${stopWordStack.length + 1}>';
+          } else {
+            operatorToAdd = highestOperator;
           }
-        }
-        continue;
-      }
 
-      newTokens.add(current);
+          if (newTokens.isNotEmpty) {
+            newTokens.add(operatorToAdd);
+          }
+          newTokens.add(token);
+          operatorStack.clear();
+          stopWordStack.clear();
+        } else {
+          newTokens.add(token);
+        }
+      } else if (_isOperator(token)) {
+        if (stopWordStack.isNotEmpty) {
+          operatorStack.add(token);
+        } else {
+          newTokens.add(token);
+        }
+      } else {
+        if (operatorStack.isNotEmpty) {
+          if (newTokens.isNotEmpty && newTokens.last != '(') {
+            operatorStack.add(newTokens.removeLast());
+          }
+          final highestOperator = _findLowestPrecedenceOperator(operatorStack);
+          final operation =
+              TextSearchOperation.fromStringToOperation(highestOperator);
+
+          late final String operatorToAdd;
+
+          if (operation == TextSearchOperation.phrase) {
+            operatorToAdd = '<${stopWordStack.length + 1}>';
+          } else {
+            operatorToAdd = highestOperator;
+          }
+
+          if (newTokens.isNotEmpty && newTokens.last != '(' && token != ')') {
+            newTokens.add(operatorToAdd);
+          }
+          newTokens.add(token);
+          operatorStack.clear();
+          stopWordStack.clear();
+        } else {
+          newTokens.add(token);
+        }
+      }
+    }
+
+    if (newTokens.isNotEmpty && stopWordStack.isNotEmpty) {
+      newTokens.removeLast();
     }
 
     return newTokens;
   }
 
-  List<String> _removeSingleQuotes(List<String> tokens) {
-    final List<String> newTokens = [];
+  String _findLowestPrecedenceOperator(List<String> operators) {
+    int lowest = 4;
+    String finalOperator = "<->";
 
-    for (final token in tokens) {
-      if (token.startsWith('\'') && token.endsWith('\'')) {
-        newTokens.add(token.substring(1, token.length - 1));
-        continue;
+    for (final oprt in operators) {
+      final operation = TextSearchOperation.fromStringToOperation(oprt);
+
+      if (operation != null &&
+          TextSearchOperation.isBinaryOperator(operation) &&
+          operation.precedence < lowest) {
+        lowest = operation.precedence;
+        finalOperator = oprt;
       }
-      newTokens.add(token);
     }
 
-    return newTokens;
+    return finalOperator;
   }
 
-  List<String> _separateParenthesesFromTokens(List<String> tokens) {
-    // Matches every parenthesis individually, but treats all other characters
-    // as a whole, as opposed to individual characters, this is used combined
-    // with the split() method to separate the parenthesis from the token
-    // strings generated by _parseExpression(). e.g.
-    // "((sample)))))" -> ['(', '(', 'sample', ')', ')', ')', ')', ')']
-    final regex = RegExp(r'(?<=\()|(?=\))|(?<=\))|(?=\()|\b');
+  bool _isOperator(String token) =>
+      TextSearchOperation.isStringBinaryOperator(token) ||
+      TextSearchOperation.isStringUnaryOperator(token) ||
+      TextSearchOperation.isStringSubExpression(token);
 
-    final List<String> newTokens = [];
+  void clearCache() {
+    _tokens.clear();
+  }
+}
 
-    for (final token in tokens) {
-      // If token contains '(' or ')'
-      if (token.contains(RegExp(r'[()]'))) {
-        final splitElement = token.split(regex);
-        for (final element in splitElement) {
-          newTokens.add(element);
+class PlainTextSearchConverter {
+  String convertToTsQuery(String query) {
+    final filteredQuery = _removeOperators(query);
+    return _addAndOperatorBetweenTerms(filteredQuery);
+  }
+
+  String _addAndOperatorBetweenTerms(String query) =>
+      query.split(' ').join(' & ');
+
+  String _removeOperators(String query) {
+    // This is used to match all characters that are neither an alphanumeric
+    // character nor a space
+    RegExp pattern = RegExp(r'[^\w\s]');
+
+    return query.replaceAll(pattern, ' ').removeExtraSpaces().trim();
+  }
+}
+
+class PhraseTextSearchConverter {
+  String convertToTsQuery(String query) {
+    final filteredQuery = _removeOperators(query);
+    return _addAndOperatorBetweenTerms(filteredQuery);
+  }
+
+  String _addAndOperatorBetweenTerms(String query) =>
+      query.split(' ').join(' <-> ');
+
+  String _removeOperators(String query) {
+    // This is used to match all characters that are neither an alphanumeric
+    // character nor a space
+    final pattern = RegExp(r'[^\w\s]');
+
+    return query.replaceAll(pattern, ' ').removeExtraSpaces().trim();
+  }
+}
+
+class WebSearchTextSearchConverter {
+  String convertToTsQuery(String query) {
+    final lowerCaseQuery = query.toLowerCase();
+    final filteredQuery = _removeOperators(lowerCaseQuery);
+    final processedQuery = _addOperatorsBetweenTerms(filteredQuery);
+    return _convertStringToOperator(processedQuery);
+  }
+
+  String _convertStringToOperator(String query) {
+    final regex = RegExp(r'(?<!<)-(?!\>)');
+
+    String newQuery = "";
+    final List<String> operationStack = [];
+
+    final splitQuery = query.removeExtraSpaces().trim().split(' ').trimAll();
+    for (final token in splitQuery) {
+      if (token == 'and') {
+        operationStack.removeLast();
+        operationStack.add(token);
+      } else if (token == 'or') {
+        operationStack.removeLast();
+        operationStack.add(token);
+      } else if (token == '&') {
+        if (!['and', 'or'].contains(operationStack.last)) {
+          operationStack.add(token);
         }
-        continue;
+      } else if (token.startsWith('-')) {
+        final tokenWithoutDash = token.length > 1 ? token.substring(1) : '';
+        if (['and', 'or', '&'].contains(operationStack.last)) {
+          operationStack.add('!$tokenWithoutDash');
+        } else {
+          operationStack.add('&');
+          operationStack.add('!$tokenWithoutDash');
+        }
+      } else if (regex.hasMatch(token)) {
+        final processedToken = token.replaceAll('-', ' <-> ');
+        operationStack.add(processedToken);
+      } else {
+        operationStack.add(token);
       }
-
-      newTokens.add(token);
     }
 
-    return newTokens;
+    newQuery = operationStack.join(' ');
+
+    return newQuery
+        .replaceAll(RegExp(r'\band\b'), '&')
+        .replaceAll(RegExp(r'\bor\b'), '|');
+  }
+
+  String _addOperatorsBetweenTerms(String query) {
+    final List<String> quotesStack = [];
+    final List<String> parenthesisStack = [];
+    String newQuery = "";
+
+    final splitQuery = query.removeExtraSpaces().trim().split('');
+
+    for (int i = 0; i < splitQuery.length; i++) {
+      final current = splitQuery[i];
+
+      if (current == '"') {
+        // We need this to negate the subexpression
+        if (newQuery.last() == '-') {
+          newQuery += '(';
+          parenthesisStack.add('(');
+        }
+
+        if (quotesStack.isNotEmpty) {
+          quotesStack.removeLast();
+
+          if (parenthesisStack.isNotEmpty) {
+            newQuery += ')';
+            parenthesisStack.removeLast();
+          }
+        } else {
+          quotesStack.add('"');
+        }
+      } else if (current == ' ') {
+        if (quotesStack.isNotEmpty) {
+          newQuery += ' <-> ';
+        } else {
+          newQuery += ' & ';
+        }
+      } else {
+        newQuery += current;
+      }
+    }
+
+    if (quotesStack.isNotEmpty) {
+      throw Exception(
+        'Invalid query. Unclosed double quotes from compound term.',
+      );
+    }
+
+    return newQuery;
+  }
+
+  String _removeOperators(String query) {
+    // This is used to match all characters that are neither an alphanumeric
+    // character nor a space
+    final pattern = RegExp(r'[^\w\s"-]');
+
+    return query.replaceAll(pattern, ' ').removeExtraSpaces().trim();
   }
 }
