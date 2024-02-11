@@ -76,6 +76,13 @@ class TokenValidator {
       );
     }
 
+    if (_invalidPrefixOperator()) {
+      return TokenValidationResult(
+        isValid: false,
+        message: "Invalid prefix operator: ${_getErrorRange()}",
+      );
+    }
+
     if (_consecutiveBinary()) {
       return TokenValidationResult(
         isValid: false,
@@ -88,6 +95,20 @@ class TokenValidator {
         isValid: false,
         message:
             "Binary operator used with invalid operands: ${_getErrorRange()}",
+      );
+    }
+
+    if (_invalidPhraseOperator()) {
+      return TokenValidationResult(
+        isValid: false,
+        message: "Invalid phrase operator: ${_getErrorRange()}",
+      );
+    }
+
+    if (_unknownOperator()) {
+      return TokenValidationResult(
+        isValid: false,
+        message: "Unkown operator: ${_getErrorRange()}",
       );
     }
 
@@ -138,6 +159,36 @@ class TokenValidator {
             return true;
           }
         }
+        return false;
+      });
+
+  bool _unknownOperator() => _forEachToken((last, current, next) {
+        if (RegExp(r"[^a-z0-9&|!()<>:*'-]").hasMatch(current)) {
+          return true;
+        }
+
+        if (current == '>') {
+          if (next == '>') {
+            return true;
+          }
+        }
+
+        if (current == '<') {
+          if (next == '<') {
+            return true;
+          }
+        }
+
+        return false;
+      });
+
+  bool _invalidPhraseOperator() => _forEachToken((last, current, next) {
+        if (current == '<') {
+          if (next != null && (int.tryParse(next) == null || next != '-')) {
+            return true;
+          }
+        }
+
         return false;
       });
 
@@ -199,7 +250,9 @@ class TokenValidator {
 
   bool _binaryWithInvalidOperand() => _forEachToken((last, current, next) {
         if (_isBinaryOperator(current)) {
-          final isLastValid = _isOperand(last!) || _isClosingParenthesis(last);
+          final isLastValid = _isOperand(last!) ||
+              _isClosingParenthesis(last) ||
+              _isPrefixOperator(last);
           final isNextValid = _isUnaryOperator(next!) ||
               _isOperand(next) ||
               _isOpeningParenthesis(next);
@@ -216,6 +269,33 @@ class TokenValidator {
         if (_isOperand(current)) {
           if (next != null && _isOperand(next)) {
             return true;
+          }
+        }
+
+        return false;
+      });
+
+  bool _invalidPrefixOperator() => _forEachToken((last, current, next) {
+        if (current.contains(':')) {
+          if (RegExp(r'[^:*abcd]').hasMatch(current)) {
+            return true;
+          }
+
+          if (current == ':') {
+            return true;
+          }
+
+          if (next != null && _isOperand(next)) {
+            return true;
+          }
+
+          if (last != null) {
+            if (_isBinaryOperator(last) ||
+                _isUnaryOperator(last) ||
+                _isOpeningParenthesis(last) ||
+                _isClosingParenthesis(last)) {
+              return true;
+            }
           }
         }
 
@@ -248,6 +328,7 @@ class TokenValidator {
   bool _isOperand(String token) =>
       !_isBinaryOperator(token) &&
       !_isUnaryOperator(token) &&
+      !_isPrefixOperator(token) &&
       !_isOpeningParenthesis(token) &&
       !_isClosingParenthesis(token);
 
@@ -256,6 +337,9 @@ class TokenValidator {
 
   bool _isUnaryOperator(String token) =>
       TextSearchOperation.isStringUnaryOperator(token);
+
+  bool _isPrefixOperator(String token) =>
+      TextSearchOperation.isStringPrefixOperator(token);
 
   bool _isOpeningParenthesis(String token) =>
       TextSearchOperation.isStringSubExpression(token);

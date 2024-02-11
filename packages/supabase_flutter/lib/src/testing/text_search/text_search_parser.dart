@@ -8,7 +8,10 @@ class TextSearchParser {
 
   final List<String> _tokens = [];
 
-  List<String> parseExpression(String expression) {
+  List<String> parseExpression(
+    String expression, {
+    bool performEarlyChecks = true,
+  }) {
     final lowerCaseExp = expression.toLowerCase();
     final handledHyphens = _handleHyphens(lowerCaseExp);
     final handledApostrophes = _handleApostrophes(handledHyphens);
@@ -16,6 +19,10 @@ class TextSearchParser {
     final removedExtraSpaces = spacedAngleBrackets.removeExtraSpaces();
 
     _expression = removedExtraSpaces;
+
+    if (performEarlyChecks) {
+      _checkForUnclosedQuotes();
+    }
 
     final processedExpression = _processExpression();
     _cleanParsingCache();
@@ -56,6 +63,24 @@ class TextSearchParser {
         final correctedElement = _current == '>' ? '$element>' : element;
         final removedSpace = correctedElement.removeSpaces();
         _tokens.add(removedSpace);
+      } else if (_current == ':') {
+        final element = _consumeWhile(
+            () => _current != ' ' && _current != '\'' && _current != ':');
+        final splitElement = element.split('')
+          ..sort((a, b) {
+            final precedence1 = _getPrefixLabelPrecedence(a);
+            final precedence2 = _getPrefixLabelPrecedence(b);
+
+            return precedence1.compareTo(precedence2);
+          });
+
+        final reducedElement = _reduceDuplicates(splitElement);
+
+        _tokens.add(reducedElement.join(''));
+
+        if (_current == ':') {
+          continue;
+        }
       } else {
         if (_current != ' ') {
           _tokens.add(_current);
@@ -66,6 +91,44 @@ class TextSearchParser {
     }
 
     return List.from(_tokens);
+  }
+
+  List<String> _reduceDuplicates(List<String> inputList) {
+    final Set<String> deduplicateChars = {'*', 'a', 'b', 'c', 'd'};
+    final Set<String> seenChars = {};
+    final List<String> resultList = [];
+
+    for (String char in inputList) {
+      if (deduplicateChars.contains(char)) {
+        if (!seenChars.contains(char)) {
+          seenChars.add(char);
+          resultList.add(char);
+        }
+      } else {
+        resultList.add(char);
+      }
+    }
+
+    return resultList;
+  }
+
+  int _getPrefixLabelPrecedence(String prefix) {
+    switch (prefix) {
+      case ':':
+        return 0;
+      case '*':
+        return 1;
+      case 'a':
+        return 2;
+      case 'b':
+        return 3;
+      case 'c':
+        return 4;
+      case 'd':
+        return 5;
+      default:
+        return 6;
+    }
   }
 
   List<String> _addPhraseBetweenOperands(String expression) =>
@@ -151,6 +214,21 @@ class TextSearchParser {
     return buffer;
   }
 
+  void _checkForUnclosedQuotes() {
+    bool foundQuote = false;
+    final split = _expression.split('');
+
+    for (String char in split) {
+      if (char == '\'') {
+        foundQuote = !foundQuote;
+      }
+    }
+
+    if (foundQuote == true) {
+      throw Exception('Early check: Found unclosed single quotes.');
+    }
+  }
+
   void _cleanParsingCache() {
     _index = 0;
     _current = '';
@@ -190,13 +268,15 @@ class QueryOptimizer {
     // ['the' & 'cat'] -> ['cat']
     // [!'the' & 'cat'] -> ['cat']
     //
-    final optimizedTokens = [..._removeStopWords(dict)];
+    _removeStopWords(dict);
+
+    final finalTokens = [..._tokens];
     clearCache();
 
-    return optimizedTokens;
+    return finalTokens;
   }
 
-  List<String> _removeUnnecessaryParentheses() {
+  void _removeUnnecessaryParentheses() {
     // Stack to keep track of opening parentheses positions
     final List<int> stack = [];
     // Set to keep track of parentheses positions to remove
@@ -225,10 +305,11 @@ class QueryOptimizer {
       }
     }
 
-    return newTokens;
+    _tokens.clear();
+    _tokens.addAll(newTokens);
   }
 
-  List<String> _removeStopWords(TextSearchDictionary dict) {
+  void _removeStopWords(TextSearchDictionary dict) {
     final List<String> newTokens = [];
     final List<String> stopWordStack = [];
     final List<String> operatorStack = [];
@@ -301,7 +382,8 @@ class QueryOptimizer {
       newTokens.removeLast();
     }
 
-    return newTokens;
+    _tokens.clear();
+    _tokens.addAll(newTokens);
   }
 
   String _findLowestPrecedenceOperator(List<String> operators) {

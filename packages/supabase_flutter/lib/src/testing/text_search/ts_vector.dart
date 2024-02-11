@@ -13,7 +13,7 @@ class Doc {
 
   Map<int, TsVector> get data => _data;
 
-  void filterDoc(String? Function(String innerValue) updateFunc) {
+  void filterDoc(Term? Function(Term innerValue) updateFunc) {
     final newDoc = Doc.empty();
     _data.forEach((docIndex, docTsVector) {
       final TsVector newTsVector = TsVector.empty();
@@ -61,21 +61,45 @@ class Doc {
 }
 
 class TsVector {
-  final Map<int, String> _data;
+  final Map<int, Term> _data;
 
-  TsVector(Map<int, String> data) : _data = Map.from(data);
+  TsVector(Map<int, Term> data, {List<WeightLabels>? weightLabels})
+      : _data = Map.from(data);
 
-  Map<int, String> get data => _data;
+  Map<int, Term> get data => _data;
 
   factory TsVector.empty() => TsVector({});
 
   bool get isEmpty => _data.isEmpty;
 
-  void addIndex(int index, String term) {
+  void addIndex(int index, Term term) {
     _data[index] = term;
   }
 
-  bool hasTerm(String term) => _data.containsValue(term);
+  bool hasTerm(String term, {List<WeightLabels>? labels}) {
+    final labelsList = labels ?? [];
+
+    return _data.values.any((element) {
+      final elementHasTerm = element.value == term;
+      final elementHasAllLabels = labelsList.isNotEmpty
+          ? element.labels.every((element) => labelsList.contains(element))
+          : true;
+
+      return elementHasTerm && elementHasAllLabels;
+    });
+  }
+
+  bool hasPrefix(String prefix, {List<WeightLabels>? labels}) {
+    final labelsList = labels ?? [];
+
+    return _data.values.any((element) {
+      final elementHasPrefix = element.value.startsWith(prefix);
+      final elementHasAllLabels = labelsList.isNotEmpty
+          ? element.labels.every((element) => labelsList.contains(element))
+          : true;
+      return elementHasPrefix && elementHasAllLabels;
+    });
+  }
 
   int? getDistance(String term1, String term2) {
     final index1 = firstIndexOf(term1);
@@ -99,8 +123,8 @@ class TsVector {
 
     int? firstKey;
 
-    _data.forEach((key, value) {
-      if (firstKey == null && value == term) {
+    _data.forEach((key, termObj) {
+      if (firstKey == null && termObj.value == term) {
         firstKey = key;
       }
     });
@@ -117,7 +141,7 @@ class TsVector {
       if (!isFirst) {
         buffer.write(', ');
       }
-      buffer.write('$index: "$term"');
+      buffer.write('$index: "${term.toString()}"');
       isFirst = false;
     });
     buffer.write('}');
@@ -129,11 +153,54 @@ class TsVector {
     if (identical(this, other)) return true;
     if (other is! TsVector) return false;
 
-    return const MapEquality<int, String>().equals(_data, other._data);
+    return const DeepCollectionEquality().equals(_data, other._data);
   }
 
   @override
-  int get hashCode => const MapEquality<int, String>().hash(_data);
+  int get hashCode => const DeepCollectionEquality().hash(_data);
+}
+
+class Term {
+  final String value;
+  final List<WeightLabels> labels;
+  final int score;
+
+  factory Term.fromString(String value) => Term(value, 0, []);
+
+  Term(this.value, this.score, List<WeightLabels>? weightLabels)
+      : labels = List.from(weightLabels ?? []);
+
+  Term copyWith({
+    String? value,
+    List<WeightLabels>? labels,
+    int? score,
+  }) {
+    return Term(
+      value ?? this.value,
+      score ?? this.score,
+      labels ?? this.labels,
+    );
+  }
+
+  @override
+  String toString() => 'value: $value';
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! Term) return false;
+    const listEquality = ListEquality<WeightLabels>();
+    return value == other.value &&
+        score == other.score &&
+        listEquality.equals(labels, other.labels);
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        value,
+        score,
+        const ListEquality<WeightLabels>().hash(labels),
+      );
 }
 
 class TsVectorBuilder {
@@ -164,7 +231,12 @@ class TsVectorBuilder {
   Doc _stemDoc(Doc doc) {
     SnowballStemmer stemmer = SnowballStemmer();
 
-    return doc..filterDoc((innerValue) => stemmer.stem(innerValue));
+    return doc
+      ..filterDoc(
+        (term) => term.copyWith(
+          value: stemmer.stem(term.value),
+        ),
+      );
   }
 
   Doc _filterStopWords(
@@ -172,9 +244,9 @@ class TsVectorBuilder {
     TextSearchDictionary dict,
   ) =>
       doc
-        ..filterDoc((innerValue) {
-          if (!dict.containsStopWord(innerValue)) {
-            return innerValue;
+        ..filterDoc((term) {
+          if (!dict.containsStopWord(term.value)) {
+            return term;
           }
 
           return null;
@@ -183,14 +255,14 @@ class TsVectorBuilder {
   TsVector _rawTokenToTsVector(String token) {
     final regex = RegExp(r'[^\w\s\d]');
 
-    final Map<int, String> tsVector = {};
+    final Map<int, Term> tsVector = {};
 
     final withoutDashes = token.replaceAll('-', ' ');
     final rawToken = withoutDashes.replaceAll(regex, '');
     final splitDoc = rawToken.trim().split(' ');
 
     for (int i = 0; i < splitDoc.length; i++) {
-      tsVector[i] = splitDoc[i];
+      tsVector[i] = Term.fromString(splitDoc[i]);
     }
 
     return TsVector(tsVector);

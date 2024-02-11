@@ -34,6 +34,8 @@ class ParseTreeBuilder {
         continue;
       } else if (token == '(') {
         _handleOpeningParenthesis(tokenOperation!);
+      } else if (token.contains(':')) {
+        _handlePrefix(token);
       } else if (_isOperand(token)) {
         _handleOperand(token);
         continue;
@@ -74,6 +76,26 @@ class ParseTreeBuilder {
         operand: operand,
       ),
     );
+  }
+
+  void _handlePrefix(String token) {
+    if (_operandStack.isNotEmpty && _operandStack.last is OperandNode) {
+      final operand = _operandStack.removeLast() as OperandNode;
+      final isPrefix = token.contains('*');
+      final labelsString = isPrefix ? token.substring(2) : token.substring(1);
+      final labels = stringToWeightLabels(labelsString);
+
+      final newOperand = OperandNode(
+        value: operand.value,
+        left: operand.left,
+        right: operand.right,
+        parent: operand.parent,
+        isPrefix: isPrefix,
+        weightLabels: labels,
+      );
+
+      _operandStack.add(newOperand);
+    }
   }
 
   void _handleUnaryOperator() {
@@ -142,6 +164,24 @@ class ParseTreeBuilder {
       final distance = _getOperatorDistance(token);
       _distanceStack.add(distance);
     }
+  }
+
+  List<WeightLabels> stringToWeightLabels(String labelsString) {
+    final List<WeightLabels> labels = [];
+
+    for (String char in labelsString.split('')) {
+      if (char == 'a') {
+        labels.add(WeightLabels.a);
+      } else if (char == 'b') {
+        labels.add(WeightLabels.b);
+      } else if (char == 'c') {
+        labels.add(WeightLabels.c);
+      } else if (char == 'd') {
+        labels.add(WeightLabels.d);
+      }
+    }
+
+    return labels;
   }
 
   bool _isUnary(TextSearchOperation operation) =>
@@ -269,18 +309,30 @@ abstract class TextSearchNode {
 
 class OperandNode extends TextSearchNode {
   final String value;
+  final bool isPrefix;
+  final List<WeightLabels> labels;
 
   OperandNode({
     required this.value,
+    this.isPrefix = false,
+    List<WeightLabels>? weightLabels,
     super.left,
     super.right,
     super.parent,
-  });
+  }) : labels = List.from(weightLabels ?? []);
 
   @override
   bool evaluate(TsVector tsVector) {
     // Return the value from the tsvector for this term
-    final result = tsVector.hasTerm(value);
+    final result = isPrefix
+        ? tsVector.hasPrefix(
+            value,
+            labels: labels,
+          )
+        : tsVector.hasTerm(
+            value,
+            labels: labels,
+          );
     return result;
   }
 

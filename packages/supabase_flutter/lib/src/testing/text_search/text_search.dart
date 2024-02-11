@@ -22,27 +22,31 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 enum TextSearchOperation {
   subExpression(
     precedence: 0,
-    regexString: r'\(',
+    regexString: r'^\($',
   ),
   or(
     precedence: 1,
-    regexString: r'\|',
+    regexString: r'^\|$',
   ),
   and(
     precedence: 2,
-    regexString: r'&',
+    regexString: r'^&$',
   ),
   proximity(
     precedence: 3,
-    regexString: r'<(\d+)>',
+    regexString: r'^<(\d+)>$',
   ),
   phrase(
     precedence: 4,
-    regexString: r'<->',
+    regexString: r'^<->$',
   ),
   not(
     precedence: 5,
-    regexString: r'!',
+    regexString: r'^!$',
+  ),
+  prefix(
+    precedence: 6,
+    regexString: r"^:(\*)?(a)?(b)?(c)?(d)?$",
   );
 
   const TextSearchOperation({
@@ -75,6 +79,16 @@ enum TextSearchOperation {
     return TextSearchOperation.isUnaryOperator(operation);
   }
 
+  static bool isStringPrefixOperator(String operatorString) {
+    final operation = TextSearchOperation.fromStringToOperation(operatorString);
+
+    if (operation == null) {
+      return false;
+    }
+
+    return TextSearchOperation.isPrefixOperator(operation);
+  }
+
   static bool isStringSubExpression(String operatorString) {
     final operation = TextSearchOperation.fromStringToOperation(operatorString);
 
@@ -87,11 +101,15 @@ enum TextSearchOperation {
 
   static bool isBinaryOperator(TextSearchOperation operation) {
     return !TextSearchOperation.isUnaryOperator(operation) &&
-        !TextSearchOperation.isSubExpression(operation);
+        !TextSearchOperation.isSubExpression(operation) &&
+        !TextSearchOperation.isPrefixOperator(operation);
   }
 
   static bool isUnaryOperator(TextSearchOperation operation) =>
       operation == TextSearchOperation.not;
+
+  static bool isPrefixOperator(TextSearchOperation operation) =>
+      operation == TextSearchOperation.prefix;
 
   static bool isSubExpression(TextSearchOperation operation) =>
       operation == TextSearchOperation.subExpression;
@@ -108,6 +126,8 @@ enum TextSearchOperation {
     return null;
   }
 }
+
+enum WeightLabels { a, b, c, d }
 
 class TextSearch {
   final List<Map<String, dynamic>> _data;
