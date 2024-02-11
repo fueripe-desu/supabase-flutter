@@ -523,4 +523,43 @@ void main() {
       );
     });
   });
+
+  group('prefix matching tests', () {
+    test('should perform a prefix matching operation', () {
+      final expectedRows = [
+        {
+          'title': 'Green Eggs and Ham',
+          'author': 'Dr. Seuss',
+          'description':
+              'Sam has changing food preferences and eats unusually colored food.'
+        },
+        {
+          'title': 'Anne of Green Gables',
+          'author': 'L.M. Montgomery',
+          'description': 'An imaginative orphan finds a home.'
+        },
+        {
+          'title': 'The Gruffalo',
+          'author': 'Julia Donaldson',
+          'description':
+              'A mouse outsmarts predators with tales of a monstrous creature.'
+        },
+        {
+          'title': 'The Great Gatsby',
+          'author': 'F. Scott Fitzgerald',
+          'description':
+              'The story of a mysterious millionaire\'s pursuit of love and success.'
+        },
+      ];
+
+      expect(
+        search(
+          'title',
+          "gr:*",
+          books,
+        ),
+        expectedRows,
+      );
+    });
+  });
 }

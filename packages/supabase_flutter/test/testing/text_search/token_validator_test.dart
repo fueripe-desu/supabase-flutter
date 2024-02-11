@@ -44,6 +44,10 @@ void main() {
     expect(validate("'cat'"), true);
   });
 
+  test('should return true if the query is constituted by a hyphened word', () {
+    expect(validate("'dog-cat'"), true);
+  });
+
   test('should return false if the first token is a binary operator', () {
     expect(validate("& 'cat'"), false);
   });
@@ -86,8 +90,16 @@ void main() {
     expect(validate("!'dog' & 'cat'"), true);
   });
 
+  test('should return false if a NOT operator is duplicated', () {
+    expect(validate("!!'dog' & 'cat'"), false);
+  });
+
   test('should return true if a NOT operator precedes a subexpression', () {
     expect(validate("'dog' & !('cat' | 'lion')"), true);
+  });
+
+  test('should return true if hyphened word is negated correctly', () {
+    expect(validate("!'cat-dog' & 'cat'"), true);
   });
 
   test('should return false if binary operator has an empty first operand', () {
@@ -136,25 +148,135 @@ void main() {
     expect(validate("'dog' <-><2> 'cat'"), false);
   });
 
-  test('should return false if the AND operator is used correctly', () {
+  test('should return true if the AND operator is used correctly', () {
     expect(validate("'dog' & 'cat'"), true);
   });
 
-  test('should return false if the OR operator is used correctly', () {
+  test('should return true if there is an apostrophe', () {
+    expect(validate("'mister''s' & 'dog'"), true);
+  });
+
+  test('should return true if the OR operator is used correctly', () {
     expect(validate("'dog' | 'cat'"), true);
   });
 
-  test('should return false if the PHRASE operator is used correctly', () {
+  test('should return true if the PHRASE operator is used correctly', () {
     expect(validate("'dog' <-> 'cat'"), true);
   });
 
-  test('should return false if the PROXIMITY operator is used correctly', () {
+  test('should return true if the PROXIMITY operator is used correctly', () {
     expect(validate("'dog' <2> 'cat'"), true);
   });
 
   test('should return false if there are consecutive operands', () {
     expect(validate("'dog' 'cat'"), false);
     expect(validate("dog cat"), false);
+  });
+
+  test('should return false if there is an unknown operator', () {
+    expect(validate(r"'dog' $%@ 'cat'"), false);
+  });
+
+  test('should return false if there are consecutive opening angle bracket',
+      () {
+    expect(validate("'dog' >> 'cat'"), false);
+  });
+
+  test('should return false if there are consecutive closing angle bracket',
+      () {
+    expect(validate("'dog' << 'cat'"), false);
+  });
+
+  test(
+      'should return false if there is text between consecutive angle brackets',
+      () {
+    expect(validate("'cat' <'lion'<<< 'dog'"), false);
+  });
+
+  test('should return false if there is an invalid angle bracket', () {
+    expect(validate("'cat' <'lion'< 'dog'"), false);
+    expect(validate("'cat' < <-> 'dog'"), false);
+  });
+
+  test('should throw an Exception if there is an unclosed single quote', () {
+    expect(() => validate("'cat & 'dog'"), throwsException);
+  });
+
+  test('should return true if the proximity operator is used correctly', () {
+    expect(validate("dog:A"), true);
+    expect(validate("dog:B"), true);
+    expect(validate("dog:C"), true);
+    expect(validate("dog:D"), true);
+    expect(validate("dog:*"), true);
+    expect(validate("dog:*A"), true);
+    expect(validate("dog:*B"), true);
+    expect(validate("dog:*C"), true);
+    expect(validate("dog:*D"), true);
+    expect(validate("dog:*ABCD"), true);
+  });
+
+  test('should return true if prefix operator has valid duplicates', () {
+    expect(validate("dog:*ABCDADBC*DACBD*CBA"), true);
+  });
+
+  test(
+      'should return false if there is only a colon in the prefix match operator',
+      () {
+    expect(validate("dog:"), false);
+  });
+
+  test(
+      'should return true if prefix operator is used correctly with a binary operator',
+      () {
+    expect(validate("dog:* & 'cat'"), true);
+  });
+
+  test('should return true if prefix operator is ignored by the single quotes',
+      () {
+    expect(validate("'dog:*' & 'cat'"), true);
+  });
+
+  test('should return false if prefix operator is used on a binary operator',
+      () {
+    expect(validate("'dog' &:* 'cat'"), false);
+  });
+
+  test('should return false if prefix operator is used before the term', () {
+    expect(validate(":*dog & 'cat'"), false);
+    expect(validate("'dog' & :*cat"), false);
+  });
+
+  test(
+      'should return false if prefix operator is used with binary operators as labels',
+      () {
+    expect(validate("dog:& cat"), false);
+  });
+
+  test('should return false if there are consecutive prefix operators', () {
+    expect(validate("dog:*AB:*CD cat"), false);
+  });
+
+  test('should return false if the prefix operator is used with invalid labels',
+      () {
+    expect(validate("dog:*ABTY cat"), false);
+  });
+
+  test('should return false if the prefix operator is used as binary opeartor',
+      () {
+    expect(validate("dog:*ABCD cat"), false);
+  });
+
+  test('should return true if prefix operator is used with a quoted term', () {
+    // Even though this is unexpected behavior, when you use a prefix
+    // operator in a quoted term, the last term after the space is the
+    // one that receives it
+    expect(validate("'black cat':*ABCD"), true);
+  });
+
+  test(
+      'should return false if prefix operator is used after negated quoted term',
+      () {
+    expect(validate("!'black cat':*ABCD"), false);
   });
 
   test('should return false if proximity does not have the last angle bracket',

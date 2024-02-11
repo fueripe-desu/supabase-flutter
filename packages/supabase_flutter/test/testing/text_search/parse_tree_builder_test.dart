@@ -22,6 +22,8 @@ void main() {
     TextSearchDictionary dict,
   ) buildTree;
 
+  late final Term Function(String value) term;
+
   setUpAll(() {
     parseExpression = (query, dict, {optimize = true}) {
       final parser = TextSearchParser();
@@ -60,6 +62,8 @@ void main() {
       final builder = ParseTreeBuilder();
       return builder.buildTree(tokens);
     };
+
+    term = (value) => Term.fromString(value);
   });
 
   group('parse tree general tests', () {
@@ -140,14 +144,14 @@ void main() {
     });
 
     test('should return true if term exists in the ts vector', () {
-      final tsVector = TsVector({0: 'cat', 1: 'dog'});
+      final tsVector = TsVector({0: term('cat'), 1: term('dog')});
       final operand = createOperand('cat', loadDict('english'));
 
       expect(operand.evaluate(tsVector), true);
     });
 
     test('should return false if term does not exist in the ts vector', () {
-      final tsVector = TsVector({0: 'cat', 1: 'dog'});
+      final tsVector = TsVector({0: term('cat'), 1: term('dog')});
       final operand = createOperand('cow', loadDict('english'));
 
       expect(operand.evaluate(tsVector), false);
@@ -173,17 +177,108 @@ void main() {
     });
 
     test('should return true if term does not exist in the ts vector', () {
-      final tsVector = TsVector({1: 'dog'});
+      final tsVector = TsVector({1: term('dog')});
       final unary = createUnary('!cat', loadDict('english'));
 
       expect(unary.evaluate(tsVector), true);
     });
 
     test('should return false if term exists in the ts vector', () {
-      final tsVector = TsVector({0: 'cat', 1: 'dog'});
+      final tsVector = TsVector({0: term('cat'), 1: term('dog')});
       final unary = createUnary('!cat', loadDict('english'));
 
       expect(unary.evaluate(tsVector), false);
+    });
+  });
+
+  group('prefix operator tests', () {
+    test('should contain the prefix', () {
+      final tree = buildTree('search:*', loadDict('english'));
+      expect(tree, OperandNode(value: 'search', isPrefix: true));
+    });
+
+    test('should contain the weight label', () {
+      final tree = buildTree('search:*A', loadDict('english'));
+      expect(
+        tree,
+        OperandNode(
+          value: 'search',
+          isPrefix: true,
+          weightLabels: [
+            WeightLabels.a,
+          ],
+        ),
+      );
+    });
+
+    test('should contain the weight label without prefix', () {
+      final tree = buildTree('search:A', loadDict('english'));
+      expect(
+        tree,
+        OperandNode(
+          value: 'search',
+          isPrefix: false,
+          weightLabels: [
+            WeightLabels.a,
+          ],
+        ),
+      );
+    });
+    test('should contain more than one weight label', () {
+      final tree = buildTree('search:*ABCD', loadDict('english'));
+      expect(
+        tree,
+        OperandNode(
+          value: 'search',
+          isPrefix: true,
+          weightLabels: [
+            WeightLabels.a,
+            WeightLabels.b,
+            WeightLabels.c,
+            WeightLabels.d,
+          ],
+        ),
+      );
+    });
+
+    test('should work correctly with other binary operators (without labels)',
+        () {
+      final tree = buildTree("search:* & 'cat'", loadDict('english'));
+      expect(
+        tree,
+        OperatorNode(
+          operation: TextSearchOperation.and,
+          left: OperandNode(
+            value: 'search',
+            isPrefix: true,
+          ),
+          right: OperandNode(
+            value: 'cat',
+          ),
+        ),
+      );
+    });
+    test('should work correctly with other binary operators (with labels)', () {
+      final tree = buildTree("search:*ABCD & 'cat'", loadDict('english'));
+      expect(
+        tree,
+        OperatorNode(
+          operation: TextSearchOperation.and,
+          left: OperandNode(
+            value: 'search',
+            isPrefix: true,
+            weightLabels: [
+              WeightLabels.a,
+              WeightLabels.b,
+              WeightLabels.c,
+              WeightLabels.d,
+            ],
+          ),
+          right: OperandNode(
+            value: 'cat',
+          ),
+        ),
+      );
     });
   });
 
@@ -213,7 +308,7 @@ void main() {
     });
 
     test('should return true if both terms exist in the ts vector', () {
-      final tsVector = TsVector({0: 'cat', 1: 'dog'});
+      final tsVector = TsVector({0: term('cat'), 1: term('dog')});
       final node = createOperator('cat & dog', loadDict('english'));
 
       expect(node.evaluate(tsVector), true);
@@ -222,14 +317,14 @@ void main() {
     test(
         'should return false if at least one term does not exist in the ts vector',
         () {
-      final tsVector = TsVector({0: 'cat'});
+      final tsVector = TsVector({0: term('cat')});
       final node = createOperator('cat & dog', loadDict('english'));
 
       expect(node.evaluate(tsVector), false);
     });
 
     test('should return true if at least one term exists in the ts vector', () {
-      final tsVector = TsVector({0: 'cat', 1: 'dog'});
+      final tsVector = TsVector({0: term('cat'), 1: term('dog')});
       final node = createOperator('cat | cow', loadDict('english'));
 
       expect(node.evaluate(tsVector), true);
@@ -237,28 +332,33 @@ void main() {
 
     test('should return false if both terms does not exist in the ts vector',
         () {
-      final tsVector = TsVector({0: 'cat', 1: 'dog'});
+      final tsVector = TsVector({0: term('cat'), 1: term('dog')});
       final node = createOperator('lion | cow', loadDict('english'));
 
       expect(node.evaluate(tsVector), false);
     });
 
     test('should return true if terms are adjacent in the ts vector', () {
-      final tsVector = TsVector({0: 'cat', 1: 'dog', 2: 'cow'});
+      final tsVector =
+          TsVector({0: term('cat'), 1: term('dog'), 2: term('cow')});
       final node = createOperator('cat <-> dog', loadDict('english'));
 
       expect(node.evaluate(tsVector), true);
     });
 
     test('should return false if terms  are not adjacent in the ts vector', () {
-      final tsVector = TsVector({0: 'cat', 1: 'dog', 2: 'cow'});
+      final tsVector = TsVector(
+        {0: term('cat'), 1: term('dog'), 2: term('cow')},
+      );
       final node = createOperator('cat <-> cow', loadDict('english'));
 
       expect(node.evaluate(tsVector), false);
     });
 
     test('should return true if terms are n terms apart in the ts vector', () {
-      final tsVector = TsVector({0: 'cat', 1: 'dog', 2: 'cow'});
+      final tsVector = TsVector(
+        {0: term('cat'), 1: term('dog'), 2: term('cow')},
+      );
       final node = createOperator('cat <2> cow', loadDict('english'));
 
       expect(node.evaluate(tsVector), true);
@@ -266,7 +366,9 @@ void main() {
 
     test('should return false if terms are not n terms apart in the ts vector',
         () {
-      final tsVector = TsVector({0: 'cat', 1: 'dog', 2: 'cow'});
+      final tsVector = TsVector(
+        {0: term('cat'), 1: term('dog'), 2: term('cow')},
+      );
       final node = createOperator('cat <2> dog', loadDict('english'));
 
       expect(node.evaluate(tsVector), false);

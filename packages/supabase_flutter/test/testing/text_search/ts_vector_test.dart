@@ -6,6 +6,12 @@ import 'package:supabase_flutter/src/testing/text_search/text_search.dart';
 import 'package:supabase_flutter/src/testing/text_search/ts_vector.dart';
 
 void main() {
+  late final Term Function(String value) term;
+
+  setUpAll(() {
+    term = (value) => Term.fromString(value);
+  });
+
   group('doc tests', () {
     late final bool Function(Map<int, TsVector>, Map<int, TsVector>) mapEq;
 
@@ -21,15 +27,15 @@ void main() {
     group('addTsVector() tests', () {
       test('should add a new ts vector to the doc', () {
         final doc = Doc.empty();
-        doc.addTsVector(0, TsVector({0: 'zero'}));
-        doc.addTsVector(1, TsVector({1: 'one'}));
+        doc.addTsVector(0, TsVector({0: term('zero')}));
+        doc.addTsVector(1, TsVector({1: term('one')}));
 
         expect(
           mapEq(
             doc.data,
             {
-              0: TsVector({0: 'zero'}),
-              1: TsVector({1: 'one'}),
+              0: TsVector({0: term('zero')}),
+              1: TsVector({1: term('one')}),
             },
           ),
           true,
@@ -41,22 +47,22 @@ void main() {
       test('should return a filtered doc based on the condition', () {
         final doc = Doc(
           {
-            0: TsVector({0: 'zero'}),
-            1: TsVector({1: 'one'}),
-            2: TsVector({2: 'two'}),
-            3: TsVector({3: 'three'}),
+            0: TsVector({0: term('zero')}),
+            1: TsVector({1: term('one')}),
+            2: TsVector({2: term('two')}),
+            3: TsVector({3: term('three')}),
           },
         );
 
-        doc.filterDoc((innerValue) => innerValue != 'two' ? innerValue : null);
+        doc.filterDoc((term) => term.value != 'two' ? term : null);
 
         expect(
           mapEq(
             doc.data,
             {
-              0: TsVector({0: 'zero'}),
-              1: TsVector({1: 'one'}),
-              3: TsVector({3: 'three'}),
+              0: TsVector({0: term('zero')}),
+              1: TsVector({1: term('one')}),
+              3: TsVector({3: term('three')}),
             },
           ),
           true,
@@ -67,20 +73,20 @@ void main() {
     group('equality tests', () {
       test('should return true if docs are equal', () {
         final doc1 = Doc.empty();
-        doc1.addTsVector(0, TsVector({0: 'zero'}));
+        doc1.addTsVector(0, TsVector({0: term('zero')}));
 
         final doc2 = Doc.empty();
-        doc2.addTsVector(0, TsVector({0: 'zero'}));
+        doc2.addTsVector(0, TsVector({0: term('zero')}));
 
         expect(doc1 == doc2, true);
       });
 
       test('should return false if docs are different', () {
         final doc1 = Doc.empty();
-        doc1.addTsVector(0, TsVector({0: 'zero'}));
+        doc1.addTsVector(0, TsVector({0: term('zero')}));
 
         final doc2 = Doc.empty();
-        doc2.addTsVector(1, TsVector({1: 'one'}));
+        doc2.addTsVector(1, TsVector({1: term('one')}));
 
         expect(doc1 == doc2, false);
       });
@@ -88,15 +94,17 @@ void main() {
   });
 
   group('ts vector tests', () {
-    late final bool Function(Map<int, String>, Map<int, String>) mapEq;
+    late final bool Function(Map<int, Term>, Map<int, Term>) mapEq;
     late final TsVector Function(List<String> terms) createVector;
 
     setUpAll(() {
-      mapEq = const MapEquality<int, String>().equals;
+      mapEq = (value1, value2) {
+        return TsVector(value1) == TsVector(value2);
+      };
       createVector = (terms) {
-        final Map<int, String> vectorMap = {};
+        final Map<int, Term> vectorMap = {};
         for (int i = 0; i < terms.length; i++) {
-          vectorMap[i] = terms[i];
+          vectorMap[i] = Term.fromString(terms[i]);
         }
 
         return TsVector(vectorMap);
@@ -116,10 +124,10 @@ void main() {
     group('addIndex() tests', () {
       test('should add a new index in the ts vector', () {
         final tsVector = TsVector.empty();
-        tsVector.addIndex(2, 'cat');
-        tsVector.addIndex(5, 'dog');
+        tsVector.addIndex(2, term('cat'));
+        tsVector.addIndex(5, term('dog'));
 
-        expect(mapEq(tsVector.data, {2: 'cat', 5: 'dog'}), true);
+        expect(mapEq(tsVector.data, {2: term('cat'), 5: term('dog')}), true);
       });
     });
 
@@ -296,8 +304,8 @@ void main() {
         mapEq(
           doc.data,
           {
-            0: TsVector({0: 'row', 1: '1', 2: 'sampl'}),
-            1: TsVector({0: 'row', 1: '2', 2: 'sampl'}),
+            0: TsVector({0: term('row'), 1: term('1'), 2: term('sampl')}),
+            1: TsVector({0: term('row'), 1: term('2'), 2: term('sampl')}),
           },
         ),
         true,
@@ -317,8 +325,8 @@ void main() {
         mapEq(
           doc.data,
           {
-            0: TsVector({1: 'cat', 4: 'dog'}),
-            1: TsVector({3: 'book'}),
+            0: TsVector({1: term('cat'), 4: term('dog')}),
+            1: TsVector({3: term('book')}),
           },
         ),
         true,
@@ -338,8 +346,8 @@ void main() {
         mapEq(
           doc.data,
           {
-            0: TsVector({0: 'troubl', 2: 'come'}),
-            1: TsVector({1: 'cat', 3: 'pur'}),
+            0: TsVector({0: term('troubl'), 2: term('come')}),
+            1: TsVector({1: term('cat'), 3: term('pur')}),
           },
         ),
         true,
