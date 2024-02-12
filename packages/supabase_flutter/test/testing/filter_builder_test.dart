@@ -452,6 +452,14 @@ void main() {
     expect(result, [issues[0]]);
   });
 
+  test('should return all rows that matches with the text search', () {
+    final result = FilterBuilder(tasks)
+        .textSearch('title', 'complete <-> presentation')
+        .execute();
+
+    expect(result, [tasks[1]]);
+  });
+
   test('shoud match all the conditions specified', () {
     final countries = [
       {'id': 1, 'name': 'Afghanistan'},
