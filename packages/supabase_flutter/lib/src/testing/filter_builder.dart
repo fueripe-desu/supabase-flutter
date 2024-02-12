@@ -1,10 +1,12 @@
 import 'package:supabase_flutter/src/testing/range_comparable.dart';
 import 'package:supabase_flutter/src/testing/range_type.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
+import 'package:supabase_flutter/src/testing/text_search/text_search.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FilterBuilder {
   final List<Map<String, dynamic>> _data;
-  const FilterBuilder(List<Map<String, dynamic>> data) : _data = data;
+  FilterBuilder(List<Map<String, dynamic>> data) : _data = List.from(data);
 
   List<Map<String, dynamic>> execute() => _data;
 
@@ -150,6 +152,18 @@ class FilterBuilder {
     }
 
     throw Exception('Invalid use of overlaps.');
+  }
+
+  FilterBuilder textSearch(
+    String column,
+    String query, {
+    String? config,
+    TextSearchType? type,
+  }) {
+    final search = TextSearch(_data);
+    final result = search.textSearch(column, query, config: config, type: type);
+
+    return FilterBuilder(result);
   }
 
   FilterBuilder match(Map<String, dynamic> query) {
