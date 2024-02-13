@@ -269,6 +269,62 @@ abstract class RangeType {
     return getComparable().overlaps(other.getComparable());
   }
 
+  bool strictlyLeftOf(RangeType other) {
+    if (isEmpty || other.isEmpty) {
+      return false;
+    }
+
+    if (rangeDataType != other.rangeDataType) {
+      throw RangeTypeException(
+        'Cannot check if a range of different type is strictly left of another',
+      );
+    }
+
+    return getComparable().strictlyLeftOf(other.getComparable());
+  }
+
+  bool strictlyRightOf(RangeType other) {
+    if (isEmpty || other.isEmpty) {
+      return false;
+    }
+
+    if (rangeDataType != other.rangeDataType) {
+      throw RangeTypeException(
+        'Cannot check if a range of different type is strictly left of another',
+      );
+    }
+
+    return getComparable().strictlyRightOf(other.getComparable());
+  }
+
+  bool doesNotExtendToTheLeftOf(RangeType other) {
+    if (isEmpty || other.isEmpty) {
+      return false;
+    }
+
+    if (rangeDataType != other.rangeDataType) {
+      throw RangeTypeException(
+        'Cannot check if a range of different type is strictly left of another',
+      );
+    }
+
+    return getComparable().doesNotExtendToTheLeftOf(other.getComparable());
+  }
+
+  bool doesNotExtendToTheRightOf(RangeType other) {
+    if (isEmpty || other.isEmpty) {
+      return false;
+    }
+
+    if (rangeDataType != other.rangeDataType) {
+      throw RangeTypeException(
+        'Cannot check if a range of different type is strictly left of another',
+      );
+    }
+
+    return getComparable().doesNotExtendToTheRightOf(other.getComparable());
+  }
+
   bool operator >(RangeType other) => isEmpty || other.isEmpty
       ? false
       : getComparable() > other.getComparable();

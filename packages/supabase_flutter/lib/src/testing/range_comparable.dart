@@ -94,6 +94,88 @@ class RangeComparable<T> {
         _upperRange >= Bound<T>(other.lowerRange);
   }
 
+  bool strictlyLeftOf(RangeComparable<T> other) {
+    if (_upperRange.isBounded && other.lowerRange != null) {
+      return _upperRange < Bound<T>(other.lowerRange);
+    }
+
+    return false;
+  }
+
+  bool strictlyRightOf(RangeComparable<T> other) {
+    if (_lowerRange.isBounded && other.upperRange != null) {
+      return _lowerRange > Bound<T>(other.upperRange);
+    }
+
+    return false;
+  }
+
+  bool doesNotExtendToTheLeftOf(RangeComparable<T> other) {
+    if (isUnbounded) {
+      if (other.isUnbounded) {
+        return true;
+      }
+
+      if (other.hasUnbounded && other.upperRange != null) {
+        return true;
+      }
+    }
+
+    if (isBounded || (hasUnbounded && !isUnbounded)) {
+      if (other.isUnbounded) {
+        return true;
+      }
+    }
+
+    if (hasUnbounded && lowerRange != null) {
+      if (other.hasUnbounded && other.upperRange != null) {
+        return true;
+      }
+    }
+
+    if (_lowerRange.isBounded && other.lowerRange != null) {
+      return _lowerRange >= Bound<T>(other.lowerRange);
+    }
+
+    return false;
+  }
+
+  bool doesNotExtendToTheRightOf(RangeComparable<T> other) {
+    if (isUnbounded) {
+      if (other.isUnbounded) {
+        return true;
+      }
+
+      if (other.hasUnbounded && other.lowerRange != null) {
+        return true;
+      }
+    }
+
+    if (isBounded || (hasUnbounded && !isUnbounded)) {
+      if (other.isUnbounded) {
+        return true;
+      }
+    }
+
+    if (hasUnbounded && lowerRange != null) {
+      if (other.hasUnbounded && other.lowerRange != null) {
+        return true;
+      }
+    }
+
+    if (hasUnbounded && upperRange != null) {
+      if (other.hasUnbounded && other.lowerRange != null) {
+        return true;
+      }
+    }
+
+    if (_upperRange.isBounded && other.upperRange != null) {
+      return _upperRange <= Bound<T>(other.upperRange);
+    }
+
+    return false;
+  }
+
   bool operator >(RangeComparable<T> other) => _gt(other);
 
   bool operator >=(RangeComparable<T> other) => _gt(other) || this == other;
