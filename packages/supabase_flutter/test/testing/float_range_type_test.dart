@@ -583,6 +583,535 @@ void main() {
     });
   });
 
+  group('strictlyLeftOf() tests', () {
+    late final bool Function(String range1, String range2) strictlyLeftOf;
+
+    setUpAll(() {
+      strictlyLeftOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.float,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.float,
+        );
+        return r1.strictlyLeftOf(r2);
+      };
+    });
+
+    test(
+        'should return true if the lower bound is less than the other upper bound',
+        () {
+      expect(strictlyLeftOf('[10.0, 20.0]', '[30.0, 40.0]'), true);
+    });
+
+    test(
+        'should return false if the lower bound is equal to the other upper bound',
+        () {
+      expect(strictlyLeftOf('[10.0, 20.0]', '[20.0, 40.0]'), false);
+    });
+
+    test(
+        'should return false if the lower bound is greater than the other upper bound',
+        () {
+      expect(strictlyLeftOf('[10.0, 30.0]', '[20.0, 40.0]'), false);
+    });
+  });
+
+  group('strictlyLeftOf() unbounded tests', () {
+    late final bool Function(String range1, String range2) strictlyLeftOf;
+
+    setUpAll(() {
+      strictlyLeftOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.float,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.float,
+        );
+        return r1.strictlyLeftOf(r2);
+      };
+    });
+    test('should return false if both are [,] ranges', () {
+      expect(strictlyLeftOf('[,]', '[,]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [b,] range',
+        () {
+      expect(strictlyLeftOf('[,]', '[30.0,]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [,b] range',
+        () {
+      expect(strictlyLeftOf('[,]', '[,40.0]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [b,b] range',
+        () {
+      expect(strictlyLeftOf('[,]', '[30.0,40.0]'), false);
+    });
+
+    test('should return false if a [b,] range is checked against a [,] range',
+        () {
+      expect(strictlyLeftOf('[10.0,]', '[,]'), false);
+    });
+
+    test('should return false if a [,b] range is checked against a [,] range',
+        () {
+      expect(strictlyLeftOf('[,20.0]', '[,]'), false);
+    });
+
+    test('should return false if a [b,b] range is checked against a [,] range',
+        () {
+      expect(strictlyLeftOf('[10.0,20.0]', '[,]'), false);
+    });
+
+    test('should return false if a [b,] range is checked against a [b,] range',
+        () {
+      expect(strictlyLeftOf('[10.0,]', '[30.0,]'), false);
+    });
+
+    test('should return false if a [b,] range is checked against a [,b] range',
+        () {
+      expect(strictlyLeftOf('[10.0,]', '[,40.0]'), false);
+    });
+
+    test('should return false if a [b,] range is checked against a [b,b] range',
+        () {
+      expect(strictlyLeftOf('[10.0,]', '[30.0,40.0]'), false);
+    });
+
+    test(
+        'should return true if the lower bound of a [,b] range is less than the upper bound of a [b,] range',
+        () {
+      expect(strictlyLeftOf('[,20.0]', '[30.0,]'), true);
+    });
+
+    test('should return false if a [,b] range is checked against a [,b] range',
+        () {
+      expect(strictlyLeftOf('[,20.0]', '[,40.0]'), false);
+    });
+
+    test(
+        'should return true if the lower bound of a [,b] range is less than the upper bound of a [b,b] range',
+        () {
+      expect(strictlyLeftOf('[,20.0]', '[30.0,40.0]'), true);
+    });
+  });
+
+  group('strictlyRighttOf() tests', () {
+    late final bool Function(String range1, String range2) strictlyRightOf;
+
+    setUpAll(() {
+      strictlyRightOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.float,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.float,
+        );
+        return r1.strictlyRightOf(r2);
+      };
+    });
+
+    test(
+        'should return true if the lower bound is greater than the other upper bound',
+        () {
+      expect(strictlyRightOf('[30.0, 40.0]', '[10.0, 20.0]'), true);
+    });
+
+    test(
+        'should return false if the lower bound is equal to the other upper bound',
+        () {
+      expect(strictlyRightOf('[30.0, 40.0]', '[10.0, 40.0]'), false);
+    });
+
+    test(
+        'should return false if the lower bound is less than the other upper bound',
+        () {
+      expect(strictlyRightOf('[30.0, 40.0]', '[20.0, 60.0]'), false);
+    });
+  });
+
+  group('strictlyRightOf() unbounded tests', () {
+    late final bool Function(String range1, String range2) strictlyRightOf;
+
+    setUpAll(() {
+      strictlyRightOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.float,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.float,
+        );
+        return r1.strictlyRightOf(r2);
+      };
+    });
+    test('should return false if both are [,] ranges', () {
+      expect(strictlyRightOf('[,]', '[,]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [b,] range',
+        () {
+      expect(strictlyRightOf('[,]', '[10.0,]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [,b] range',
+        () {
+      expect(strictlyRightOf('[,]', '[,20.0]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [b,b] range',
+        () {
+      expect(strictlyRightOf('[,]', '[10.0,20.0]'), false);
+    });
+
+    test('should return false if a [b,] range is checked against a [,] range',
+        () {
+      expect(strictlyRightOf('[30.0,]', '[,]'), false);
+    });
+
+    test('should return false if a [,b] range is checked against a [,] range',
+        () {
+      expect(strictlyRightOf('[,40.0]', '[,]'), false);
+    });
+
+    test('should return false if a [b,b] range is checked against a [,] range',
+        () {
+      expect(strictlyRightOf('[30.0,40.0]', '[,]'), false);
+    });
+
+    test('should return false if a [b,] range is checked against a [b,] range',
+        () {
+      expect(strictlyRightOf('[30.0,]', '[10.0,]'), false);
+    });
+
+    test(
+        'should return true if the lower bound of a [b,] range is greater than the upper bound of a [,b] range',
+        () {
+      expect(strictlyRightOf('[30.0,]', '[,20.0]'), true);
+    });
+
+    test(
+        'should return true if the lower bound of a [b,] range is greater than the upper bound of a [b,b] range',
+        () {
+      expect(strictlyRightOf('[30.0,]', '[10.0,20.0]'), true);
+    });
+
+    test('should return false if a [,b] range is checked against a [b,] range',
+        () {
+      expect(strictlyRightOf('[,40.0]', '[10.0,]'), false);
+    });
+
+    test('should return false if a [,b] range is checked against a [,b] range',
+        () {
+      expect(strictlyRightOf('[,40.0]', '[,20.0]'), false);
+    });
+
+    test('should return false if a [,b] range is checked against a [b,b] range',
+        () {
+      expect(strictlyRightOf('[,40.0]', '[10.0,20.0]'), false);
+    });
+  });
+
+  group('doesNotExtendToTheLeftOf() tests', () {
+    late final bool Function(String range1, String range2)
+        doesNotExtendToTheLeftOf;
+
+    setUpAll(() {
+      doesNotExtendToTheLeftOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.float,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.float,
+        );
+        return r1.doesNotExtendToTheLeftOf(r2);
+      };
+    });
+
+    test(
+        'should return true if the lower bound is greater than the other lower bound',
+        () {
+      expect(doesNotExtendToTheLeftOf('[30.0, 40.0]', '[10.0, 20.0]'), true);
+    });
+
+    test(
+        'should return true if the lower bound is equal to the other lower bound',
+        () {
+      expect(doesNotExtendToTheLeftOf('[10.0, 40.0]', '[10.0, 20.0]'), true);
+    });
+
+    test(
+        'should return false if the lower bound is less than the other lower bound',
+        () {
+      expect(doesNotExtendToTheLeftOf('[10.0, 40.0]', '[20.0, 60.0]'), false);
+    });
+  });
+
+  group('doesNotExtendToTheLeftOf() unbounded tests', () {
+    late final bool Function(String range1, String range2)
+        doesNotExtendToTheLeftOf;
+
+    setUpAll(() {
+      doesNotExtendToTheLeftOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.float,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.float,
+        );
+        return r1.doesNotExtendToTheLeftOf(r2);
+      };
+    });
+    test('should return true if both are [,] ranges', () {
+      expect(doesNotExtendToTheLeftOf('[,]', '[,]'), true);
+    });
+
+    test('should return false if a [,] range is checked against a [b,] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[,]', '[10.0,]'), false);
+    });
+
+    test('should return true if a [,] range is checked against a [,b] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[,]', '[,20.0]'), true);
+    });
+
+    test('should return false if a [,] range is checked against a [b,b] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[,]', '[10.0,20.0]'), false);
+    });
+
+    test('should return true if a [b,] range is checked against a [,] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[30.0,]', '[,]'), true);
+    });
+
+    test('should return true if a [,b] range is checked against a [,] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[,40.0]', '[,]'), true);
+    });
+
+    test('should return true if a [b,b] range is checked against a [,] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[30.0,40.0]', '[,]'), true);
+    });
+
+    test(
+        'should return true if the lower bound of a [b,] range is greater than the lower bound a [b,] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[30.0,]', '[10.0,]'), true);
+    });
+
+    test(
+        'should return true if the lower bound of a [b,] range is equal to the lower bound a [b,] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[30.0,]', '[30.0,]'), true);
+    });
+
+    test(
+        'should return false if the lower bound of a [b,] range is less than the lower bound a [b,] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[30.0,]', '[40.0,]'), false);
+    });
+
+    test('should return true if a [b,] range is checked against a [,b] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[30.0,]', '[,20.0]'), true);
+    });
+
+    test(
+        'should return true if the lower bound of a [b,] range is greater than the lower bound of a [b,b] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[30.0,]', '[10.0,20.0]'), true);
+    });
+
+    test(
+        'should return true if the lower bound of a [b,] range is equal to the lower bound of a [b,b] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[30.0,]', '[30.0,40.0]'), true);
+    });
+
+    test(
+        'should return false if the lower bound of a [b,] range is equal to the lower bound of a [b,b] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[30.0,]', '[40.0,50.0]'), false);
+    });
+
+    test('should return false if a [,b] range is checked against a [b,] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[,30.0]', '[10.0,]'), false);
+    });
+
+    test('should return false if a [,b] range is checked against a [,b] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[,30.0]', '[,20.0]'), false);
+    });
+
+    test('should return false if a [,b] range is checked against a [b,b] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[,30.0]', '[10.0,20.0]'), false);
+    });
+  });
+
+  group('doesNotExtendToTheRightOf() tests', () {
+    late final bool Function(String range1, String range2)
+        doesNotExtendToTheRightOf;
+
+    setUpAll(() {
+      doesNotExtendToTheRightOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.float,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.float,
+        );
+        return r1.doesNotExtendToTheRightOf(r2);
+      };
+    });
+
+    test(
+        'should return true if the upper bound is less than the other upper bound',
+        () {
+      expect(doesNotExtendToTheRightOf('[10.0, 20.0]', '[30.0, 40.0]'), true);
+    });
+
+    test(
+        'should return true if the upper bound is equal to the other upper bound',
+        () {
+      expect(doesNotExtendToTheRightOf('[10.0, 40.0]', '[30.0, 40.0]'), true);
+    });
+
+    test(
+        'should return false if the upper bound is greater than the other upper bound',
+        () {
+      expect(doesNotExtendToTheRightOf('[10.0, 40.0]', '[30.0, 35.0]'), false);
+    });
+  });
+
+  group('doesNotExtendToTheRightOf() unbounded tests', () {
+    late final bool Function(String range1, String range2)
+        doesNotExtendToTheRightOf;
+
+    setUpAll(() {
+      doesNotExtendToTheRightOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.float,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.float,
+        );
+        return r1.doesNotExtendToTheRightOf(r2);
+      };
+    });
+    test('should return true if both are [,] ranges', () {
+      expect(doesNotExtendToTheRightOf('[,]', '[,]'), true);
+    });
+
+    test('should return true if a [,] range is checked against a [b,] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,]', '[30.0,]'), true);
+    });
+
+    test('should return false if a [,] range is checked against a [,b] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,]', '[,40.0]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [b,b] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,]', '[30.0,40.0]'), false);
+    });
+
+    test('should return true if a [b,] range is checked against a [,] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[10.0,]', '[,]'), true);
+    });
+
+    test('should return true if a [,b] range is checked against a [,] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,20.0]', '[,]'), true);
+    });
+
+    test('should return true if a [b,b] range is checked against a [,] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[10.0,20.0]', '[,]'), true);
+    });
+
+    test('should return true if a [b,] range is compared against a [b,] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[10.0,]', '[30.0,]'), true);
+    });
+
+    test('should return false if a [b,] range is checked against a [,b] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[10.0,]', '[,40.0]'), false);
+    });
+
+    test(
+        'should return false if a [b,] range is compared against a [b,b] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[10.0,]', '[30.0,40.0]'), false);
+    });
+
+    test('should return true if a [,b] range is checked against a [b,] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,20.0]', '[30.0,]'), true);
+    });
+
+    test(
+        'should return true if the upper bound of a [,b] range is less than the upper bound of a [,b] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,20.0]', '[,40.0]'), true);
+    });
+
+    test(
+        'should return true if the upper bound of a [,b] range is equal to the upper bound of a [,b] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,20.0]', '[,20.0]'), true);
+    });
+
+    test(
+        'should return false if the upper bound of a [,b] range is greater than the upper bound of a [,b] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,20.0]', '[,10.0]'), false);
+    });
+
+    test(
+        'should return true if the upper bound of a [,b] range is less than the upper bound of a [b,b] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,20.0]', '[5.0,40.0]'), true);
+    });
+
+    test(
+        'should return true if the upper bound of a [,b] range is equal to the upper bound of a [b,b] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,20.0]', '[5.0,20.0]'), true);
+    });
+
+    test(
+        'should return false if the upper bound of a [,b] range is less than the upper bound of a [b,b] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,20.0]', '[5.0,10.0]'), false);
+    });
+  });
+
   group('getComparable() tests', () {
     late final RangeComparable<double> Function(String range) getComparable;
 

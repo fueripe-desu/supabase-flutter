@@ -821,6 +821,808 @@ void main() {
     });
   });
 
+  group('strictlyLeftOf() tests', () {
+    late final bool Function(String range1, String range2) strictlyLeftOf;
+
+    setUpAll(() {
+      strictlyLeftOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.timestamptz,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.timestamptz,
+        );
+        return r1.strictlyLeftOf(r2);
+      };
+    });
+
+    test(
+        'should return true if the lower bound is less than the other upper bound',
+        () {
+      expect(
+        strictlyLeftOf(
+          '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+          '[2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return false if the lower bound is equal to the other upper bound',
+        () {
+      expect(
+        strictlyLeftOf(
+          '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+          '[2022-12-31T00:00:00Z, 2023-12-31T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+
+    test(
+        'should return false if the lower bound is greater than the other upper bound',
+        () {
+      expect(
+        strictlyLeftOf(
+          '[2022-01-01T00:00:00Z, 2023-01-01T00:00:00Z]',
+          '[2022-12-31T00:00:00Z, 2023-12-31T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+  });
+
+  group('strictlyLeftOf() unbounded tests', () {
+    late final bool Function(String range1, String range2) strictlyLeftOf;
+
+    setUpAll(() {
+      strictlyLeftOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.timestamptz,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.timestamptz,
+        );
+        return r1.strictlyLeftOf(r2);
+      };
+    });
+    test('should return false if both are [,] ranges', () {
+      expect(strictlyLeftOf('[,]', '[,]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [b,] range',
+        () {
+      expect(strictlyLeftOf('[,]', '[2023-01-01T00:00:00Z,]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [,b] range',
+        () {
+      expect(strictlyLeftOf('[,]', '[,2023-12-31T00:00:00Z]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [b,b] range',
+        () {
+      expect(
+        strictlyLeftOf('[,]', '[2023-01-01T00:00:00Z,2023-12-31T00:00:00Z]'),
+        false,
+      );
+    });
+
+    test('should return false if a [b,] range is checked against a [,] range',
+        () {
+      expect(strictlyLeftOf('[2022-01-01T00:00:00Z,]', '[,]'), false);
+    });
+
+    test('should return false if a [,b] range is checked against a [,] range',
+        () {
+      expect(strictlyLeftOf('[,2022-12-31T00:00:00Z]', '[,]'), false);
+    });
+
+    test('should return false if a [b,b] range is checked against a [,] range',
+        () {
+      expect(
+        strictlyLeftOf('[2022-01-01T00:00:00Z,2022-12-31T00:00:00Z]', '[,]'),
+        false,
+      );
+    });
+
+    test('should return false if a [b,] range is checked against a [b,] range',
+        () {
+      expect(
+        strictlyLeftOf('[2022-01-01T00:00:00Z,]', '[2023-01-01T00:00:00Z,]'),
+        false,
+      );
+    });
+
+    test('should return false if a [b,] range is checked against a [,b] range',
+        () {
+      expect(
+        strictlyLeftOf('[2022-01-01T00:00:00Z,]', '[,2023-12-31T00:00:00Z]'),
+        false,
+      );
+    });
+
+    test('should return false if a [b,] range is checked against a [b,b] range',
+        () {
+      expect(
+        strictlyLeftOf('[2022-01-01T00:00:00Z,]',
+            '[2023-01-01T00:00:00Z,2023-12-31T00:00:00Z]'),
+        false,
+      );
+    });
+
+    test(
+        'should return true if the lower bound of a [,b] range is less than the upper bound of a [b,] range',
+        () {
+      expect(
+        strictlyLeftOf('[,2022-12-31T00:00:00Z]', '[2023-01-01T00:00:00Z,]'),
+        true,
+      );
+    });
+
+    test('should return false if a [,b] range is checked against a [,b] range',
+        () {
+      expect(
+        strictlyLeftOf('[,2022-12-31T00:00:00Z]', '[,2023-12-31T00:00:00Z]'),
+        false,
+      );
+    });
+
+    test(
+        'should return true if the lower bound of a [,b] range is less than the upper bound of a [b,b] range',
+        () {
+      expect(
+        strictlyLeftOf('[,2022-12-31T00:00:00Z]',
+            '[2023-01-01T00:00:00Z,2023-12-31T00:00:00Z]'),
+        true,
+      );
+    });
+  });
+
+  group('strictlyRighttOf() tests', () {
+    late final bool Function(String range1, String range2) strictlyRightOf;
+
+    setUpAll(() {
+      strictlyRightOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.timestamptz,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.timestamptz,
+        );
+        return r1.strictlyRightOf(r2);
+      };
+    });
+
+    test(
+        'should return true if the lower bound is greater than the other upper bound',
+        () {
+      expect(
+        strictlyRightOf(
+          '[2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+          '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return false if the lower bound is equal to the other upper bound',
+        () {
+      expect(
+        strictlyRightOf(
+          '[2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+          '[2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+
+    test(
+        'should return false if the lower bound is less than the other upper bound',
+        () {
+      expect(
+        strictlyRightOf(
+          '[2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+          '[2022-12-31T00:00:00Z, 2024-01-01T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+  });
+
+  group('strictlyRightOf() unbounded tests', () {
+    late final bool Function(String range1, String range2) strictlyRightOf;
+
+    setUpAll(() {
+      strictlyRightOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.timestamptz,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.timestamptz,
+        );
+        return r1.strictlyRightOf(r2);
+      };
+    });
+    test('should return false if both are [,] ranges', () {
+      expect(strictlyRightOf('[,]', '[,]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [b,] range',
+        () {
+      expect(strictlyRightOf('[,]', '[2022-01-01T00:00:00Z,]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [,b] range',
+        () {
+      expect(strictlyRightOf('[,]', '[,2022-12-31T00:00:00Z]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [b,b] range',
+        () {
+      expect(
+        strictlyRightOf('[,]', '[2022-01-01T00:00:00Z,2022-12-31T00:00:00Z]'),
+        false,
+      );
+    });
+
+    test('should return false if a [b,] range is checked against a [,] range',
+        () {
+      expect(strictlyRightOf('[2023-01-01T00:00:00Z,]', '[,]'), false);
+    });
+
+    test('should return false if a [,b] range is checked against a [,] range',
+        () {
+      expect(strictlyRightOf('[,2023-12-31T00:00:00Z]', '[,]'), false);
+    });
+
+    test('should return false if a [b,b] range is checked against a [,] range',
+        () {
+      expect(
+        strictlyRightOf('[2023-01-01T00:00:00Z,2023-12-31T00:00:00Z]', '[,]'),
+        false,
+      );
+    });
+
+    test('should return false if a [b,] range is checked against a [b,] range',
+        () {
+      expect(
+        strictlyRightOf('[2023-01-01T00:00:00Z,]', '[2022-01-01T00:00:00Z,]'),
+        false,
+      );
+    });
+
+    test(
+        'should return true if the lower bound of a [b,] range is greater than the upper bound of a [,b] range',
+        () {
+      expect(
+        strictlyRightOf('[2023-01-01T00:00:00Z,]', '[,2022-12-31T00:00:00Z]'),
+        true,
+      );
+    });
+
+    test(
+        'should return true if the lower bound of a [b,] range is greater than the upper bound of a [b,b] range',
+        () {
+      expect(
+        strictlyRightOf(
+          '[2023-01-01T00:00:00Z,]',
+          '[2022-01-01T00:00:00Z,2022-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test('should return false if a [,b] range is checked against a [b,] range',
+        () {
+      expect(
+        strictlyRightOf('[,2023-12-31T00:00:00Z]', '[2022-01-01T00:00:00Z,]'),
+        false,
+      );
+    });
+
+    test('should return false if a [,b] range is checked against a [,b] range',
+        () {
+      expect(
+        strictlyRightOf('[,2023-12-31T00:00:00Z]', '[,2022-12-31T00:00:00Z]'),
+        false,
+      );
+    });
+
+    test('should return false if a [,b] range is checked against a [b,b] range',
+        () {
+      expect(
+        strictlyRightOf(
+          '[,2023-12-31T00:00:00Z]',
+          '[2022-01-01T00:00:00Z,2022-12-31T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+  });
+
+  group('doesNotExtendToTheLeftOf() tests', () {
+    late final bool Function(String range1, String range2)
+        doesNotExtendToTheLeftOf;
+
+    setUpAll(() {
+      doesNotExtendToTheLeftOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.timestamptz,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.timestamptz,
+        );
+        return r1.doesNotExtendToTheLeftOf(r2);
+      };
+    });
+
+    test(
+        'should return true if the lower bound is greater than the other lower bound',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+          '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return true if the lower bound is equal to the other lower bound',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+          '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return false if the lower bound is less than the other lower bound',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+          '[2022-12-31T00:00:00Z, 2024-01-01T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+  });
+
+  group('doesNotExtendToTheLeftOf() unbounded tests', () {
+    late final bool Function(String range1, String range2)
+        doesNotExtendToTheLeftOf;
+
+    setUpAll(() {
+      doesNotExtendToTheLeftOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.timestamptz,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.timestamptz,
+        );
+        return r1.doesNotExtendToTheLeftOf(r2);
+      };
+    });
+    test('should return true if both are [,] ranges', () {
+      expect(doesNotExtendToTheLeftOf('[,]', '[,]'), true);
+    });
+
+    test('should return false if a [,] range is checked against a [b,] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[,]', '[2022-01-01T00:00:00Z,]'), false);
+    });
+
+    test('should return true if a [,] range is checked against a [,b] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[,]', '[,2022-12-31T00:00:00Z]'), true);
+    });
+
+    test('should return false if a [,] range is checked against a [b,b] range',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[,]',
+          '[2022-01-01T00:00:00Z,2022-12-31T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+
+    test('should return true if a [b,] range is checked against a [,] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[2023-01-01T00:00:00Z,]', '[,]'), true);
+    });
+
+    test('should return true if a [,b] range is checked against a [,] range',
+        () {
+      expect(doesNotExtendToTheLeftOf('[,2023-12-31T00:00:00Z]', '[,]'), true);
+    });
+
+    test('should return true if a [b,b] range is checked against a [,] range',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[2023-01-01T00:00:00Z,2023-12-31T00:00:00Z]',
+          '[,]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return true if the lower bound of a [b,] range is greater than the lower bound a [b,] range',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[2023-01-01T00:00:00Z,]',
+          '[2022-01-01T00:00:00Z,]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return true if the lower bound of a [b,] range is equal to the lower bound a [b,] range',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[2023-01-01T00:00:00Z,]',
+          '[2023-01-01T00:00:00Z,]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return false if the lower bound of a [b,] range is less than the lower bound a [b,] range',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[2023-01-01T00:00:00Z,]',
+          '[2023-12-31T00:00:00Z,]',
+        ),
+        false,
+      );
+    });
+
+    test('should return true if a [b,] range is checked against a [,b] range',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[2023-01-01T00:00:00Z,]',
+          '[,2022-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return true if the lower bound of a [b,] range is greater than the lower bound of a [b,b] range',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[2023-01-01T00:00:00Z,]',
+          '[2022-01-01T00:00:00Z,2022-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return true if the lower bound of a [b,] range is equal to the lower bound of a [b,b] range',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[2023-01-01T00:00:00Z,]',
+          '[2023-01-01T00:00:00Z,2023-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return false if the lower bound of a [b,] range is equal to the lower bound of a [b,b] range',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[2023-01-01T00:00:00Z,]',
+          '[2023-12-31T00:00:00Z,2024-01-01T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+
+    test('should return false if a [,b] range is checked against a [b,] range',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[,2023-01-01T00:00:00Z]',
+          '[2022-01-01T00:00:00Z,]',
+        ),
+        false,
+      );
+    });
+
+    test('should return false if a [,b] range is checked against a [,b] range',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[,2023-01-01T00:00:00Z]',
+          '[,2022-12-31T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+
+    test('should return false if a [,b] range is checked against a [b,b] range',
+        () {
+      expect(
+        doesNotExtendToTheLeftOf(
+          '[,2023-01-01T00:00:00Z]',
+          '[2022-01-01T00:00:00Z,2022-12-31T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+  });
+
+  group('doesNotExtendToTheRightOf() tests', () {
+    late final bool Function(String range1, String range2)
+        doesNotExtendToTheRightOf;
+
+    setUpAll(() {
+      doesNotExtendToTheRightOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.timestamptz,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.timestamptz,
+        );
+        return r1.doesNotExtendToTheRightOf(r2);
+      };
+    });
+
+    test(
+        'should return true if the upper bound is less than the other upper bound',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[2022-01-01T00:00:00Z, 2022-12-31T00:00:00Z]',
+          '[2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return true if the upper bound is equal to the other upper bound',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+          '[2023-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return false if the upper bound is greater than the other upper bound',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[2022-01-01T00:00:00Z, 2023-12-31T00:00:00Z]',
+          '[2023-01-01T00:00:00Z, 2023-06-01T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+  });
+
+  group('doesNotExtendToTheRightOf() unbounded tests', () {
+    late final bool Function(String range1, String range2)
+        doesNotExtendToTheRightOf;
+
+    setUpAll(() {
+      doesNotExtendToTheRightOf = (String range1, String range2) {
+        final r1 = RangeType.createRange(
+          range: range1,
+          forceType: RangeDataType.timestamptz,
+        );
+        final r2 = RangeType.createRange(
+          range: range2,
+          forceType: RangeDataType.timestamptz,
+        );
+        return r1.doesNotExtendToTheRightOf(r2);
+      };
+    });
+    test('should return true if both are [,] ranges', () {
+      expect(doesNotExtendToTheRightOf('[,]', '[,]'), true);
+    });
+
+    test('should return true if a [,] range is checked against a [b,] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,]', '[2023-01-01T00:00:00Z,]'), true);
+    });
+
+    test('should return false if a [,] range is checked against a [,b] range',
+        () {
+      expect(
+          doesNotExtendToTheRightOf('[,]', '[,2023-12-31T00:00:00Z]'), false);
+    });
+
+    test('should return false if a [,] range is checked against a [b,b] range',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[,]',
+          '[2023-01-01T00:00:00Z,2023-12-31T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+
+    test('should return true if a [b,] range is checked against a [,] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[2022-01-01T00:00:00Z,]', '[,]'), true);
+    });
+
+    test('should return true if a [,b] range is checked against a [,] range',
+        () {
+      expect(doesNotExtendToTheRightOf('[,2022-12-31T00:00:00Z]', '[,]'), true);
+    });
+
+    test('should return true if a [b,b] range is checked against a [,] range',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[2022-01-01T00:00:00Z,2022-12-31T00:00:00Z]',
+          '[,]',
+        ),
+        true,
+      );
+    });
+
+    test('should return true if a [b,] range is compared against a [b,] range',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[2022-01-01T00:00:00Z,]',
+          '[2023-01-01T00:00:00Z,]',
+        ),
+        true,
+      );
+    });
+
+    test('should return false if a [b,] range is checked against a [,b] range',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[2022-01-01T00:00:00Z,]',
+          '[,2023-12-31T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+
+    test(
+        'should return false if a [b,] range is compared against a [b,b] range',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[2022-01-01T00:00:00Z,]',
+          '[2023-01-01T00:00:00Z,2023-12-31T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+
+    test('should return true if a [,b] range is checked against a [b,] range',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[,2022-12-31T00:00:00Z]',
+          '[2023-01-01T00:00:00Z,]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return true if the upper bound of a [,b] range is less than the upper bound of a [,b] range',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[,2022-12-31T00:00:00Z]',
+          '[,2023-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return true if the upper bound of a [,b] range is equal to the upper bound of a [,b] range',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[,2022-12-31T00:00:00Z]',
+          '[,2022-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return false if the upper bound of a [,b] range is greater than the upper bound of a [,b] range',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[,2022-12-31T00:00:00Z]',
+          '[,2022-01-01T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+
+    test(
+        'should return true if the upper bound of a [,b] range is less than the upper bound of a [b,b] range',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[,2022-12-31T00:00:00Z]',
+          '[2021-01-01T00:00:00Z,2023-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return true if the upper bound of a [,b] range is equal to the upper bound of a [b,b] range',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[,2022-12-31T00:00:00Z]',
+          '[2021-01-01T00:00:00Z,2022-12-31T00:00:00Z]',
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should return false if the upper bound of a [,b] range is less than the upper bound of a [b,b] range',
+        () {
+      expect(
+        doesNotExtendToTheRightOf(
+          '[,2022-12-31T00:00:00Z]',
+          '[2021-01-01T00:00:00Z,2022-01-01T00:00:00Z]',
+        ),
+        false,
+      );
+    });
+  });
+
   group('getComparable() tests', () {
     late final RangeComparable<DateTime> Function(String range) getComparable;
 
