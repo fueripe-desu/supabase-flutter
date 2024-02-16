@@ -24,34 +24,66 @@ class FilterBuilder {
     return FilterBuilder(newData);
   }
 
-  FilterBuilder neq(String column, Object value) {
-    if (value is List) {
-      final newData = _data
-          .where(
-            (element) => !value.contains(element[column]),
-          )
-          .toList();
-      return FilterBuilder(newData);
-    }
-
-    final newData = _data.where((element) => element[column] != value).toList();
+  FilterBuilder eqAll(String column, List value) {
+    final newData = _data
+        .where(
+          (element) => value.every(element[column]),
+        )
+        .toList();
     return FilterBuilder(newData);
   }
 
+  FilterBuilder neq(String column, Object value) => _notEqualTo(column, value);
+
+  FilterBuilder isDistinct(String column, Object? value) =>
+      _notEqualTo(column, value);
+
   FilterBuilder gt(String column, Object value) => _filter(
         test: (element) => element[column] > value,
+      );
+
+  FilterBuilder gtAny(String column, List values) => _filter(
+        test: (element) => values.any((value) => element[column] > value),
+      );
+
+  FilterBuilder gtAll(String column, List values) => _filter(
+        test: (element) => values.every((value) => element[column] > value),
       );
 
   FilterBuilder gte(String column, Object value) => _filter(
         test: (element) => element[column] >= value,
       );
 
+  FilterBuilder gteAny(String column, List values) => _filter(
+        test: (element) => values.any((value) => element[column] >= value),
+      );
+
+  FilterBuilder gteAll(String column, List values) => _filter(
+        test: (element) => values.every((value) => element[column] >= value),
+      );
+
   FilterBuilder lt(String column, Object value) => _filter(
         test: (element) => element[column] < value,
       );
 
+  FilterBuilder ltAny(String column, List values) => _filter(
+        test: (element) => values.any((value) => element[column] < value),
+      );
+
+  FilterBuilder ltAll(String column, List values) => _filter(
+        test: (element) => values.every((value) => element[column] < value),
+      );
+
   FilterBuilder lte(String column, Object value) => _filter(
         test: (element) => element[column] <= value,
+      );
+
+  FilterBuilder lteAny(String column, List values) => _filter(
+        test: (element) => values.any((value) => element[column] <= value),
+      );
+
+  FilterBuilder lteAll(String column, List values) => _filter(
+        test: (element) => values.every((value) => element[column] <= value),
       );
 
   FilterBuilder like(String column, String pattern) => _filter(
@@ -154,6 +186,36 @@ class FilterBuilder {
     throw Exception('Invalid use of overlaps.');
   }
 
+  FilterBuilder strictlyLeftOf(String column, String range) => _compareRanges(
+        column: column,
+        range: range,
+        compareFunc: (inputRange, rowRange) =>
+            rowRange.strictlyLeftOf(inputRange),
+      );
+
+  FilterBuilder strictlyRightOf(String column, String range) => _compareRanges(
+        column: column,
+        range: range,
+        compareFunc: (inputRange, rowRange) =>
+            rowRange.strictlyRightOf(inputRange),
+      );
+
+  FilterBuilder doesNotExtendToTheLeftOf(String column, String range) =>
+      _compareRanges(
+        column: column,
+        range: range,
+        compareFunc: (inputRange, rowRange) =>
+            rowRange.doesNotExtendToTheLeftOf(inputRange),
+      );
+
+  FilterBuilder doesNotExtendToTheRightOf(String column, String range) =>
+      _compareRanges(
+        column: column,
+        range: range,
+        compareFunc: (inputRange, rowRange) =>
+            rowRange.doesNotExtendToTheRightOf(inputRange),
+      );
+
   FilterBuilder textSearch(
     String column,
     String query, {
@@ -174,6 +236,20 @@ class FilterBuilder {
     });
 
     return oldResult;
+  }
+
+  FilterBuilder _notEqualTo(String column, Object? value) {
+    if (value is List) {
+      final newData = _data
+          .where(
+            (element) => !value.contains(element[column]),
+          )
+          .toList();
+      return FilterBuilder(newData);
+    }
+
+    final newData = _data.where((element) => element[column] != value).toList();
+    return FilterBuilder(newData);
   }
 
   FilterBuilder _compareRanges({
