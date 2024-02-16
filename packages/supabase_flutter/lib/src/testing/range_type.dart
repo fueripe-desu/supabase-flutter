@@ -342,6 +342,9 @@ abstract class RangeType {
   RangeComparable getComparable();
 
   @override
+  String toString() => rawRangeString;
+
+  @override
   bool operator ==(Object other);
 
   @override

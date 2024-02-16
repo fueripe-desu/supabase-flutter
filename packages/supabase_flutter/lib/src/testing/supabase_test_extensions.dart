@@ -21,6 +21,24 @@ extension StringUtils on String {
   }
 
   String last() => isEmpty ? '' : this[length - 1];
+
+  bool equalsEither(List<String> options) {
+    for (String option in options) {
+      if (this == option) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool containsEither(List<String> options) {
+    for (String option in options) {
+      if (contains(option)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
 
 extension ListStringUtils on List<String> {
