@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+import 'package:supabase_flutter/src/testing/postgrest/supabase_test_postgrest.dart';
 import 'package:supabase_flutter/src/testing/range_comparable.dart';
 import 'package:supabase_flutter/src/testing/range_type.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
@@ -27,7 +29,7 @@ class FilterBuilder {
   FilterBuilder eqAll(String column, List value) {
     final newData = _data
         .where(
-          (element) => value.every(element[column]),
+          (element) => value.every((element2) => element[column] == element2),
         )
         .toList();
     return FilterBuilder(newData);
@@ -136,10 +138,42 @@ class FilterBuilder {
         compareFunc: (inputRange, rowRange) => rowRange > inputRange,
       );
 
+  FilterBuilder rangeGtAny(String column, List<String> rangeList) => _filter(
+        test: (element) => rangeList.any(
+          (range) =>
+              RangeType.createRange(range: element[column]) >
+              RangeType.createRange(range: range),
+        ),
+      );
+
+  FilterBuilder rangeGtAll(String column, List<String> rangeList) => _filter(
+        test: (element) => rangeList.every(
+          (range) =>
+              RangeType.createRange(range: element[column]) >
+              RangeType.createRange(range: range),
+        ),
+      );
+
   FilterBuilder rangeGte(String column, String range) => _compareRanges(
         column: column,
         range: range,
         compareFunc: (inputRange, rowRange) => rowRange >= inputRange,
+      );
+
+  FilterBuilder rangeGteAny(String column, List<String> rangeList) => _filter(
+        test: (element) => rangeList.any(
+          (range) =>
+              RangeType.createRange(range: element[column]) >=
+              RangeType.createRange(range: range),
+        ),
+      );
+
+  FilterBuilder rangeGteAll(String column, List<String> rangeList) => _filter(
+        test: (element) => rangeList.every(
+          (range) =>
+              RangeType.createRange(range: element[column]) >=
+              RangeType.createRange(range: range),
+        ),
       );
 
   FilterBuilder rangeLt(String column, String range) => _compareRanges(
@@ -148,10 +182,42 @@ class FilterBuilder {
         compareFunc: (inputRange, rowRange) => rowRange < inputRange,
       );
 
+  FilterBuilder rangeLtAny(String column, List<String> rangeList) => _filter(
+        test: (element) => rangeList.any(
+          (range) =>
+              RangeType.createRange(range: element[column]) <
+              RangeType.createRange(range: range),
+        ),
+      );
+
+  FilterBuilder rangeLtAll(String column, List<String> rangeList) => _filter(
+        test: (element) => rangeList.every(
+          (range) =>
+              RangeType.createRange(range: element[column]) <
+              RangeType.createRange(range: range),
+        ),
+      );
+
   FilterBuilder rangeLte(String column, String range) => _compareRanges(
         column: column,
         range: range,
         compareFunc: (inputRange, rowRange) => rowRange <= inputRange,
+      );
+
+  FilterBuilder rangeLteAny(String column, List<String> rangeList) => _filter(
+        test: (element) => rangeList.any(
+          (range) =>
+              RangeType.createRange(range: element[column]) <=
+              RangeType.createRange(range: range),
+        ),
+      );
+
+  FilterBuilder rangeLteAll(String column, List<String> rangeList) => _filter(
+        test: (element) => rangeList.every(
+          (range) =>
+              RangeType.createRange(range: element[column]) <=
+              RangeType.createRange(range: range),
+        ),
       );
 
   FilterBuilder rangeAdjacent(String column, String range) => _compareRanges(
@@ -236,6 +302,33 @@ class FilterBuilder {
     });
 
     return oldResult;
+  }
+
+  FilterBuilder not(String column, String filter, String value) {
+    final postrestParser = PostrestSyntaxParser(_data);
+    final filterBuilder = postrestParser.executeFilter(
+      column: column,
+      filterName: filter,
+      value: value,
+    );
+    final filterResult = filterBuilder.execute();
+    final newData = _data
+        .where(
+          (entry) => !filterResult.any(
+            (excludeEntry) => const MapEquality<String, dynamic>().equals(
+              entry,
+              excludeEntry,
+            ),
+          ),
+        )
+        .toList();
+
+    return FilterBuilder(newData);
+  }
+
+  FilterBuilder or(String filters, String? referencedTable) {
+    final postrestParser = PostrestSyntaxParser(_data);
+    return postrestParser.executeExpression('or($filters)');
   }
 
   FilterBuilder _notEqualTo(String column, Object? value) {
