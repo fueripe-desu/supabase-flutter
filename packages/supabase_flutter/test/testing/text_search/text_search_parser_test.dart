@@ -35,8 +35,6 @@ void main() {
     setUpAll(() {
       compare = (expression, expected) {
         final result = parser.parseExpression(expression);
-
-        print(result);
         return deepEq(result, expected);
       };
     });

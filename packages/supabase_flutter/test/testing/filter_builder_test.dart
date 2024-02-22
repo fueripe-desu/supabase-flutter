@@ -25,6 +25,7 @@ void main() {
   setUpAll(() {
     tasks = loadJson('tasks.json');
     reservations = loadJson('reservations.json');
+    issues = loadJson('issues.json');
     deepEq = const DeepCollectionEquality.unordered().equals;
 
     users = [
@@ -37,19 +38,6 @@ void main() {
         'id': 2,
         'name': 'Jane',
         'address': {},
-      },
-    ];
-
-    issues = [
-      {
-        'id': 1,
-        'title': 'Cache invalidation is not working',
-        'tags': ['is:open', 'severity:high', 'priority:low'],
-      },
-      {
-        'id': 2,
-        'title': 'Use better names',
-        'tags': ['is:open', 'severity:low', 'priority:medium'],
       },
     ];
   });
@@ -301,7 +289,7 @@ void main() {
       final result = FilterBuilder(issues)
           .contains('tags', ['is:open', 'priority:low']).execute();
 
-      expect(deepEq(result, [issues[0]]), true);
+      expect(result, [issues[0], issues[6]]);
     });
 
     test('should return rows that contains every element in the specified map',
@@ -449,7 +437,7 @@ void main() {
     final result = FilterBuilder(issues)
         .overlaps('tags', ['is:closed', 'severity:high']).execute();
 
-    expect(result, [issues[0]]);
+    expect(result, [issues[0], issues[3], issues[4], issues[6]]);
   });
 
   test('should return all rows that matches with the text search', () {
@@ -471,5 +459,16 @@ void main() {
         FilterBuilder(countries).match({'id': 2, 'name': 'Albania'}).execute();
 
     expect(result, [countries[1]]);
+  });
+
+  test('should match at least one of the specified PostgREST filters', () {
+    final expectedMap =
+        tasks.where((element) => [2, 3].contains(element['id'])).toList();
+
+    final result = FilterBuilder(tasks)
+        .or('id.eq.2,status.eq."completed"', null)
+        .execute();
+
+    expect(deepEq(result, expectedMap), true);
   });
 }
