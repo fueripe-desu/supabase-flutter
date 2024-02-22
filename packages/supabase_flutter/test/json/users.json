@@ -1,0 +1,41 @@
+[
+    {
+        "id": 1,
+        "name": "Michael",
+        "address": {
+            "postcode": "90210",
+            "street": "Melrose Place"
+        }
+    },
+    {
+        "id": 2,
+        "name": "Jane",
+        "address": {
+            "postcode": "90210"
+        }
+    },
+    {
+        "id": 3,
+        "name": "Sarah",
+        "address": {
+            "postcode": "10001",
+            "street": "5th Avenue"
+        }
+    },
+    {
+        "id": 4,
+        "name": "John",
+        "address": {
+            "postcode": "E1 6AN",
+            "street": "Brick Lane"
+        }
+    },
+    {
+        "id": 5,
+        "name": "Emma",
+        "address": {
+            "postcode": "94105",
+            "street": "Mission Street"
+        }
+    }
+]

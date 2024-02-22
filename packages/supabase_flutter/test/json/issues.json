@@ -1,0 +1,65 @@
+[
+    {
+        "id": 1,
+        "title": "Cache invalidation is not working",
+        "tags": [
+            "is:open",
+            "severity:high",
+            "priority:low"
+        ]
+    },
+    {
+        "id": 2,
+        "title": "Use better names",
+        "tags": [
+            "is:open",
+            "severity:low",
+            "priority:medium"
+        ]
+    },
+    {
+        "id": 3,
+        "title": "Database connection timeouts",
+        "tags": [
+            "is:open",
+            "severity:medium",
+            "priority:high"
+        ]
+    },
+    {
+        "id": 4,
+        "title": "UI elements misaligned on mobile view",
+        "tags": [
+            "is:closed",
+            "severity:low",
+            "priority:low"
+        ]
+    },
+    {
+        "id": 5,
+        "title": "API rate limiting issues",
+        "tags": [
+            "is:open",
+            "severity:high",
+            "priority:high"
+        ]
+    },
+    {
+        "id": 6,
+        "title": "Deprecated dependencies in package.json",
+        "tags": [
+            "is:open",
+            "severity:medium",
+            "priority:medium"
+        ]
+    },
+    {
+        "id": 7,
+        "title": "Login system is not working",
+        "tags": [
+            "is:open",
+            "severity:high",
+            "priority:low"
+        ]
+    }
+]

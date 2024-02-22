@@ -1,0 +1,26 @@
+[
+    {
+        "id": 1,
+        "value": true
+    },
+    {
+        "id": 2,
+        "value": false
+    },
+    {
+        "id": 3,
+        "value": null
+    },
+    {
+        "id": 4,
+        "value": true
+    },
+    {
+        "id": 5,
+        "value": false
+    },
+    {
+        "id": 6,
+        "value": null
+    }
+]
