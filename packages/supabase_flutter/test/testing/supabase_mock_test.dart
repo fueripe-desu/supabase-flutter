@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:supabase_flutter/src/testing/range_type.dart';
+import 'package:supabase_flutter/src/testing/range_type/range_type.dart';
 import 'package:supabase_flutter/src/testing/schema_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:supabase_flutter/src/testing/range_comparable.dart';
-import 'package:supabase_flutter/src/testing/range_type.dart';
+import 'package:supabase_flutter/src/testing/range_type/range_comparable.dart';
+import 'package:supabase_flutter/src/testing/range_type/range_type.dart';
 
 void main() {
   group('bound class tests', () {

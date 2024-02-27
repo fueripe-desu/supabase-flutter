@@ -32,7 +32,8 @@ void main() {
         if (tokens.length == 1) {
           return tokens.first.evaluate();
         } else {
-          return PostrestSyntaxParser([]).parseValue(value);
+          final result = PostrestSyntaxParser([]).parseValue(value);
+          return result;
         }
       };
     });
@@ -432,7 +433,7 @@ void main() {
     test('should be able to parse an array of ranges', () {
       expect(
         evalValue('{[10, 20], [40, 60], [200, 400]}'),
-        ['[10, 20]', '[40, 60]', '[200, 400]'],
+        ['[10,20]', '[40,60]', '[200,400]'],
       );
     });
 
@@ -773,6 +774,260 @@ void main() {
           ),
           LogicalEnd(),
         ],
+      );
+    });
+  });
+
+  group('_allowDartLists option', () {
+    late final bool Function(
+      String value,
+      List<PostrestValueToken> compareList,
+    ) parseValue;
+
+    setUpAll(() {
+      parseValue = (value, compareList) {
+        final tokens = PostrestValueParser().tokenize(
+          value,
+          allowDartLists: true,
+        );
+        return deepEq(tokens, compareList);
+      };
+    });
+
+    test('should be able to parse a list if it has more than two elements', () {
+      expect(
+        parseValue(
+          '[10, 20, 30]',
+          [
+            StartToken(),
+            ValueToken('10'),
+            SeparatorToken(),
+            ValueToken('20'),
+            SeparatorToken(),
+            ValueToken('30'),
+            EndToken(),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test('should be able to parse a list if it has less than two elements', () {
+      expect(
+        parseValue(
+          '[10]',
+          [
+            StartToken(),
+            ValueToken('10'),
+            EndToken(),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test('should be able to parse an empty list', () {
+      expect(
+        parseValue(
+          '[]',
+          [
+            StartToken(),
+            EndToken(),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test('should be able to parse nested lists', () {
+      expect(
+        parseValue(
+          '[10, 20, 30, [10, 20, 30]]',
+          [
+            StartToken(),
+            ValueToken('10'),
+            SeparatorToken(),
+            ValueToken('20'),
+            SeparatorToken(),
+            ValueToken('30'),
+            SeparatorToken(),
+            StartToken(),
+            ValueToken('10'),
+            SeparatorToken(),
+            ValueToken('20'),
+            SeparatorToken(),
+            ValueToken('30'),
+            EndToken(),
+            EndToken(),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test('should be able to parse empty lists in the innermost level', () {
+      expect(
+        parseValue(
+          '[10, 20, 30, []]',
+          [
+            StartToken(),
+            ValueToken('10'),
+            SeparatorToken(),
+            ValueToken('20'),
+            SeparatorToken(),
+            ValueToken('30'),
+            SeparatorToken(),
+            StartToken(),
+            EndToken(),
+            EndToken(),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test('should be able to parse empty lists in the outermost level', () {
+      expect(
+        parseValue(
+          '[[10, 20, 30]]',
+          [
+            StartToken(),
+            StartToken(),
+            ValueToken('10'),
+            SeparatorToken(),
+            ValueToken('20'),
+            SeparatorToken(),
+            ValueToken('30'),
+            EndToken(),
+            EndToken(),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test('should be able to parse mixed dart and postrest lists', () {
+      expect(
+        parseValue(
+          '[{3, 5}, [10, 20, 30]]',
+          [
+            StartToken(),
+            StartToken(),
+            ValueToken('3'),
+            SeparatorToken(),
+            ValueToken('5'),
+            EndToken(),
+            SeparatorToken(),
+            StartToken(),
+            ValueToken('10'),
+            SeparatorToken(),
+            ValueToken('20'),
+            SeparatorToken(),
+            ValueToken('30'),
+            EndToken(),
+            EndToken(),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test('should be able to parse a range', () {
+      expect(
+        parseValue(
+          '[10, 20]',
+          [
+            ValueToken('[10, 20]'),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test('should be able to parse a list of ranges', () {
+      expect(
+        parseValue(
+          '[[10, 20], [30, 40], [50, 60]]',
+          [
+            StartToken(),
+            ValueToken('[10, 20]'),
+            SeparatorToken(),
+            ValueToken('[30, 40]'),
+            SeparatorToken(),
+            ValueToken('[50, 60]'),
+            EndToken(),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test('should not consider as range when the second value is a list', () {
+      expect(
+        parseValue(
+          '[10, [20]]',
+          [
+            StartToken(),
+            ValueToken('10'),
+            SeparatorToken(),
+            StartToken(),
+            ValueToken('20'),
+            EndToken(),
+            EndToken(),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test('should be able to parse an unbounded range using \'null\'', () {
+      expect(
+        parseValue(
+          '[null, null]',
+          [
+            ValueToken('[null, null]'),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test('should be able to parse an unbounded range using \'null\' as string',
+        () {
+      expect(
+        parseValue(
+          '["null", "null"]',
+          [
+            ValueToken('[null, null]'),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test('should be able to parse an infinite range using \'infinity\'', () {
+      expect(
+        parseValue(
+          '[-infinity, infinity]',
+          [
+            ValueToken('[-infinity, infinity]'),
+          ],
+        ),
+        true,
+      );
+    });
+
+    test(
+        'should be able to parse an infinite range using \'infinity\' as string',
+        () {
+      expect(
+        parseValue(
+          '["-infinity", "infinity"]',
+          [
+            ValueToken('[-infinity, infinity]'),
+          ],
+        ),
+        true,
       );
     });
   });

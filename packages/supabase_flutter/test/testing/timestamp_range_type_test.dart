@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:supabase_flutter/src/testing/range_comparable.dart';
-import 'package:supabase_flutter/src/testing/range_type.dart';
+import 'package:supabase_flutter/src/testing/range_type/range_comparable.dart';
+import 'package:supabase_flutter/src/testing/range_type/range_type.dart';
 
 void main() {
   test(
@@ -184,6 +184,11 @@ void main() {
     test('should be able to create a [,] range', () {
       expect(() => createRange('[,]'), returnsNormally);
       expect(createRange('[,]'), isA<DateRangeType>());
+    });
+
+    test('should be able to create a [,] range with \'null\'', () {
+      expect(() => createRange('[null,null]'), returnsNormally);
+      expect(createRange('[null,null]'), isA<DateRangeType>());
     });
 
     test('should be able to create a [b,] range (omitting milliseconds)', () {

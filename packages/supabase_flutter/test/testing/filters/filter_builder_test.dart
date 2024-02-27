@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:supabase_flutter/src/testing/filter_builder.dart';
+import 'package:supabase_flutter/src/testing/filters/filter_builder.dart';
 
-import '../json/json_reader.dart';
+import '../../json/json_reader.dart';
 
 void main() {
   late final List<Map<String, dynamic>> tasks;
@@ -166,7 +166,7 @@ void main() {
     test('should return empty list for non-matching patterns', () {
       final result = FilterBuilder(tasks)
           .likeAllOf('description', ['unknown', 'invalid']).execute();
-      expect(result.isEmpty, true);
+      expect(result.data.isEmpty, true);
     });
 
     test('should return filtered data with case-insensitive matching', () {
@@ -186,7 +186,7 @@ void main() {
 
     test('should return no data when no patterns provided', () {
       final result = FilterBuilder(tasks).likeAllOf('title', []).execute();
-      expect(result.isEmpty, true);
+      expect(result.data.isEmpty, true);
     });
   });
 
@@ -200,7 +200,7 @@ void main() {
     test('should return empty list for non-matching patterns', () {
       final result = FilterBuilder(tasks)
           .likeAnyOf('description', ['unknown', 'invalid']).execute();
-      expect(result.isEmpty, true);
+      expect(result.data.isEmpty, true);
     });
 
     test('should return data for partial matches', () {
@@ -219,7 +219,7 @@ void main() {
 
     test('should return no data when no patterns provided', () {
       final result = FilterBuilder(tasks).ilikeAnyOf('title', []).execute();
-      expect(result.isEmpty, true);
+      expect(result.data.isEmpty, true);
     });
   });
 
@@ -268,7 +268,7 @@ void main() {
           .execute();
 
       expect(deepEq(result1, [reservations[0]]), true);
-      expect(result2.isEmpty, true);
+      expect(result2.data.isEmpty, true);
       expect(deepEq(result3, [reservations[0]]), true);
       expect(deepEq(result4, [reservations[0]]), true);
     });
@@ -470,5 +470,53 @@ void main() {
         .execute();
 
     expect(deepEq(result, expectedMap), true);
+  });
+
+  group('type casting', () {
+    group('\'eq\' filter type casting', () {
+      late final dataMap = [
+        {'column': '22'},
+        {'column': '22.5'},
+        {'column': 'true'},
+        {'column': 'false'},
+        {'column': 'null'},
+        {'column': '2022-01-01'},
+        {'column': '2022-01-01T12:00:00'},
+        {'column': '2022-01-10T12:00:00Z'},
+        {'column': 'value2'},
+      ];
+
+      late final bool Function(String column, dynamic value,
+          List<Map<String, dynamic>> expectedMap) eqFilter;
+    });
+    test('should be able to implicitly convert int to string', () {
+      final List<Map<String, dynamic>> dataMap = [
+        {'column': '22'},
+        {'column': 'value2'},
+      ];
+
+      final result = FilterBuilder(dataMap).eq('column', 22).execute();
+
+      expect(result.isValid, true);
+      expect(
+        deepEq(result.data, [
+          {'column': '22'}
+        ]),
+        true,
+      );
+    });
+
+    test('should return an error when there is a type mismatch', () {
+      final List<Map<String, dynamic>> dataMap = [
+        {'column': '22'},
+        {'column': 'value2'},
+      ];
+
+      final result = FilterBuilder(dataMap).eq('column', 22).execute();
+
+      print(result.isValid);
+      print(result.error?.message);
+      print(result.data);
+    });
   });
 }
