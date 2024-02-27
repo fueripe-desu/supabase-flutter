@@ -511,7 +511,7 @@ class WebSearchTextSearchConverter {
 
       if (current == '"') {
         // We need this to negate the subexpression
-        if (newQuery.last() == '-') {
+        if (newQuery.last == '-') {
           newQuery += '(';
           parenthesisStack.add('(');
         }

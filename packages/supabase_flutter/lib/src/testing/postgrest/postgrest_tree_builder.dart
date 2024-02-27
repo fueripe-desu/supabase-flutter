@@ -72,10 +72,7 @@ class PostrestValueTreeBuilder {
   bool _isEndToken(PostrestValueToken token) => token is EndToken;
 
   bool _isValueToken(PostrestValueToken token) =>
-      token is ValueToken ||
-      token is JsonToken ||
-      token is ListToken ||
-      token is RangeToken;
+      token is ValueToken || token is JsonToken || token is ListToken;
 
   String _rebuildTokenString(List<PostrestValueToken> tokens) {
     String buffer = '';

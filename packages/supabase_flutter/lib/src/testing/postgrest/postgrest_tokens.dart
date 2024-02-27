@@ -2,7 +2,8 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:supabase_flutter/src/testing/postgrest/supabase_test_postgrest.dart';
-import 'package:supabase_flutter/src/testing/range_type.dart';
+import 'package:supabase_flutter/src/testing/range_type/range_type.dart';
+import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
 
 abstract class PostrestValueToken {
   Type? get tokenType => null;
@@ -88,31 +89,57 @@ class ValueToken extends PostrestValueToken {
   Type? get tokenType => _type;
 
   ValueToken(String valueString) {
-    _valueString = valueString;
     final parsed = _parseBaseTypes(valueString);
+    _type = _getType(parsed);
 
-    if (parsed is int || parsed is double) {
-      _type = num;
-    } else if (parsed is bool) {
-      _type = bool;
-    } else if (parsed is DateTime) {
-      _type = DateTime;
-    } else if (parsed is String) {
-      _type = String;
-    } else if (parsed == null) {
-      _type = Null;
+    if (parsed is String && _isValueRange(parsed)) {
+      value = parsed.replaceAll(' ', '');
+      _valueString = value.toString();
     } else {
-      throw Exception('Invalid type.');
+      value = parsed;
+      _valueString = value.toString();
     }
-
-    value = parsed;
   }
 
   @override
   dynamic evaluate() => value;
 
   @override
-  String toString() => _valueString;
+  String toString() {
+    if (_type == String) {
+      if (!["'", '['].contains(_valueString.first) &&
+          !["'", ']'].contains(_valueString.last)) {
+        return "'$_valueString'";
+      }
+    }
+
+    return _valueString;
+  }
+
+  bool _isValueRange(String value) {
+    try {
+      RangeType.createRange(range: value);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  Type _getType(dynamic value) {
+    if (value is int || value is double) {
+      return num;
+    } else if (value is bool) {
+      return bool;
+    } else if (value is DateTime) {
+      return DateTime;
+    } else if (value is String) {
+      return String;
+    } else if (value == null) {
+      return Null;
+    } else {
+      throw Exception('Invalid type.');
+    }
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -120,31 +147,6 @@ class ValueToken extends PostrestValueToken {
 
   @override
   int get hashCode => _valueString.hashCode;
-}
-
-class RangeToken extends PostrestValueToken {
-  final String _rangeString;
-  final RangeDataType? _rangeType;
-
-  RangeToken(String rangeString, RangeDataType? rangeType)
-      : _rangeString = rangeString,
-        _rangeType = rangeType;
-
-  @override
-  dynamic evaluate() => RangeType.createRange(
-        range: _rangeString,
-        forceType: _rangeType,
-      );
-
-  @override
-  String toString() => _rangeString;
-
-  @override
-  bool operator ==(Object other) =>
-      other is RangeToken && other._rangeString == _rangeString;
-
-  @override
-  int get hashCode => _rangeString.hashCode;
 }
 
 class JsonToken extends PostrestValueToken {
@@ -195,23 +197,29 @@ class JsonToken extends PostrestValueToken {
 
 class ListToken extends PostrestValueToken {
   late final List<PostrestValueToken> values;
+  late final Type? _type;
+
+  @override
+  Type? get tokenType => _type;
 
   ListToken(List<PostrestValueToken> tokens) {
-    final first = tokens.first;
-
-    if (first is JsonToken) {
-      if (!tokens.every((element) => element is JsonToken)) {
-        throw Exception('Type mismatch in array');
-      }
-    } else {
-      if (!tokens.every(
-        (element) => element.tokenType == first.tokenType,
-      )) {
-        throw Exception('Type mismatch in array');
-      }
+    if (tokens.isEmpty) {
+      _type = null;
+      values = [];
+      return;
     }
 
+    final sortedTokens = [...tokens];
+    _sortEmptyListsLast(sortedTokens);
+    final first = sortedTokens.first;
     values = List.from(tokens);
+
+    final typeMismatch = hasTypeMismatch(first);
+    if (typeMismatch) {
+      throw Exception('Type mismatch in array');
+    }
+
+    _type = first.tokenType;
   }
 
   @override
@@ -223,6 +231,43 @@ class ListToken extends PostrestValueToken {
     }
 
     return [...evaluations];
+  }
+
+  bool hasTypeMismatch(PostrestValueToken first) {
+    if (first is JsonToken) {
+      return !values.every((element) {
+        if (element is ListToken) {
+          return element.hasTypeMismatch(first);
+        } else {
+          return element is JsonToken;
+        }
+      });
+    }
+
+    return !values.every((element) {
+      if (element is ListToken) {
+        if (element.tokenType == null) {
+          return true;
+        }
+      }
+      return element.tokenType == first.tokenType;
+    });
+  }
+
+  void _sortEmptyListsLast(List<PostrestValueToken> tokens) {
+    tokens.sort((a, b) {
+      if (a is ListToken && b is ListToken) {
+        if (a.values.isEmpty && b.values.isNotEmpty) {
+          return 1;
+        } else if (b.values.isEmpty && a.values.isNotEmpty) {
+          return -1;
+        } else {
+          return 0;
+        }
+      } else {
+        return 0;
+      }
+    });
   }
 
   @override
@@ -309,7 +354,7 @@ class PostrestFilterParams extends PostrestExpToken {
       value: value!,
     );
 
-    return filterBuilder.execute();
+    return filterBuilder.execute().data;
   }
 
   PostrestFilterParams copyWith({

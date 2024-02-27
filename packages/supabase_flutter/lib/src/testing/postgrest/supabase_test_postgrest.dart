@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/src/testing/filter_builder.dart';
+import 'package:supabase_flutter/src/testing/filters/filter_builder.dart';
 import 'package:supabase_flutter/src/testing/postgrest/postgrest_token_validator.dart';
 import 'package:supabase_flutter/src/testing/postgrest/postgrest_parser.dart';
 import 'package:supabase_flutter/src/testing/postgrest/postgrest_tree_builder.dart';
@@ -48,12 +48,12 @@ class PostrestSyntaxParser {
     return FilterBuilder(filteredData);
   }
 
-  dynamic parseValue(String value) {
+  dynamic parseValue(String value, {bool allowDartLists = false}) {
     if (value.trim().isEmpty) {
       return [];
     }
 
-    final tokens = _tokenizer.tokenize(value);
+    final tokens = _tokenizer.tokenize(value, allowDartLists: allowDartLists);
     final validationResult = _validator.validate(tokens);
 
     if (!validationResult.isValid) {

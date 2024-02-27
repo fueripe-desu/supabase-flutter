@@ -1,6 +1,6 @@
 // ignore_for_file: library_private_types_in_public_api
 
-import 'package:supabase_flutter/src/testing/range_comparable.dart';
+import 'package:supabase_flutter/src/testing/range_type/range_comparable.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_error_messages.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_exceptions.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
@@ -427,8 +427,10 @@ abstract class RangeType {
     // the only thing that changes is when you directly compare one range
     // to the other, because infinity != null, infinity is treated later
     // by the _areBoundsInfinite() method
-    final lowerValue = valuePair.first == '-infinity' ? '' : valuePair.first;
-    final upperValue = valuePair.last == 'infinity' ? '' : valuePair.last;
+    final lowerValue =
+        ['-infinity', 'null'].contains(valuePair.first) ? '' : valuePair.first;
+    final upperValue =
+        ['infinity', 'null'].contains(valuePair.last) ? '' : valuePair.last;
 
     return (lowerValue, upperValue);
   }

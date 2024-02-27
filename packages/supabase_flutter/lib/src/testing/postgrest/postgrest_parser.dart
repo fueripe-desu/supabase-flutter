@@ -6,11 +6,14 @@ class PostrestValueParser {
   int _index = 0;
   String _current = '';
   String _expression = '';
+  bool _allowDartLists = false;
 
   final List<PostrestValueToken> _tokens = [];
 
-  List<PostrestValueToken> tokenize(String expression) {
+  List<PostrestValueToken> tokenize(String expression,
+      {bool allowDartLists = false}) {
     _expression = _processExpression(expression);
+    _allowDartLists = allowDartLists;
     _tokenize();
     final tokens = [..._tokens];
     _cleanParsingCache();
@@ -32,10 +35,27 @@ class PostrestValueParser {
         _tokens.add(ValueToken(value));
         continue;
       } else if (_current == '[' || _current == '(') {
-        final value = _consumeWhile(() => _current != ')' && _current != ']');
-        final finalValue =
-            value.endsWithEither([')', ']']) ? value : '$value$_current';
-        _tokens.add(ValueToken(finalValue));
+        final value = _consumeNested(['(', '['], [']', ')']);
+        if (_allowDartLists) {
+          final elements = value.substring(
+            value.firstIndex! + 1,
+            value.lastIndex,
+          );
+          final convertedList = '{$elements}';
+          final localParser = PostrestValueParser();
+          final parsedList = localParser.tokenize(
+            convertedList,
+            allowDartLists: true,
+          );
+
+          if (_isRange(parsedList)) {
+            _tokens.add(ValueToken(value));
+          } else {
+            _tokens.addAll(parsedList);
+          }
+        } else {
+          _tokens.add(ValueToken(value));
+        }
       } else if (_current == ':') {
         _tokens.add(AssignmentToken());
       } else if (_current == ',') {
@@ -51,6 +71,24 @@ class PostrestValueParser {
 
       _consume();
     }
+  }
+
+  bool _isRange(List<PostrestValueToken> tokens) {
+    final List<PostrestValueToken> valueStack = [];
+
+    for (final token in tokens) {
+      if (token is StartToken) {
+        valueStack.clear();
+      } else if (token is ValueToken) {
+        if (token.tokenType == String &&
+            !['infinity', '-infinity', 'null'].contains(token.value)) {
+          valueStack.clear();
+        } else {
+          valueStack.add(token);
+        }
+      }
+    }
+    return valueStack.length == 2;
   }
 
   bool _isNumber(String character) => RegExp(r'^\d$').hasMatch(character);
@@ -94,6 +132,33 @@ class PostrestValueParser {
         break;
       }
     } while (testFunc());
+
+    return buffer;
+  }
+
+  String _consumeNested(
+      List<String> openingTokens, List<String> closingTokens) {
+    String buffer = '';
+    bool isEndOfExpression = _index == (_expression.length - 1);
+    final List<String> openingStack = [_current];
+
+    while (openingStack.isNotEmpty && !isEndOfExpression) {
+      final value = _consumeWhile(
+        () =>
+            (!openingTokens.contains(_current)) &&
+            (!closingTokens.contains(_current)),
+      );
+      isEndOfExpression = _index == (_expression.length - 1);
+      buffer += value;
+
+      if (openingTokens.contains(_current)) {
+        openingStack.add(_current);
+      } else if (closingTokens.contains(_current)) {
+        openingStack.removeLast();
+      }
+    }
+
+    buffer += _current;
 
     return buffer;
   }

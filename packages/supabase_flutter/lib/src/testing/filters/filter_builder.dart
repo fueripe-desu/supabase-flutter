@@ -1,16 +1,32 @@
 import 'package:collection/collection.dart';
 import 'package:supabase_flutter/src/testing/postgrest/supabase_test_postgrest.dart';
-import 'package:supabase_flutter/src/testing/range_comparable.dart';
-import 'package:supabase_flutter/src/testing/range_type.dart';
+import 'package:supabase_flutter/src/testing/range_type/range_comparable.dart';
+import 'package:supabase_flutter/src/testing/range_type/range_type.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
 import 'package:supabase_flutter/src/testing/text_search/text_search.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+enum FilterDataType {
+  string,
+  integer,
+  boolean,
+  float,
+  datetime,
+}
+
 class FilterBuilder {
   final List<Map<String, dynamic>> _data;
-  FilterBuilder(List<Map<String, dynamic>> data) : _data = List.from(data);
+  final List<FilterError> _errorStack;
 
-  List<Map<String, dynamic>> execute() => _data;
+  FilterBuilder(List<Map<String, dynamic>> data, {List<FilterError>? errors})
+      : _data = List.from(data),
+        _errorStack = List.from(errors ?? []);
+
+  FilterResult execute() => FilterResult(
+        isValid: _errorStack.isEmpty,
+        error: _errorStack.isNotEmpty ? _errorStack.last : null,
+        rows: _data,
+      );
 
   FilterBuilder eq(String column, Object value) {
     if (value is List) {
@@ -22,9 +38,68 @@ class FilterBuilder {
       return FilterBuilder(newData);
     }
 
-    final newData = _data.where((element) => element[column] == value).toList();
-    return FilterBuilder(newData);
+    return _eq(column, value);
   }
+
+  FilterBuilder _eq(String column, Object value) {
+    // _checkType(column, value);
+
+    return FilterBuilder(
+      _data.where((element) {
+        final (columnCast, valueCast) = _castImplicitly(element[column], value);
+        return columnCast == valueCast;
+      }).toList(),
+      errors: _errorStack,
+    );
+  }
+
+  (dynamic, dynamic) _castImplicitly(dynamic columnValue, dynamic value) {
+    if (columnValue is String) {
+      if (DateTime.tryParse(columnValue) != null) {
+        final columnParse = DateTime.parse(columnValue);
+        final valueParse = DateTime.tryParse(value);
+
+        if (valueParse != null) {
+          return (columnParse, valueParse);
+        }
+      } else {
+        return (columnValue, value.toString());
+      }
+    }
+
+    return (null, null);
+  }
+
+  void _checkType(String column, Object value) {
+    final columnValue = _data.first[column];
+    if (_isComplexType(columnValue)) {
+      final parsedColumnValue = _parseBaseTypes(columnValue.toString());
+
+      if (_isComplexType(value)) {
+        _setError(
+          message: 'Value mistmatch between input and column value',
+          code: '1234',
+        );
+        return;
+      }
+
+      final parsedValue = _parseBaseTypes(value.toString());
+
+      if (parsedColumnValue.runtimeType != parsedValue.runtimeType) {
+        _setError(
+          message: 'Value mistmatch between input and column value',
+          code: '1234',
+        );
+        return;
+      }
+    }
+  }
+
+  bool _isComplexType(Object value) =>
+      value is List || value is Map || value is Set;
+
+  bool _isNotComplexType(Object value) =>
+      value is! List && value is! Map && value is! Set;
 
   FilterBuilder eqAll(String column, List value) {
     final newData = _data
@@ -312,9 +387,10 @@ class FilterBuilder {
       value: value,
     );
     final filterResult = filterBuilder.execute();
+
     final newData = _data
         .where(
-          (entry) => !filterResult.any(
+          (entry) => !filterResult.data.any(
             (excludeEntry) => const MapEquality<String, dynamic>().equals(
               entry,
               excludeEntry,
@@ -499,4 +575,69 @@ class FilterBuilder {
 
     return FilterBuilder(newData);
   }
+
+  dynamic _parseBaseTypes(String value) {
+    final newValue = value.trim();
+    final numParse = num.tryParse(newValue);
+    if (numParse != null) {
+      return numParse;
+    }
+
+    if (['true', 'false'].contains(newValue)) {
+      return newValue == 'true' ? true : false;
+    }
+
+    if (value == 'null') {
+      return null;
+    }
+
+    final dateTimeParse = DateTime.tryParse(newValue);
+    if (dateTimeParse != null) {
+      return dateTimeParse;
+    }
+
+    return newValue.replaceAll('\'', '"').replaceAll('"', '');
+  }
+
+  void _setError({
+    required String message,
+    required String code,
+    String? details,
+    String? hint,
+  }) {
+    _errorStack.add(
+      FilterError(
+        message: message,
+        code: code,
+        detais: details,
+        hint: hint,
+      ),
+    );
+  }
+}
+
+class FilterResult {
+  final bool isValid;
+  final FilterError? error;
+  final List<Map<String, dynamic>> data;
+
+  FilterResult({
+    required this.isValid,
+    this.error,
+    List<Map<String, dynamic>>? rows,
+  }) : data = List<Map<String, dynamic>>.from(rows ?? []);
+}
+
+class FilterError {
+  final String message;
+  final String code;
+  final String? detais;
+  final String? hint;
+
+  const FilterError({
+    required this.message,
+    required this.code,
+    this.detais,
+    this.hint,
+  });
 }

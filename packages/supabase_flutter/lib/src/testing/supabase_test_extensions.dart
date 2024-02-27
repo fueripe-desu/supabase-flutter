@@ -3,6 +3,12 @@ extension RangeTypeExtension on String {
 }
 
 extension StringUtils on String {
+  String get first => isEmpty ? '' : this[0];
+  String get last => isEmpty ? '' : this[length - 1];
+
+  int? get firstIndex => isEmpty ? null : 0;
+  int? get lastIndex => isEmpty ? null : length - 1;
+
   String removeSpaces() => replaceAll(' ', '');
   String removeExtraSpaces() => replaceAll(RegExp(r'\s+'), ' ');
 
@@ -19,8 +25,6 @@ extension StringUtils on String {
   int count(String element) {
     return split('').where((item) => item == element).length;
   }
-
-  String last() => isEmpty ? '' : this[length - 1];
 
   bool equalsEither(List<String> options) {
     for (String option in options) {

@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/src/testing/range_type.dart';
+import 'package:supabase_flutter/src/testing/range_type/range_type.dart';
 
 typedef ValidatorFunction = bool Function(dynamic value);
 
