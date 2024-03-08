@@ -92,13 +92,8 @@ class ValueToken extends PostrestValueToken {
     final parsed = _parseBaseTypes(valueString);
     _type = _getType(parsed);
 
-    if (parsed is String && _isValueRange(parsed)) {
-      value = parsed.replaceAll(' ', '');
-      _valueString = value.toString();
-    } else {
-      value = parsed;
-      _valueString = value.toString();
-    }
+    value = parsed;
+    _valueString = value.toString();
   }
 
   @override
@@ -107,8 +102,8 @@ class ValueToken extends PostrestValueToken {
   @override
   String toString() {
     if (_type == String) {
-      if (!["'", '['].contains(_valueString.first) &&
-          !["'", ']'].contains(_valueString.last)) {
+      if (!["'"].contains(_valueString.first) &&
+          !["'"].contains(_valueString.last)) {
         return "'$_valueString'";
       }
     }
