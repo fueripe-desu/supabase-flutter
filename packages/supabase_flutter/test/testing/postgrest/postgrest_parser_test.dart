@@ -433,7 +433,7 @@ void main() {
     test('should be able to parse an array of ranges', () {
       expect(
         evalValue('{[10, 20], [40, 60], [200, 400]}'),
-        ['[10,20]', '[40,60]', '[200,400]'],
+        ['[10, 20]', '[40, 60]', '[200, 400]'],
       );
     });
 
@@ -560,23 +560,25 @@ void main() {
     test('should be able to parse a JSON of range type', () {
       expect(
         mapEq(
-          evalValue('{"range1": "[10, 20]", "range2": "(30, 40)"}'),
+          evalValue('{"range1": "[10,20]", "range2": "(30,40)"}'),
           {
-            'range1': '[10, 20]',
-            'range2': '(30, 40)',
+            'range1': '[10,20]',
+            'range2': '(30,40)',
           },
         ),
         true,
       );
     });
 
-    test('should be able to parse a JSON of list type', () {
+    test(
+        'should be able to parse a JSON of list type (should be considered as Strings)',
+        () {
       expect(
         deepEq(
           evalValue('{"column1": [10, 20, 30], "column2": [40, 50, 60]}'),
           {
-            'column1': [10, 20, 30],
-            'column2': [40, 50, 60],
+            'column1': '[10, 20, 30]',
+            'column2': '[40, 50, 60]',
           },
         ),
         true,
