@@ -375,8 +375,8 @@ void main() {
         () {
       expect(
         cast(
-          ['sample', range('[2, 4]')],
-          '["sample", [2, 4]]',
+          ['sample', range('[2,4]')],
+          '["sample", [2,4]]',
         ),
         true,
       );
@@ -388,10 +388,10 @@ void main() {
       expect(
         cast(
           [
-            range('[1, 5]'),
+            range('[1,5]'),
             ['sample']
           ],
-          '[[1, 5], ["sample"]]',
+          '[[1,5], ["sample"]]',
         ),
         true,
       );
