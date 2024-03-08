@@ -872,16 +872,10 @@ class DateRangeType extends RangeType {
       duration = const Duration(milliseconds: 1);
     }
 
-    final newLowerRange = lowerRangeInclusive
-        ? lowerRange
-        : lowerRange == null
-            ? null
-            : lowerRange!.add(duration);
-    final newUpperRange = upperRangeInclusive
-        ? upperRange
-        : upperRange == null
-            ? null
-            : upperRange!.subtract(duration);
+    final newLowerRange =
+        lowerRangeInclusive ? lowerRange : lowerRange?.add(duration);
+    final newUpperRange =
+        upperRangeInclusive ? upperRange : upperRange?.subtract(duration);
 
     return RangeComparable<DateTime>(
       lowerRange: newLowerRange,
