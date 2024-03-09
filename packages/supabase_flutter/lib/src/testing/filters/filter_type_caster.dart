@@ -36,6 +36,10 @@ class FilterTypeCaster {
       if (_baseValue.runtimeType != _castValue.runtimeType) {
         return _castToString();
       }
+    } else if (_baseValue is double) {
+      if (_canCastToFloat()) {
+        return _castToFloat();
+      }
     } else if (_baseValue is Map) {
       if (_baseValue.runtimeType != _castValue.runtimeType) {
         return _castToString();
@@ -46,6 +50,42 @@ class FilterTypeCaster {
       }
     }
 
+    if (_baseValue is List && _castValue is List) {
+      if (!_isHomogeneousList(_baseValue)) {
+        return FilterCastResult(
+          wasSucessful: false,
+          baseValue: _baseValue,
+          castValue: _castValue,
+        );
+      }
+
+      if (!_isHomogeneousList(_castValue)) {
+        return FilterCastResult(
+          wasSucessful: false,
+          baseValue: _baseValue,
+          castValue: _castValue,
+        );
+      }
+
+      if (_baseValue.isNotEmpty && _castValue.isNotEmpty) {
+        final rawBaseValue = _baseValue.first.runtimeType;
+        final rawCastValue = _castValue.first.runtimeType;
+
+        if (rawBaseValue != rawCastValue) {
+          _recursivelyCastListElements();
+        }
+
+        final baseValue = _baseValue.first.runtimeType;
+        final castValue = _castValue.first.runtimeType;
+
+        return FilterCastResult(
+          wasSucessful: baseValue == castValue,
+          baseValue: _baseValue,
+          castValue: _castValue,
+        );
+      }
+    }
+
     return FilterCastResult(
       wasSucessful: _baseValue.runtimeType == _castValue.runtimeType,
       baseValue: _baseValue,
@@ -53,8 +93,34 @@ class FilterTypeCaster {
     );
   }
 
+  void _recursivelyCastListElements() {
+    final List newCastList = [];
+    final dynamic firstBase = _baseValue.first;
+    final FilterTypeCaster localCaster = FilterTypeCaster();
+
+    for (final element in _castValue) {
+      final castValue = localCaster.cast(firstBase, element);
+      newCastList.add(castValue.castValue);
+    }
+
+    _castValue.clear();
+    _castValue = [...newCastList];
+
+    if (firstBase is Map && _castValue.first is String) {
+      _baseValue = _baseValue.map((e) => e.toString()).toList();
+    }
+  }
+
   void _parseValues() {
-    if (_castValue is! RangeType) {
+    final bool isBaseListOfRange = _baseValue is List &&
+        _baseValue.isNotEmpty &&
+        _baseValue.first is RangeType;
+
+    final bool isCastListOfRange = _castValue is List &&
+        _castValue.isNotEmpty &&
+        _castValue.first is RangeType;
+
+    if (_castValue is! RangeType && !isCastListOfRange) {
       if (_castValue is List) {
         _castValue = (_castValue as List).convertToPostgresArray();
       }
@@ -64,7 +130,7 @@ class FilterTypeCaster {
       );
     }
 
-    if (_baseValue is! RangeType) {
+    if (_baseValue is! RangeType && !isBaseListOfRange) {
       if (_baseValue is List) {
         _baseValue = (_baseValue as List).convertToPostgresArray();
       }
@@ -75,6 +141,16 @@ class FilterTypeCaster {
     }
   }
 
+  bool _isHomogeneousList(List list) {
+    if (list.isEmpty) {
+      return true;
+    }
+
+    final type = list.first.runtimeType;
+
+    return list.every((element) => element.runtimeType == type);
+  }
+
   bool _canCastToRange() {
     try {
       RangeType.createRange(range: _castValue.toString());
@@ -83,6 +159,15 @@ class FilterTypeCaster {
       return false;
     }
   }
+
+  bool _canCastToFloat() => double.tryParse(_castValue.toString()) != null;
+
+  FilterCastResult _castToFloat() => FilterCastResult(
+        baseValue: _baseValue,
+        castValue: _castValue is double
+            ? _castValue
+            : double.tryParse(_castValue.toString()),
+      );
 
   FilterCastResult _castToRange() => FilterCastResult(
         baseValue: _baseValue,

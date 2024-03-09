@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:supabase_flutter/src/testing/filters/filter_type_caster.dart';
 import 'package:supabase_flutter/src/testing/postgrest/supabase_test_postgrest.dart';
 import 'package:supabase_flutter/src/testing/range_type/range_comparable.dart';
 import 'package:supabase_flutter/src/testing/range_type/range_type.dart';
@@ -17,6 +18,7 @@ enum FilterDataType {
 class FilterBuilder {
   final List<Map<String, dynamic>> _data;
   final List<FilterError> _errorStack;
+  final FilterTypeCaster _typeCaster = FilterTypeCaster();
 
   FilterBuilder(List<Map<String, dynamic>> data, {List<FilterError>? errors})
       : _data = List.from(data),
@@ -29,77 +31,24 @@ class FilterBuilder {
       );
 
   FilterBuilder eq(String column, Object value) {
-    if (value is List) {
-      final newData = _data
-          .where(
-            (element) => value.contains(element[column]),
-          )
-          .toList();
-      return FilterBuilder(newData);
-    }
-
-    return _eq(column, value);
-  }
-
-  FilterBuilder _eq(String column, Object value) {
-    // _checkType(column, value);
-
     return FilterBuilder(
       _data.where((element) {
-        final (columnCast, valueCast) = _castImplicitly(element[column], value);
-        return columnCast == valueCast;
+        final castResult = _typeCaster.cast(element[column], value);
+
+        if (!castResult.wasSucessful) {
+          _setCastError(castResult.baseValue, castResult.castValue);
+        }
+
+        if (castResult.baseValue == List && castResult.castValue == List) {
+          return const DeepCollectionEquality()
+              .equals(castResult.baseValue, castResult.castValue);
+        }
+
+        return castResult.baseValue == castResult.castValue;
       }).toList(),
       errors: _errorStack,
     );
   }
-
-  (dynamic, dynamic) _castImplicitly(dynamic columnValue, dynamic value) {
-    if (columnValue is String) {
-      if (DateTime.tryParse(columnValue) != null) {
-        final columnParse = DateTime.parse(columnValue);
-        final valueParse = DateTime.tryParse(value);
-
-        if (valueParse != null) {
-          return (columnParse, valueParse);
-        }
-      } else {
-        return (columnValue, value.toString());
-      }
-    }
-
-    return (null, null);
-  }
-
-  void _checkType(String column, Object value) {
-    final columnValue = _data.first[column];
-    if (_isComplexType(columnValue)) {
-      final parsedColumnValue = _parseBaseTypes(columnValue.toString());
-
-      if (_isComplexType(value)) {
-        _setError(
-          message: 'Value mistmatch between input and column value',
-          code: '1234',
-        );
-        return;
-      }
-
-      final parsedValue = _parseBaseTypes(value.toString());
-
-      if (parsedColumnValue.runtimeType != parsedValue.runtimeType) {
-        _setError(
-          message: 'Value mistmatch between input and column value',
-          code: '1234',
-        );
-        return;
-      }
-    }
-  }
-
-  bool _isComplexType(Object value) =>
-      value is List || value is Map || value is Set;
-
-  bool _isNotComplexType(Object value) =>
-      value is! List && value is! Map && value is! Set;
 
   FilterBuilder eqAll(String column, List value) {
     final newData = _data
@@ -576,27 +525,169 @@ class FilterBuilder {
     return FilterBuilder(newData);
   }
 
-  dynamic _parseBaseTypes(String value) {
-    final newValue = value.trim();
-    final numParse = num.tryParse(newValue);
-    if (numParse != null) {
-      return numParse;
+  void _setCastError(dynamic baseType, dynamic castType) {
+    final valueString = castType is List
+        ? _toPostgresList(castType.toString())
+        : castType.toString();
+    if (baseType is int) {
+      _setError(
+        message: 'invalid input syntax for type int: "$valueString"',
+        code: '22P02',
+        details: 'Bad Request',
+        hint: null,
+      );
+    } else if (baseType is double) {
+      _setError(
+        message:
+            'invalid input syntax for type double precision: "$valueString"',
+        code: '22P02',
+        details: 'Bad Request',
+        hint: null,
+      );
+    } else if (baseType is bool) {
+      _setError(
+        message: 'invalid input syntax for type boolean: "$valueString"',
+        code: '22P02',
+        details: 'Bad Request',
+        hint: null,
+      );
+    } else if (baseType is DateTime) {
+      if (castType is int) {
+        _setError(
+          message: 'date/time field value out of range: "$valueString"',
+          code: '22008',
+          details: 'Bad Request',
+          hint: 'Perhaps you need a different "datestyle" setting',
+        );
+      } else {
+        _setError(
+          message:
+              'invalid input syntax for type timestamp with time zone: "$valueString"',
+          code: '22007',
+          details: 'Bad Request',
+          hint: null,
+        );
+      }
+    } else if (baseType is RangeType) {
+      _setError(
+        message: 'malformed range literal: "$valueString"',
+        code: '22P02',
+        details: 'Missing left parenthesis or bracket.',
+        hint: null,
+      );
+    } else if (baseType is List) {
+      if (baseType.first is int) {
+        if (castType is List) {
+          _setError(
+            message: 'invalid input syntax for type int: "${castType.first}"',
+            code: '22P02',
+            details: 'Bad Request',
+            hint: null,
+          );
+        } else {
+          _setError(
+            message: 'malformed array literal: "$valueString"',
+            code: '22P02',
+            details:
+                'Array value must start with "{" or dimension information.',
+            hint: null,
+          );
+        }
+      } else if (baseType.first is double) {
+        if (castType is List) {
+          _setError(
+            message:
+                'invalid input syntax for type double precision: "${castType.first}"',
+            code: '22P02',
+            details: 'Bad Request',
+            hint: null,
+          );
+        } else {
+          _setError(
+            message: 'malformed array literal: "$valueString"',
+            code: '22P02',
+            details:
+                'Array value must start with "{" or dimension information.',
+            hint: null,
+          );
+        }
+      } else if (baseType.first is String) {
+        _setError(
+          message: 'malformed array literal: "$valueString"',
+          code: '22P02',
+          details: 'Array value must start with "{" or dimension information.',
+          hint: null,
+        );
+      } else if (baseType.first is bool) {
+        if (castType is List) {
+          _setError(
+            message:
+                'invalid input syntax for type boolean: "${castType.first}"',
+            code: '22P02',
+            details: 'Bad Request',
+            hint: null,
+          );
+        } else {
+          _setError(
+            message: 'malformed array literal: "$valueString"',
+            code: '22P02',
+            details:
+                'Array value must start with "{" or dimension information.',
+            hint: null,
+          );
+        }
+      } else if (baseType.first is DateTime) {
+        if (castType is List) {
+          _setError(
+            message:
+                'invalid input syntax for type timestamp with time zone: "${castType.first}"',
+            code: '22P02',
+            details: 'Bad Request',
+            hint: null,
+          );
+        } else {
+          _setError(
+            message: 'malformed array literal: "$valueString"',
+            code: '22P02',
+            details:
+                'Array value must start with "{" or dimension information.',
+            hint: null,
+          );
+        }
+      } else if (baseType.first is RangeType) {
+        if (castType is List) {
+          _setError(
+            message: 'malformed range literal: "${castType.first}"',
+            code: '22P02',
+            details: 'Bad Request',
+            hint: null,
+          );
+        } else {
+          _setError(
+            message: ' malformed array literal: "$valueString"',
+            code: '22P02',
+            details:
+                'Array value must start with "{" or dimension information.',
+            hint: null,
+          );
+        }
+      } else if (baseType.first is Map) {
+        _setError(
+          message: ' malformed array literal: "$valueString"',
+          code: '22P02',
+          details: 'Array value must start with "{" or dimension information.',
+          hint: null,
+        );
+      }
     }
+  }
 
-    if (['true', 'false'].contains(newValue)) {
-      return newValue == 'true' ? true : false;
-    }
-
-    if (value == 'null') {
-      return null;
-    }
-
-    final dateTimeParse = DateTime.tryParse(newValue);
-    if (dateTimeParse != null) {
-      return dateTimeParse;
-    }
-
-    return newValue.replaceAll('\'', '"').replaceAll('"', '');
+  String _toPostgresList(String listString) {
+    final elements = listString.substring(
+      listString.firstIndex! + 1,
+      listString.lastIndex,
+    );
+    return '{$elements}';
   }
 
   void _setError({
@@ -609,7 +700,7 @@ class FilterBuilder {
       FilterError(
         message: message,
         code: code,
-        detais: details,
+        details: details,
         hint: hint,
       ),
     );
@@ -631,13 +722,17 @@ class FilterResult {
 class FilterError {
   final String message;
   final String code;
-  final String? detais;
+  final String? details;
   final String? hint;
 
   const FilterError({
     required this.message,
     required this.code,
-    this.detais,
+    this.details,
     this.hint,
   });
+
+  @override
+  String toString() =>
+      'message: $message, code: $code, details: $details, hint: $hint';
 }
