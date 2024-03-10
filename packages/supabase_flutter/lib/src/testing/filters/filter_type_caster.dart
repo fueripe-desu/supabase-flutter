@@ -36,6 +36,14 @@ class FilterTypeCaster {
   FilterCastResult _cast(bool baseAsArrayCaster) {
     _parseValues();
 
+    if (_baseValue == null || _castValue == null) {
+      return FilterCastResult(
+        wasSucessful: true,
+        baseValue: _baseValue,
+        castValue: _castValue,
+      );
+    }
+
     if (_baseValue is String && !baseAsArrayCaster) {
       if (_baseValue.runtimeType != _castValue.runtimeType) {
         return _castToString();
