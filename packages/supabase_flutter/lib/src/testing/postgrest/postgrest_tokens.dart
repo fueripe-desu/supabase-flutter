@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:supabase_flutter/src/testing/postgrest/supabase_test_postgrest.dart';
-import 'package:supabase_flutter/src/testing/range_type/range_type.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
 
 abstract class PostrestValueToken {
@@ -109,15 +108,6 @@ class ValueToken extends PostrestValueToken {
     }
 
     return _valueString;
-  }
-
-  bool _isValueRange(String value) {
-    try {
-      RangeType.createRange(range: value);
-      return true;
-    } catch (err) {
-      return false;
-    }
   }
 
   Type _getType(dynamic value) {
