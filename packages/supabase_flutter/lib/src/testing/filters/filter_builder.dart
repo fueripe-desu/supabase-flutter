@@ -38,14 +38,15 @@ class FilterBuilder {
 
         if (!castResult.wasSucessful) {
           _setCastError(castResult.baseValue, castResult.castValue, 'eq');
+          return true;
         }
 
-        if (castResult.baseValue == List && castResult.castValue == List) {
+        if (castResult.baseValue is List && castResult.castValue is List) {
           return const DeepCollectionEquality()
               .equals(castResult.baseValue, castResult.castValue);
         }
 
-        if (castResult.baseValue == Map && castResult.castValue == Map) {
+        if (castResult.baseValue is Map && castResult.castValue is Map) {
           return const MapEquality()
               .equals(castResult.baseValue, castResult.castValue);
         }
@@ -124,53 +125,220 @@ class FilterBuilder {
   FilterBuilder isDistinct(String column, Object? value) =>
       _notEqualTo(column, value);
 
-  FilterBuilder gt(String column, Object value) => _filter(
-        test: (element) => element[column] > value,
+  FilterBuilder gt(String column, Object value) => _compare(
+        column: column,
+        value: value,
+        filterLabel: 'gt',
+        compareFunc: (compareResult) => compareResult > 0,
       );
 
-  FilterBuilder gtAny(String column, List values) => _filter(
-        test: (element) => values.any((value) => element[column] > value),
+  FilterBuilder gtAny(String column, Object values) => _compare(
+        column: column,
+        value: values,
+        filterLabel: 'gt(any)',
+        modifier: FilterModifier.any,
+        compareFunc: (compareResult) => compareResult > 0,
       );
 
-  FilterBuilder gtAll(String column, List values) => _filter(
-        test: (element) => values.every((value) => element[column] > value),
+  FilterBuilder gtAll(String column, Object values) => _compare(
+        column: column,
+        value: values,
+        filterLabel: 'gt(all)',
+        modifier: FilterModifier.all,
+        compareFunc: (compareResult) => compareResult > 0,
       );
 
-  FilterBuilder gte(String column, Object value) => _filter(
-        test: (element) => element[column] >= value,
+  FilterBuilder gte(String column, Object value) => _compare(
+        column: column,
+        value: value,
+        filterLabel: 'gte',
+        compareFunc: (compareResult) => compareResult >= 0,
       );
 
-  FilterBuilder gteAny(String column, List values) => _filter(
-        test: (element) => values.any((value) => element[column] >= value),
+  FilterBuilder gteAny(String column, Object values) => _compare(
+        column: column,
+        value: values,
+        filterLabel: 'gte(any)',
+        modifier: FilterModifier.any,
+        compareFunc: (compareResult) => compareResult >= 0,
       );
 
-  FilterBuilder gteAll(String column, List values) => _filter(
-        test: (element) => values.every((value) => element[column] >= value),
+  FilterBuilder gteAll(String column, Object values) => _compare(
+        column: column,
+        value: values,
+        filterLabel: 'gte(all)',
+        modifier: FilterModifier.all,
+        compareFunc: (compareResult) => compareResult >= 0,
       );
 
-  FilterBuilder lt(String column, Object value) => _filter(
-        test: (element) => element[column] < value,
+  FilterBuilder lt(String column, Object value) => _compare(
+        column: column,
+        value: value,
+        filterLabel: 'lt',
+        compareFunc: (compareResult) => compareResult < 0,
       );
 
-  FilterBuilder ltAny(String column, List values) => _filter(
-        test: (element) => values.any((value) => element[column] < value),
+  FilterBuilder ltAny(String column, Object values) => _compare(
+        column: column,
+        value: values,
+        filterLabel: 'lt(any)',
+        modifier: FilterModifier.any,
+        compareFunc: (compareResult) => compareResult < 0,
       );
 
-  FilterBuilder ltAll(String column, List values) => _filter(
-        test: (element) => values.every((value) => element[column] < value),
+  FilterBuilder ltAll(String column, Object values) => _compare(
+        column: column,
+        value: values,
+        filterLabel: 'lt(all)',
+        modifier: FilterModifier.all,
+        compareFunc: (compareResult) => compareResult < 0,
       );
 
-  FilterBuilder lte(String column, Object value) => _filter(
-        test: (element) => element[column] <= value,
+  FilterBuilder lte(String column, Object value) => _compare(
+        column: column,
+        value: value,
+        filterLabel: 'lte',
+        compareFunc: (compareResult) => compareResult <= 0,
       );
 
-  FilterBuilder lteAny(String column, List values) => _filter(
-        test: (element) => values.any((value) => element[column] <= value),
+  FilterBuilder lteAny(String column, Object values) => _compare(
+        column: column,
+        value: values,
+        filterLabel: 'lte(any)',
+        modifier: FilterModifier.any,
+        compareFunc: (compareResult) => compareResult <= 0,
       );
 
-  FilterBuilder lteAll(String column, List values) => _filter(
-        test: (element) => values.every((value) => element[column] <= value),
+  FilterBuilder lteAll(String column, Object values) => _compare(
+        column: column,
+        value: values,
+        filterLabel: 'lte(all)',
+        modifier: FilterModifier.all,
+        compareFunc: (compareResult) => compareResult <= 0,
       );
+
+  FilterBuilder _compare({
+    required String column,
+    required Object value,
+    required String filterLabel,
+    required bool Function(int compareResult) compareFunc,
+    FilterModifier? modifier,
+  }) =>
+      FilterBuilder(
+        _data.where((element) {
+          final castResult = _typeCaster.cast(
+            element[column],
+            value,
+            baseAsArrayCaster: modifier == null ? false : true,
+          );
+          final baseValue = castResult.baseValue;
+          final castValue = castResult.castValue;
+
+          if (modifier != null) {
+            if (castResult.baseValue is List) {
+              _setNotScalarValueError(castResult.baseValue);
+              return true;
+            }
+
+            if (castResult.castValue is! List) {
+              _setMalformedArrayLiteralError(value);
+              return true;
+            }
+          }
+
+          if (!castResult.wasSucessful) {
+            _setCastError(baseValue, castValue, filterLabel);
+            return true;
+          }
+
+          if (modifier == FilterModifier.any) {
+            return castValue.any((castElement) =>
+                compareFunc(_compareValuesBasedOnType(baseValue, castElement)));
+          } else if (modifier == FilterModifier.all) {
+            return castValue.every((castElement) =>
+                compareFunc(_compareValuesBasedOnType(baseValue, castElement)));
+          } else {
+            return compareFunc(_compareValuesBasedOnType(baseValue, castValue));
+          }
+        }).toList(),
+        errors: _errorStack,
+      );
+
+  int _compareDateTime(DateTime value1, DateTime value2) {
+    if (value1.isAfter(value2)) {
+      return 1;
+    } else if (value1.isAtSameMomentAs(value2)) {
+      return 0;
+    } else {
+      return -1;
+    }
+  }
+
+  int _compareString(String value1, String value2) => value1.compareTo(value2);
+
+  int _compareBool(bool value1, bool value2) {
+    final integer1 = value1 ? 1 : 0;
+    final integer2 = value2 ? 1 : 0;
+    if (integer1 > integer2) {
+      return 1;
+    } else if (integer1 == integer2) {
+      return 0;
+    } else {
+      return -1;
+    }
+  }
+
+  int _compareMap(Map value1, Map value2) {
+    final cast1 = value1.toString();
+    final cast2 = value2.toString();
+
+    return cast1.compareTo(cast2);
+  }
+
+  int _compareRange(RangeType range1, RangeType range2) {
+    final comparable1 = range1.getComparable();
+    final comparable2 = range2.getComparable();
+
+    if (comparable1 > comparable2) {
+      return 1;
+    } else if (comparable1 == comparable2) {
+      return 0;
+    } else {
+      return -1;
+    }
+  }
+
+  int _compareValuesBasedOnType(dynamic value1, dynamic value2) {
+    if (value1 is String && value2 is String) {
+      return _compareString(value1, value2);
+    } else if (value1 is DateTime && value2 is DateTime) {
+      return _compareDateTime(value1, value2);
+    } else if (value1 is bool && value2 is bool) {
+      return _compareBool(value1, value2);
+    } else if (value1 is List && value2 is List) {
+      return _compareLists(value1, value2);
+    } else if (value1 is Map && value2 is Map) {
+      return _compareMap(value1, value2);
+    } else if (value1 is RangeType && value2 is RangeType) {
+      return _compareRange(value1, value2);
+    } else {
+      return value1.compareTo(value2);
+    }
+  }
+
+  int _compareLists(List list1, List list2) {
+    final minLength = list1.length < list2.length ? list1.length : list2.length;
+    for (int i = 0; i < minLength; i++) {
+      final baseValue = list1[i];
+      final castValue = list2[i];
+
+      final comparison = _compareValuesBasedOnType(baseValue, castValue);
+      if (comparison != 0) {
+        return comparison;
+      }
+    }
+    return list1.length.compareTo(list2.length);
+  }
 
   FilterBuilder like(String column, String pattern) => _filter(
         test: (element) => _like(
