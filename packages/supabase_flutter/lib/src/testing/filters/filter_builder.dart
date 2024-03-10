@@ -7,12 +7,13 @@ import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
 import 'package:supabase_flutter/src/testing/text_search/text_search.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-enum FilterDataType {
-  string,
-  integer,
-  boolean,
-  float,
-  datetime,
+enum FilterModifier {
+  any('any'),
+  all('all');
+
+  final String stringName;
+
+  const FilterModifier(this.stringName);
 }
 
 class FilterBuilder {
@@ -50,7 +51,14 @@ class FilterBuilder {
     );
   }
 
-  FilterBuilder eqAny(String column, Object value) {
+  FilterBuilder eqAny(String column, Object value) =>
+      _eqModifier(column, value, FilterModifier.any);
+
+  FilterBuilder eqAll(String column, Object value) =>
+      _eqModifier(column, value, FilterModifier.all);
+
+  FilterBuilder _eqModifier(
+      String column, Object value, FilterModifier modifier) {
     return FilterBuilder(
       _data.where((element) {
         final castResult = _typeCaster.cast(
@@ -70,30 +78,40 @@ class FilterBuilder {
         }
 
         if (!castResult.wasSucessful) {
-          _setCastError(castResult.baseValue, castResult.castValue, 'eq(any)');
+          _setCastError(
+            castResult.baseValue,
+            castResult.castValue,
+            'eq(${modifier.stringName})',
+          );
           return true;
         }
 
         if (castResult.castValue.isNotEmpty &&
             castResult.castValue.first is Map) {
-          return castResult.castValue.any(
-            (map) => const MapEquality().equals(map, castResult.baseValue),
-          );
+          if (modifier == FilterModifier.all) {
+            return castResult.castValue.every(
+              (map) => const MapEquality().equals(map, castResult.baseValue),
+            );
+          } else if (modifier == FilterModifier.any) {
+            return castResult.castValue.any(
+              (map) => const MapEquality().equals(map, castResult.baseValue),
+            );
+          } else {
+            throw Exception('Unknown modifier');
+          }
         }
 
-        return castResult.castValue.contains(castResult.baseValue);
+        if (modifier == FilterModifier.all) {
+          return castResult.castValue
+              .every((castElement) => castResult.baseValue == castElement);
+        } else if (modifier == FilterModifier.any) {
+          return castResult.castValue.contains(castResult.baseValue);
+        } else {
+          throw Exception('Unknown modifier');
+        }
       }).toList(),
       errors: _errorStack,
     );
-  }
-
-  FilterBuilder eqAll(String column, List value) {
-    final newData = _data
-        .where(
-          (element) => value.every((element2) => element[column] == element2),
-        )
-        .toList();
-    return FilterBuilder(newData);
   }
 
   FilterBuilder neq(String column, Object value) => _notEqualTo(column, value);
@@ -619,7 +637,7 @@ class FilterBuilder {
 
   void _setCastError(dynamic baseType, dynamic castType, String filter) {
     final valueString = castType is List
-        ? ['eq(any)'].contains(filter) && castType.isNotEmpty
+        ? ['eq(any)', 'eq(all)'].contains(filter) && castType.isNotEmpty
             ? castType.first
             : _toPostgresList(castType.toString())
         : castType.toString();
