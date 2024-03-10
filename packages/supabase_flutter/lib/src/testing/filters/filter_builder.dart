@@ -36,7 +36,7 @@ class FilterBuilder {
         final castResult = _typeCaster.cast(element[column], value);
 
         if (!castResult.wasSucessful) {
-          _setCastError(castResult.baseValue, castResult.castValue);
+          _setCastError(castResult.baseValue, castResult.castValue, 'eq');
         }
 
         if (castResult.baseValue == List && castResult.castValue == List) {
@@ -45,6 +45,43 @@ class FilterBuilder {
         }
 
         return castResult.baseValue == castResult.castValue;
+      }).toList(),
+      errors: _errorStack,
+    );
+  }
+
+  FilterBuilder eqAny(String column, Object value) {
+    return FilterBuilder(
+      _data.where((element) {
+        final castResult = _typeCaster.cast(
+          element[column],
+          value,
+          baseAsArrayCaster: true,
+        );
+
+        if (castResult.baseValue is List) {
+          _setNotScalarValueError(castResult.baseValue);
+          return true;
+        }
+
+        if (castResult.castValue is! List) {
+          _setMalformedArrayLiteralError(value);
+          return true;
+        }
+
+        if (!castResult.wasSucessful) {
+          _setCastError(castResult.baseValue, castResult.castValue, 'eq(any)');
+          return true;
+        }
+
+        if (castResult.castValue.isNotEmpty &&
+            castResult.castValue.first is Map) {
+          return castResult.castValue.any(
+            (map) => const MapEquality().equals(map, castResult.baseValue),
+          );
+        }
+
+        return castResult.castValue.contains(castResult.baseValue);
       }).toList(),
       errors: _errorStack,
     );
@@ -525,9 +562,66 @@ class FilterBuilder {
     return FilterBuilder(newData);
   }
 
-  void _setCastError(dynamic baseType, dynamic castType) {
+  void _setMalformedArrayLiteralError(dynamic castType) {
+    _setError(
+      message: 'malformed array literal: "${castType.toString()}"',
+      code: '22P02',
+      details: 'Array value must start with "{" or dimension information.',
+      hint: null,
+    );
+  }
+
+  void _setNotScalarValueError(dynamic baseType) {
+    _setError(
+      message:
+          'could not find array type for data type ${_getTypeString(baseType)}[]',
+      code: '42704',
+      details: 'Bad Request',
+      hint: null,
+    );
+  }
+
+  String _getTypeString(dynamic value) {
+    final dynamic type = _getListFirstElement(value);
+
+    if (type is int) {
+      return 'int';
+    } else if (type is double) {
+      return 'double precision';
+    } else if (type is String) {
+      return 'text';
+    } else if (type is bool) {
+      return 'boolean';
+    } else if (type is DateTime) {
+      return 'timestamp with time zone';
+    } else if (type is RangeType) {
+      return 'range';
+    } else if (type is Map) {
+      return 'jsonb';
+    } else if (type == null) {
+      return 'null or empty list';
+    } else {
+      return 'unknown type';
+    }
+  }
+
+  dynamic _getListFirstElement(dynamic value) {
+    if (value is List) {
+      if (value.isEmpty) {
+        return null;
+      } else {
+        return value.first;
+      }
+    } else {
+      return value;
+    }
+  }
+
+  void _setCastError(dynamic baseType, dynamic castType, String filter) {
     final valueString = castType is List
-        ? _toPostgresList(castType.toString())
+        ? ['eq(any)'].contains(filter) && castType.isNotEmpty
+            ? castType.first
+            : _toPostgresList(castType.toString())
         : castType.toString();
     if (baseType is int) {
       _setError(
