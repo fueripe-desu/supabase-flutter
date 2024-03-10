@@ -22,29 +22,33 @@ class FilterTypeCaster {
   dynamic _baseValue;
   dynamic _castValue;
 
-  FilterCastResult cast(dynamic baseValue, dynamic castValue) {
+  FilterCastResult cast(
+    dynamic baseValue,
+    dynamic castValue, {
+    bool baseAsArrayCaster = false,
+  }) {
     _castValue = castValue;
     _baseValue = baseValue;
 
-    return _cast();
+    return _cast(baseAsArrayCaster);
   }
 
-  FilterCastResult _cast() {
+  FilterCastResult _cast(bool baseAsArrayCaster) {
     _parseValues();
 
-    if (_baseValue is String) {
+    if (_baseValue is String && !baseAsArrayCaster) {
       if (_baseValue.runtimeType != _castValue.runtimeType) {
         return _castToString();
       }
-    } else if (_baseValue is double) {
+    } else if (_baseValue is double && !baseAsArrayCaster) {
       if (_canCastToFloat()) {
         return _castToFloat();
       }
-    } else if (_baseValue is Map) {
+    } else if (_baseValue is Map && !baseAsArrayCaster) {
       if (_baseValue.runtimeType != _castValue.runtimeType) {
         return _castToString();
       }
-    } else if (_baseValue is RangeType) {
+    } else if (_baseValue is RangeType && !baseAsArrayCaster) {
       if (_canCastToRange()) {
         return _castToRange();
       }
@@ -86,16 +90,38 @@ class FilterTypeCaster {
       }
     }
 
+    if (baseAsArrayCaster && _baseValue is! List && _castValue is List) {
+      _recursivelyCastListElements();
+    }
+
     return FilterCastResult(
-      wasSucessful: _baseValue.runtimeType == _castValue.runtimeType,
+      wasSucessful: _calculateSuccess(baseAsArrayCaster),
       baseValue: _baseValue,
       castValue: _castValue,
     );
   }
 
+  bool _calculateSuccess(bool baseAsArrayCaster) {
+    if (baseAsArrayCaster) {
+      if (_castValue is! List || _baseValue is List) {
+        return false;
+      }
+
+      if (_castValue.isEmpty) {
+        return true;
+      } else {
+        return _isHomogeneousList(_castValue) &&
+            _castValue.first.runtimeType == _baseValue.runtimeType;
+      }
+    } else {
+      return _baseValue.runtimeType == _castValue.runtimeType;
+    }
+  }
+
   void _recursivelyCastListElements() {
     final List newCastList = [];
-    final dynamic firstBase = _baseValue.first;
+    final dynamic firstBase =
+        _baseValue is List ? _baseValue.first : _baseValue;
     final FilterTypeCaster localCaster = FilterTypeCaster();
 
     for (final element in _castValue) {
@@ -107,7 +133,11 @@ class FilterTypeCaster {
     _castValue = [...newCastList];
 
     if (firstBase is Map && _castValue.first is String) {
-      _baseValue = _baseValue.map((e) => e.toString()).toList();
+      if (_baseValue is List) {
+        _baseValue = (_baseValue as List).map((e) => e.toString()).toList();
+      } else {
+        _baseValue = _baseValue.toString();
+      }
     }
   }
 
