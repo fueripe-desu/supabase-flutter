@@ -45,6 +45,11 @@ class FilterBuilder {
               .equals(castResult.baseValue, castResult.castValue);
         }
 
+        if (castResult.baseValue == Map && castResult.castValue == Map) {
+          return const MapEquality()
+              .equals(castResult.baseValue, castResult.castValue);
+        }
+
         return castResult.baseValue == castResult.castValue;
       }).toList(),
       errors: _errorStack,
@@ -412,17 +417,28 @@ class FilterBuilder {
   }
 
   FilterBuilder _notEqualTo(String column, Object? value) {
-    if (value is List) {
-      final newData = _data
-          .where(
-            (element) => !value.contains(element[column]),
-          )
-          .toList();
-      return FilterBuilder(newData);
-    }
+    return FilterBuilder(
+      _data.where((element) {
+        final castResult = _typeCaster.cast(element[column], value);
 
-    final newData = _data.where((element) => element[column] != value).toList();
-    return FilterBuilder(newData);
+        if (!castResult.wasSucessful) {
+          _setCastError(castResult.baseValue, castResult.castValue, 'eq');
+        }
+
+        if (castResult.baseValue == List && castResult.castValue == List) {
+          return !(const DeepCollectionEquality()
+              .equals(castResult.baseValue, castResult.castValue));
+        }
+
+        if (castResult.baseValue == Map && castResult.castValue == Map) {
+          return !(const MapEquality()
+              .equals(castResult.baseValue, castResult.castValue));
+        }
+
+        return castResult.baseValue != castResult.castValue;
+      }).toList(),
+      errors: _errorStack,
+    );
   }
 
   FilterBuilder _compareRanges({
