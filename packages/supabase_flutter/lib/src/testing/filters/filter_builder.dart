@@ -438,8 +438,33 @@ class FilterBuilder {
         modifier: FilterModifier.any,
       );
 
-  FilterBuilder isFilter(String column, Object? value) => _filter(
-        test: (element) => element[column] == value,
+  FilterBuilder isFilter(String column, Object? value) => FilterBuilder(
+        _data.where((element) {
+          final castResult = _typeCaster.cast(
+            element[column],
+            value,
+          );
+
+          final baseValue = castResult.baseValue;
+          final castValue = castResult.castValue;
+
+          if (baseValue is! bool) {
+            if (castValue is bool || castValue == null) {
+              _setInvalidIsArgumentError(baseValue);
+              return true;
+            }
+            _setFailedToParseIsFilterError(castValue);
+            return true;
+          }
+
+          if (castValue is! bool && castValue != null) {
+            _setFailedToParseIsFilterError(castValue);
+            return true;
+          }
+
+          return baseValue == castValue;
+        }).toList(),
+        errors: _errorStack,
       );
 
   FilterBuilder inFilter(String column, Object value) => eqAny(column, value);
@@ -450,154 +475,120 @@ class FilterBuilder {
   FilterBuilder containedBy(String column, Object value) =>
       _contains(column, value, true);
 
-  FilterBuilder rangeGt(String column, String range) => _compareRanges(
+  FilterBuilder rangeAdjacent(String column, Object range) => _compareRanges(
         column: column,
         range: range,
-        compareFunc: (inputRange, rowRange) => rowRange > inputRange,
+        operatorStr: '-|-',
+        compareFunc: (baseRange, castRange) => baseRange.isAdjacent(castRange),
       );
 
-  FilterBuilder rangeGtAny(String column, List<String> rangeList) => _filter(
-        test: (element) => rangeList.any(
-          (range) =>
-              RangeType.createRange(range: element[column]) >
-              RangeType.createRange(range: range),
-        ),
+  FilterBuilder overlaps(String column, Object value) => FilterBuilder(
+        _data.where((element) {
+          final castResult = _typeCaster.cast(
+            element[column],
+            value,
+          );
+
+          final baseValue = castResult.baseValue;
+          final castValue = castResult.castValue;
+
+          if (baseValue is! RangeType && baseValue is! List) {
+            _setOperatorDoesNotExistError(
+              baseValue,
+              '&&',
+            );
+            return true;
+          }
+
+          if (!castResult.wasSucessful) {
+            _setMalformedLiteralError(castValue, 'range');
+            return true;
+          }
+
+          if (baseValue is RangeType) {
+            return baseValue.overlaps(castValue);
+          }
+
+          if (baseValue is List) {
+            return castValue.any((element) => baseValue.contains(element));
+          }
+
+          throw Exception('Unknown Error');
+        }).toList(),
+        errors: _errorStack,
       );
 
-  FilterBuilder rangeGtAll(String column, List<String> rangeList) => _filter(
-        test: (element) => rangeList.every(
-          (range) =>
-              RangeType.createRange(range: element[column]) >
-              RangeType.createRange(range: range),
-        ),
-      );
-
-  FilterBuilder rangeGte(String column, String range) => _compareRanges(
+  FilterBuilder rangeLt(String column, Object range) => _compareRanges(
         column: column,
         range: range,
-        compareFunc: (inputRange, rowRange) => rowRange >= inputRange,
+        operatorStr: '<<',
+        compareFunc: (baseRange, castRange) =>
+            baseRange.strictlyLeftOf(castRange),
       );
 
-  FilterBuilder rangeGteAny(String column, List<String> rangeList) => _filter(
-        test: (element) => rangeList.any(
-          (range) =>
-              RangeType.createRange(range: element[column]) >=
-              RangeType.createRange(range: range),
-        ),
-      );
-
-  FilterBuilder rangeGteAll(String column, List<String> rangeList) => _filter(
-        test: (element) => rangeList.every(
-          (range) =>
-              RangeType.createRange(range: element[column]) >=
-              RangeType.createRange(range: range),
-        ),
-      );
-
-  FilterBuilder rangeLt(String column, String range) => _compareRanges(
+  FilterBuilder rangeGt(String column, Object range) => _compareRanges(
         column: column,
         range: range,
-        compareFunc: (inputRange, rowRange) => rowRange < inputRange,
+        operatorStr: '>>',
+        compareFunc: (baseRange, castRange) =>
+            baseRange.strictlyRightOf(castRange),
       );
 
-  FilterBuilder rangeLtAny(String column, List<String> rangeList) => _filter(
-        test: (element) => rangeList.any(
-          (range) =>
-              RangeType.createRange(range: element[column]) <
-              RangeType.createRange(range: range),
-        ),
-      );
-
-  FilterBuilder rangeLtAll(String column, List<String> rangeList) => _filter(
-        test: (element) => rangeList.every(
-          (range) =>
-              RangeType.createRange(range: element[column]) <
-              RangeType.createRange(range: range),
-        ),
-      );
-
-  FilterBuilder rangeLte(String column, String range) => _compareRanges(
+  FilterBuilder rangeGte(String column, Object range) => _compareRanges(
         column: column,
         range: range,
-        compareFunc: (inputRange, rowRange) => rowRange <= inputRange,
+        operatorStr: '&>',
+        compareFunc: (baseRange, castRange) =>
+            baseRange.doesNotExtendToTheLeftOf(castRange),
       );
 
-  FilterBuilder rangeLteAny(String column, List<String> rangeList) => _filter(
-        test: (element) => rangeList.any(
-          (range) =>
-              RangeType.createRange(range: element[column]) <=
-              RangeType.createRange(range: range),
-        ),
-      );
-
-  FilterBuilder rangeLteAll(String column, List<String> rangeList) => _filter(
-        test: (element) => rangeList.every(
-          (range) =>
-              RangeType.createRange(range: element[column]) <=
-              RangeType.createRange(range: range),
-        ),
-      );
-
-  FilterBuilder rangeAdjacent(String column, String range) => _compareRanges(
+  FilterBuilder rangeLte(String column, Object range) => _compareRanges(
         column: column,
         range: range,
-        compareFunc: (inputRange, rowRange) => rowRange.isAdjacent(inputRange),
+        operatorStr: '&<',
+        compareFunc: (baseRange, castRange) =>
+            baseRange.doesNotExtendToTheRightOf(castRange),
       );
 
-  FilterBuilder overlaps(String column, Object value) {
-    if (value is String) {
-      return _compareRanges(
-        column: column,
-        range: value,
-        compareFunc: (inputRange, rowRange) => rowRange.overlaps(inputRange),
-      );
-    }
+  FilterBuilder _compareRanges({
+    required String column,
+    required Object range,
+    required String operatorStr,
+    required bool Function(
+      RangeType baseRange,
+      RangeType castRange,
+    ) compareFunc,
+  }) =>
+      FilterBuilder(
+        _data.where((element) {
+          final castResult = _typeCaster.cast(
+            element[column],
+            range,
+          );
 
-    if (value is List) {
-      return _filter(test: (element) {
-        final data = element[column];
+          final baseValue = castResult.baseValue;
+          final castValue = castResult.castValue;
 
-        if (data is List) {
-          return value.any((element) => data.contains(element));
-        }
+          if (baseValue is! RangeType) {
+            if (baseValue is int && ['>>', '<<'].contains(operatorStr)) {
+              _setInvalidWhereArgumentError(baseValue);
+              return true;
+            }
+            _setOperatorDoesNotExistError(
+              baseValue,
+              operatorStr,
+            );
+            return true;
+          }
 
-        throw Exception(
-          'Overlaps must be used in lists when passing a list as argument.',
-        );
-      });
-    }
+          if (castValue is! RangeType) {
+            _setMalformedLiteralError(castValue, 'range');
+            return true;
+          }
 
-    throw Exception('Invalid use of overlaps.');
-  }
-
-  FilterBuilder strictlyLeftOf(String column, String range) => _compareRanges(
-        column: column,
-        range: range,
-        compareFunc: (inputRange, rowRange) =>
-            rowRange.strictlyLeftOf(inputRange),
-      );
-
-  FilterBuilder strictlyRightOf(String column, String range) => _compareRanges(
-        column: column,
-        range: range,
-        compareFunc: (inputRange, rowRange) =>
-            rowRange.strictlyRightOf(inputRange),
-      );
-
-  FilterBuilder doesNotExtendToTheLeftOf(String column, String range) =>
-      _compareRanges(
-        column: column,
-        range: range,
-        compareFunc: (inputRange, rowRange) =>
-            rowRange.doesNotExtendToTheLeftOf(inputRange),
-      );
-
-  FilterBuilder doesNotExtendToTheRightOf(String column, String range) =>
-      _compareRanges(
-        column: column,
-        range: range,
-        compareFunc: (inputRange, rowRange) =>
-            rowRange.doesNotExtendToTheRightOf(inputRange),
+          return compareFunc(baseValue, castValue);
+        }).toList(),
+        errors: _errorStack,
       );
 
   FilterBuilder textSearch(
@@ -673,20 +664,6 @@ class FilterBuilder {
       }).toList(),
       errors: _errorStack,
     );
-  }
-
-  FilterBuilder _compareRanges({
-    required String column,
-    required String range,
-    required bool Function(RangeType inputRange, RangeType rowRange)
-        compareFunc,
-  }) {
-    final inputRange = RangeType.createRange(range: range);
-
-    return _filter(test: (element) {
-      final rowRange = RangeType.createRange(range: element[column]);
-      return compareFunc(inputRange, rowRange);
-    });
   }
 
   bool _containsRange(RangeType range1, RangeType range2, bool isContainedBy) {
@@ -794,17 +771,6 @@ class FilterBuilder {
     return regex.hasMatch(value);
   }
 
-  FilterBuilder _filter({
-    required bool Function(
-      Map<String, dynamic> element,
-    ) test,
-  }) {
-    final data = _data;
-    final newData = data.where(test).toList();
-
-    return FilterBuilder(newData);
-  }
-
   void _setMalformedLiteralError(dynamic castType, String literalName) {
     _setError(
       message: 'malformed $literalName literal: "${castType.toString()}"',
@@ -832,6 +798,37 @@ class FilterBuilder {
       details: 'Not Found',
       hint:
           'No operator matches the given name and argument types. You might need to add explicit type casts.',
+    );
+  }
+
+  void _setInvalidWhereArgumentError(dynamic baseType) {
+    _setError(
+      message:
+          'argument of WHERE must be type boolean, not type ${_getTypeString(baseType)}',
+      code: '42804',
+      details: 'Bad Request',
+      hint: null,
+    );
+  }
+
+  void _setFailedToParseIsFilterError(dynamic castValue) {
+    _setError(
+      message:
+          '"failed to parse filter (is.${castValue.toString()})" (line 1, column 4)',
+      code: 'PGRST100',
+      details:
+          'unexpected "${castValue.toString()[0]}" expecting null or trilean value (unknown, true, false)',
+      hint: null,
+    );
+  }
+
+  void _setInvalidIsArgumentError(dynamic baseType) {
+    _setError(
+      message:
+          'argument of IS TRUE must be type boolean, not type ${_getTypeString(baseType)}',
+      code: '42804',
+      details: 'Bad Request',
+      hint: null,
     );
   }
 

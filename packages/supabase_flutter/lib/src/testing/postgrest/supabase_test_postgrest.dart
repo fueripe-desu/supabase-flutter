@@ -78,21 +78,17 @@ class PostrestSyntaxParser {
           return (String column, dynamic value) =>
               filterBuilder.eq(column, value);
         case 'gt':
-          return (String column, dynamic value) => value is String
-              ? filterBuilder.rangeGt(column, value)
-              : filterBuilder.gt(column, value);
+          return (String column, dynamic value) =>
+              filterBuilder.gt(column, value);
         case 'gte':
-          return (String column, dynamic value) => value is String
-              ? filterBuilder.rangeGte(column, value)
-              : filterBuilder.gte(column, value);
+          return (String column, dynamic value) =>
+              filterBuilder.gte(column, value);
         case 'lt':
-          return (String column, dynamic value) => value is String
-              ? filterBuilder.rangeLt(column, value)
-              : filterBuilder.lt(column, value);
+          return (String column, dynamic value) =>
+              filterBuilder.lt(column, value);
         case 'lte':
-          return (String column, dynamic value) => value is String
-              ? filterBuilder.rangeLte(column, value)
-              : filterBuilder.lte(column, value);
+          return (String column, dynamic value) =>
+              filterBuilder.lte(column, value);
         case 'neq':
           return (String column, dynamic value) =>
               filterBuilder.neq(column, value);
@@ -134,16 +130,16 @@ class PostrestSyntaxParser {
               filterBuilder.overlaps(column, value);
         case 'sl':
           return (String column, dynamic value) =>
-              filterBuilder.strictlyLeftOf(column, value);
+              filterBuilder.rangeLt(column, value);
         case 'sr':
           return (String column, dynamic value) =>
-              filterBuilder.strictlyRightOf(column, value);
+              filterBuilder.rangeGt(column, value);
         case 'nxr':
           return (String column, dynamic value) =>
-              filterBuilder.doesNotExtendToTheRightOf(column, value);
+              filterBuilder.rangeLte(column, value);
         case 'nxl':
           return (String column, dynamic value) =>
-              filterBuilder.doesNotExtendToTheLeftOf(column, value);
+              filterBuilder.rangeGte(column, value);
         case 'adj':
           return (String column, dynamic value) =>
               filterBuilder.rangeAdjacent(column, value);
@@ -167,36 +163,16 @@ class PostrestSyntaxParser {
               );
         case 'gt':
           return (String column, dynamic value) =>
-              value is List && value.first is String
-                  ? filterBuilder.rangeGtAny(
-                      column,
-                      value.map((e) => e.toString()).toList(),
-                    )
-                  : filterBuilder.gtAny(column, value);
+              filterBuilder.gtAny(column, value);
         case 'gte':
           return (String column, dynamic value) =>
-              value is List && value.first is String
-                  ? filterBuilder.rangeGteAny(
-                      column,
-                      value.map((e) => e.toString()).toList(),
-                    )
-                  : filterBuilder.gteAny(column, value);
+              filterBuilder.gteAny(column, value);
         case 'lt':
           return (String column, dynamic value) =>
-              value is List && value.first is String
-                  ? filterBuilder.rangeLtAny(
-                      column,
-                      value.map((e) => e.toString()).toList(),
-                    )
-                  : filterBuilder.ltAny(column, value);
+              filterBuilder.ltAny(column, value);
         case 'lte':
           return (String column, dynamic value) =>
-              value is List && value.first is String
-                  ? filterBuilder.rangeLteAny(
-                      column,
-                      value.map((e) => e.toString()).toList(),
-                    )
-                  : filterBuilder.lteAny(column, value);
+              filterBuilder.lteAny(column, value);
         default:
           throw Exception('\'$filter\' is not a valid filter.');
       }
@@ -217,36 +193,16 @@ class PostrestSyntaxParser {
               );
         case 'gt':
           return (String column, dynamic value) =>
-              value is List && value.first is String
-                  ? filterBuilder.rangeGtAll(
-                      column,
-                      value.map((e) => e.toString()).toList(),
-                    )
-                  : filterBuilder.gtAll(column, value);
+              filterBuilder.gtAll(column, value);
         case 'gte':
           return (String column, dynamic value) =>
-              value is List && value.first is String
-                  ? filterBuilder.rangeGteAll(
-                      column,
-                      value.map((e) => e.toString()).toList(),
-                    )
-                  : filterBuilder.gteAll(column, value);
+              filterBuilder.gteAll(column, value);
         case 'lt':
           return (String column, dynamic value) =>
-              value is List && value.first is String
-                  ? filterBuilder.rangeLtAll(
-                      column,
-                      value.map((e) => e.toString()).toList(),
-                    )
-                  : filterBuilder.ltAll(column, value);
+              filterBuilder.ltAll(column, value);
         case 'lte':
           return (String column, dynamic value) =>
-              value is List && value.first is String
-                  ? filterBuilder.rangeLteAll(
-                      column,
-                      value.map((e) => e.toString()).toList(),
-                    )
-                  : filterBuilder.lteAll(column, value);
+              filterBuilder.lteAll(column, value);
         default:
           throw Exception('\'$filter\' is not a valid filter.');
       }
