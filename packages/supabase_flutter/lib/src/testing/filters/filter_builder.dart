@@ -442,11 +442,7 @@ class FilterBuilder {
         test: (element) => element[column] == value,
       );
 
-  FilterBuilder inFilter(String column, List<dynamic> value) => _filter(
-        test: (element) => value.contains(
-          element[column],
-        ),
-      );
+  FilterBuilder inFilter(String column, Object value) => eqAny(column, value);
 
   FilterBuilder contains(String column, Object value) =>
       _contains(column, value, false);
