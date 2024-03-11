@@ -20,6 +20,7 @@ class FilterBuilder {
   final List<Map<String, dynamic>> _data;
   final List<FilterError> _errorStack;
   final FilterTypeCaster _typeCaster = FilterTypeCaster();
+  final PostrestSyntaxParser _syntaxParser = PostrestSyntaxParser([]);
 
   FilterBuilder(List<Map<String, dynamic>> data, {List<FilterError>? errors})
       : _data = List.from(data),
@@ -340,33 +341,102 @@ class FilterBuilder {
     return list1.length.compareTo(list2.length);
   }
 
-  FilterBuilder like(String column, String pattern) => _filter(
-        test: (element) => _like(
-          element[column],
-          pattern,
-          caseSensitive: true,
-        ),
+  FilterBuilder _matchPattern({
+    required String column,
+    required Object pattern,
+    required bool caseSensitive,
+    FilterModifier? modifier,
+  }) =>
+      FilterBuilder(
+        _data.where((element) {
+          final baseValue = element[column];
+
+          if (baseValue is! String) {
+            _setOperatorDoesNotExistError(baseValue);
+            return true;
+          }
+
+          if (modifier != null) {
+            final parsedPattern = pattern is String
+                ? _syntaxParser.parseValue(pattern.toString())
+                : pattern;
+            if (parsedPattern is! List) {
+              _setMalformedArrayLiteralError(parsedPattern);
+              return true;
+            }
+
+            final patternStringList =
+                parsedPattern.map((e) => e.toString()).toList();
+
+            if (modifier == FilterModifier.any) {
+              return patternStringList.any(
+                (patternString) => _like(
+                  baseValue,
+                  patternString,
+                  caseSensitive: caseSensitive,
+                ),
+              );
+            } else if (modifier == FilterModifier.all) {
+              return patternStringList.every(
+                (patternString) => _like(
+                  baseValue,
+                  patternString,
+                  caseSensitive: caseSensitive,
+                ),
+              );
+            } else {
+              throw Exception('Unknown modifier');
+            }
+          }
+
+          return _like(
+            baseValue,
+            pattern.toString(),
+            caseSensitive: caseSensitive,
+          );
+        }).toList(),
+        errors: _errorStack,
       );
 
-  FilterBuilder ilike(String column, String pattern) => _filter(
-        test: (element) => _like(
-          element[column],
-          pattern,
-          caseSensitive: false,
-        ),
+  FilterBuilder like(String column, Object pattern) => _matchPattern(
+        column: column,
+        pattern: pattern,
+        caseSensitive: true,
       );
 
-  FilterBuilder likeAllOf(String column, List<String> patterns) =>
-      _likeAllOf(column, patterns, true);
+  FilterBuilder ilike(String column, Object pattern) => _matchPattern(
+        column: column,
+        pattern: pattern,
+        caseSensitive: false,
+      );
 
-  FilterBuilder ilikeAllOf(String column, List<String> patterns) =>
-      _likeAllOf(column, patterns, false);
+  FilterBuilder likeAllOf(String column, Object patterns) => _matchPattern(
+        column: column,
+        pattern: patterns,
+        caseSensitive: true,
+        modifier: FilterModifier.all,
+      );
 
-  FilterBuilder likeAnyOf(String column, List<String> patterns) =>
-      _likeAnyOf(column, patterns, true);
+  FilterBuilder ilikeAllOf(String column, Object patterns) => _matchPattern(
+        column: column,
+        pattern: patterns,
+        caseSensitive: false,
+        modifier: FilterModifier.all,
+      );
 
-  FilterBuilder ilikeAnyOf(String column, List<String> patterns) =>
-      _likeAnyOf(column, patterns, false);
+  FilterBuilder likeAnyOf(String column, Object patterns) => _matchPattern(
+        column: column,
+        pattern: patterns,
+        caseSensitive: true,
+        modifier: FilterModifier.any,
+      );
+
+  FilterBuilder ilikeAnyOf(String column, Object patterns) => _matchPattern(
+        column: column,
+        pattern: patterns,
+        caseSensitive: false,
+        modifier: FilterModifier.any,
+      );
 
   FilterBuilder isFilter(String column, Object? value) => _filter(
         test: (element) => element[column] == value,
@@ -693,49 +763,6 @@ class FilterBuilder {
     );
   }
 
-  FilterBuilder _likeAnyOf(
-      String column, List<String> patterns, bool caseSensitive) {
-    // Initialize an empty list to store filtered data
-    final List<Map<String, dynamic>> newData = [];
-    for (final row in _data) {
-      // Extract the value of the specified column for the current row
-      final data = row[column];
-      for (final pattern in patterns) {
-        // If a match is found, add the matched data to the newData list
-        // and break out of the loop, therefore only adding if it satisfies one
-        // of the patterns
-        if (_like(data, pattern, caseSensitive: caseSensitive)) {
-          newData.add(row);
-          break;
-        }
-      }
-    }
-
-    return FilterBuilder([...newData]);
-  }
-
-  FilterBuilder _likeAllOf(
-      String column, List<String> patterns, bool caseSensitive) {
-    final List<Map<String, dynamic>> newData = [];
-    for (final row in _data) {
-      // Extract the value of the specified column for the current row
-      final data = row[column];
-      for (final pattern in patterns) {
-        // If it does not match any of the patterns, it breaks out of the loop
-        if (!_like(data, pattern, caseSensitive: caseSensitive)) {
-          break;
-        }
-
-        // If the current pattern is the last one, it means all others have passed
-        if (pattern == patterns.last) {
-          newData.add(row);
-        }
-      }
-    }
-
-    return FilterBuilder([...newData]);
-  }
-
   bool _like(String value, String pattern, {bool caseSensitive = true}) {
     // Escape regex metacharacters in the pattern
     final escapedPattern = pattern.replaceAllMapped(
@@ -780,6 +807,17 @@ class FilterBuilder {
       code: '42704',
       details: 'Bad Request',
       hint: null,
+    );
+  }
+
+  void _setOperatorDoesNotExistError(dynamic baseType) {
+    _setError(
+      message:
+          'operator does not exist: ${_getTypeString(baseType)}${baseType is List ? '[]' : ''} ~~ unknown',
+      code: '42883',
+      details: 'Not Found',
+      hint:
+          'No operator matches the given name and argument types. You might need to add explicit type casts.',
     );
   }
 
