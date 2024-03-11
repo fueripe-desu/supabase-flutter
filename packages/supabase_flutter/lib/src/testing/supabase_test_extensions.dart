@@ -57,9 +57,3 @@ extension ListStringUtils on List<String> {
     return where((item) => item == element).length;
   }
 }
-
-extension MapUtils on Map {
-  bool contains(Map other) => other.entries.every(
-        (element) => containsKey(element.key) && containsValue(element.value),
-      );
-}

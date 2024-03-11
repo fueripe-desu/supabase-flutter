@@ -80,7 +80,7 @@ class FilterBuilder {
         }
 
         if (castResult.castValue is! List) {
-          _setMalformedArrayLiteralError(value);
+          _setMalformedLiteralError(value, 'array');
           return true;
         }
 
@@ -242,7 +242,7 @@ class FilterBuilder {
             }
 
             if (castResult.castValue is! List) {
-              _setMalformedArrayLiteralError(value);
+              _setMalformedLiteralError(value, 'array');
               return true;
             }
           }
@@ -352,7 +352,7 @@ class FilterBuilder {
           final baseValue = element[column];
 
           if (baseValue is! String) {
-            _setOperatorDoesNotExistError(baseValue);
+            _setOperatorDoesNotExistError(baseValue, '~~');
             return true;
           }
 
@@ -361,7 +361,7 @@ class FilterBuilder {
                 ? _syntaxParser.parseValue(pattern.toString())
                 : pattern;
             if (parsedPattern is! List) {
-              _setMalformedArrayLiteralError(parsedPattern);
+              _setMalformedLiteralError(parsedPattern, 'array');
               return true;
             }
 
@@ -689,75 +689,93 @@ class FilterBuilder {
     });
   }
 
-  FilterBuilder _contains(String column, Object value, bool isContainedBy) {
-    if (value is String) {
-      final rangeValue = RangeType.createRange(range: value);
-      return _filter(
-        test: (element) {
-          final data = element[column];
-          final rangeToTest = RangeType.createRange(range: data);
+  bool _containsRange(RangeType range1, RangeType range2, bool isContainedBy) {
+    late final RangeComparable comparable1;
+    late final RangeComparable comparable2;
 
-          late final RangeComparable comparable;
-          late final RangeType rangeToCompare;
-
-          if (isContainedBy) {
-            comparable = rangeToTest.getComparable();
-            rangeToCompare = rangeValue;
-          } else {
-            comparable = rangeValue.getComparable();
-            rangeToCompare = rangeToTest;
-          }
-
-          return rangeToCompare.isInRange(comparable.lowerRange) &&
-              rangeToCompare.isInRange(comparable.upperRange);
-        },
-      );
-    }
-    if (value is List) {
-      return _filter(
-        test: (row) {
-          final data = row[column];
-
-          if (data is List) {
-            if (isContainedBy) {
-              return data.every((element) => value.contains(element));
-            }
-
-            return value.every((element) => data.contains(element));
-          }
-
-          if (isContainedBy) {
-            return value.any((element) => element == data);
-          }
-
-          return value.every((element) => element == data);
-        },
-      );
+    if (isContainedBy) {
+      comparable1 = range1.getComparable();
+      comparable2 = range2.getComparable();
+    } else {
+      comparable1 = range2.getComparable();
+      comparable2 = range1.getComparable();
     }
 
-    if (value is Map) {
-      return _filter(
-        test: (row) {
-          final data = row[column];
-
-          if (data is Map) {
-            if (isContainedBy) {
-              return value.contains(data);
-            }
-            return data.contains(value);
-          }
-
-          throw Exception(
-            'Invalid use of \'${isContainedBy ? 'containedBy' : 'contains'}\' filter. Please when using contains with jsonb make sure that the target data is also a json map.',
-          );
-        },
-      );
-    }
-
-    throw Exception(
-      'Invalid use of \'${isContainedBy ? 'containedBy' : 'contains'}\' filter. Must be used with range, list or jsonb.',
-    );
+    return comparable2.isInRange(comparable1.lowerRange) &&
+        comparable2.isInRange(comparable1.upperRange);
   }
+
+  bool _containsList(dynamic value1, dynamic value2, bool isContainedBy) {
+    if (value1 is List) {
+      if (isContainedBy) {
+        return value1.every((element) => value2.contains(element));
+      }
+
+      return value2.every((element) => value1.contains(element));
+    }
+
+    if (isContainedBy) {
+      return value2.any((element) => element == value1);
+    }
+
+    return value2.every((element) => element == value1);
+  }
+
+  bool _containsMap(dynamic value1, dynamic value2, bool isContainedBy) {
+    if (isContainedBy) {
+      return _containsMapOperation(value2, value1);
+    }
+    return _containsMapOperation(value1, value2);
+  }
+
+  bool _containsMapOperation(Map thisMap, Map other) => other.entries.every(
+        (element) =>
+            thisMap.containsKey(element.key) &&
+            thisMap.containsValue(element.value),
+      );
+
+  FilterBuilder _contains(String column, Object value, bool isContainedBy) =>
+      FilterBuilder(
+        _data.where((element) {
+          final castResult = _typeCaster.cast(
+            element[column],
+            value,
+          );
+
+          final baseValue = castResult.baseValue;
+          final castValue = castResult.castValue;
+
+          if (baseValue is! RangeType &&
+              baseValue is! List &&
+              baseValue is! Map) {
+            _setOperatorDoesNotExistError(
+              baseValue,
+              isContainedBy ? '<@' : '@>',
+            );
+            return true;
+          }
+
+          if (!castResult.wasSucessful) {
+            _setMalformedLiteralError(castValue, 'range');
+            return true;
+          }
+
+          if (baseValue is RangeType) {
+            return _containsRange(baseValue, castValue, isContainedBy);
+          }
+
+          if (baseValue is List) {
+            return _containsList(baseValue, castValue, isContainedBy);
+          }
+
+          if (baseValue is Map) {
+            return _containsMap(baseValue, castValue, isContainedBy);
+          }
+
+          throw Exception('Unknown Error');
+        }).toList(),
+        errors: _errorStack,
+      );
 
   bool _like(String value, String pattern, {bool caseSensitive = true}) {
     // Escape regex metacharacters in the pattern
@@ -787,9 +805,9 @@ class FilterBuilder {
     return FilterBuilder(newData);
   }
 
-  void _setMalformedArrayLiteralError(dynamic castType) {
+  void _setMalformedLiteralError(dynamic castType, String literalName) {
     _setError(
-      message: 'malformed array literal: "${castType.toString()}"',
+      message: 'malformed $literalName literal: "${castType.toString()}"',
       code: '22P02',
       details: 'Array value must start with "{" or dimension information.',
       hint: null,
@@ -806,10 +824,10 @@ class FilterBuilder {
     );
   }
 
-  void _setOperatorDoesNotExistError(dynamic baseType) {
+  void _setOperatorDoesNotExistError(dynamic baseType, String operatorStr) {
     _setError(
       message:
-          'operator does not exist: ${_getTypeString(baseType)}${baseType is List ? '[]' : ''} ~~ unknown',
+          'operator does not exist: ${_getTypeString(baseType)}${baseType is List ? '[]' : ''} $operatorStr unknown',
       code: '42883',
       details: 'Not Found',
       hint:
