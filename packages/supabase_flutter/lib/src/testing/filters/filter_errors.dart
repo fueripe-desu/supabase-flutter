@@ -3,89 +3,110 @@ import 'package:supabase_flutter/src/testing/range_type/range_type.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
 
 class FilterBuilderErrors {
-  // args[0] -> castType
-  // args[1] -> literalName
-  FilterError malformedLiteralError(List<dynamic> args) => FilterError(
-        message: 'malformed ${args[1]} literal: "${args[0].toString()}"',
-        code: '22P02',
-        details: args[1] == 'array'
-            ? 'Array value must start with "{" or dimension information.'
-            : 'Missing left parenthesis or bracket.',
-        hint: null,
-      );
+  FilterError malformedLiteralError(dynamic castValue, String literalName) {
+    final castValueString =
+        castValue is List ? _handleList(castValue) : castValue.toString();
 
-  // args[0] -> baseType
-  FilterError notScalarValueError(List<dynamic> args) => FilterError(
+    late final String details;
+
+    switch (literalName) {
+      case 'array':
+        details = 'Array value must start with "{" or dimension information.';
+        break;
+      case 'range':
+        details = 'Missing left parenthesis or bracket.';
+        break;
+      default:
+        details = 'Bad Request';
+    }
+
+    return FilterError(
+      message: 'malformed $literalName literal: "$castValueString"',
+      code: '22P02',
+      details: details,
+      hint: null,
+    );
+  }
+
+  FilterError notScalarValueError(dynamic baseValue) => FilterError(
         message:
-            'could not find array type for data type ${_getTypeString(args[0])}[]',
+            'could not find array type for data type ${_getTypeString(baseValue.toString())}[]',
         code: '42704',
         details: 'Bad Request',
         hint: null,
       );
 
-  // args[0] -> baseType
-  // args[1] -> operatorStr
-  FilterError operatorDoesNotExistError(List<dynamic> args) => FilterError(
+  FilterError operatorDoesNotExistError(
+    dynamic baseValue,
+    String operatorString,
+  ) =>
+      FilterError(
         message:
-            'operator does not exist: ${_getTypeString(args[0])}${args[0] is List ? '[]' : ''} ${args[1]} unknown',
+            'operator does not exist: ${_getTypeString(baseValue.toString())}${baseValue is List ? '[]' : ''} $operatorString unknown',
         code: '42883',
         details: 'Not Found',
         hint:
             'No operator matches the given name and argument types. You might need to add explicit type casts.',
       );
 
-  // args[0] -> baseType
-  // args[1] -> keywordString
-  FilterError invalidArgumentError(List<dynamic> args) => FilterError(
+  FilterError invalidArgumentError(dynamic baseValue, String keywordString) =>
+      FilterError(
         message:
-            'argument of ${args[1]} must be type boolean, not type ${_getTypeString(args[0])}',
+            'argument of $keywordString must be type boolean, not type ${_getTypeString(baseValue.toString())}',
         code: '42804',
         details: 'Bad Request',
         hint: null,
       );
 
-  // args[0] -> castValue
-  FilterError failedToParseIsFilterError(List<dynamic> args) => FilterError(
+  FilterError failedToParseIsFilterError(dynamic castValue) => FilterError(
         message:
-            '"failed to parse filter (is.${args[0].toString()})" (line 1, column 4)',
+            '"failed to parse filter (is.${castValue.toString()})" (line 1, column 4)',
         code: 'PGRST100',
         details:
-            'unexpected "${args[0].toString()[0]}" expecting null or trilean value (unknown, true, false)',
+            'unexpected "${castValue.toString()[0]}" expecting null or trilean value (unknown, true, false)',
         hint: null,
       );
 
-  // args[0] -> baseType
-  // args[1] -> castType
-  // args[2] -> grabOnlyFirstElement
-  FilterError invalidInputSyntaxError(List<dynamic> args) {
+  FilterError invalidInputSyntaxError(
+    dynamic baseValue,
+    dynamic castValue,
+    bool grabOnlyFirstElement,
+  ) {
     late final String valueString;
 
-    if (args[1] is List) {
-      if (args[1].isNotEmpty && args[2] == true) {
-        valueString = args[1].first.toString();
+    if (castValue is List) {
+      if (castValue.isNotEmpty && grabOnlyFirstElement == true) {
+        valueString = castValue.first.toString();
       } else {
-        valueString = _toPostgresList(args[1].toString());
+        valueString = _toPostgresList(castValue.toString());
       }
     } else {
-      valueString = args[1].toString();
+      valueString = castValue.toString();
     }
 
     return FilterError(
       message:
-          'invalid input syntax for type ${_getTypeString(args[0])}: "$valueString"',
+          'invalid input syntax for type ${_getTypeString(baseValue.toString())}: "$valueString"',
       code: '22P02',
       details: 'Bad Request',
       hint: null,
     );
   }
 
-  // args[0] -> castType
-  FilterError datetimeOutOfRange(List<dynamic> args) => FilterError(
-        message: 'date/time field value out of range: "${args[0]}"',
+  FilterError datetimeOutOfRange(dynamic castType) => FilterError(
+        message: 'date/time field value out of range: "$castType"',
         code: '22008',
         details: 'Bad Request',
         hint: 'Perhaps you need a different "datestyle" setting',
       );
+
+  String _handleList(List list) {
+    if (_getListFirstElement(list) is String) {
+      return _toPostgresList(_addQuotesToAllStringElements(list).toString());
+    } else {
+      return _toPostgresList(list.toString());
+    }
+  }
 
   String _toPostgresList(String listString) {
     final elements = listString.substring(
@@ -94,6 +115,9 @@ class FilterBuilderErrors {
     );
     return '{$elements}';
   }
+
+  List<String> _addQuotesToAllStringElements(List list) =>
+      list.map((e) => '"${e as String}"').toList();
 
   String _getTypeString(dynamic value) {
     final dynamic type = _getListFirstElement(value);

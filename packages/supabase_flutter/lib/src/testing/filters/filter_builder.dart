@@ -45,7 +45,7 @@ class FilterBuilder {
         baseFunc: (baseValue, castValue) => baseValue == castValue,
         customErrorCallback: (baseValue, castValue) {
           if (baseValue is DateTime && castValue is int) {
-            return _setError(_errors.datetimeOutOfRange([castValue]));
+            return _setError(_errors.datetimeOutOfRange(castValue));
           }
           return null;
         },
@@ -239,16 +239,16 @@ class FilterBuilder {
         allowedTypeFunc: (baseValue, castValue) {
           if (baseValue is! bool && baseValue != null) {
             if (castValue is bool || castValue == null) {
-              return _setError(_errors.invalidArgumentError([
+              return _setError(_errors.invalidArgumentError(
                 baseValue,
                 'IS ${castValue == true ? 'TRUE' : 'FALSE'}',
-              ]));
+              ));
             }
-            return _setError(_errors.failedToParseIsFilterError([castValue]));
+            return _setError(_errors.failedToParseIsFilterError(castValue));
           }
 
           if (castValue is! bool && castValue != null) {
-            return _setError(_errors.failedToParseIsFilterError([castValue]));
+            return _setError(_errors.failedToParseIsFilterError(castValue));
           }
           return null;
         },
@@ -264,10 +264,9 @@ class FilterBuilder {
           if (baseValue is! RangeType &&
               baseValue is! List &&
               baseValue is! Map) {
-            return _setError(_errors.operatorDoesNotExistError([
-              baseValue,
-              '@>',
-            ]));
+            return _setError(
+              _errors.operatorDoesNotExistError(baseValue, '@>'),
+            );
           }
           return null;
         },
@@ -289,10 +288,9 @@ class FilterBuilder {
           if (baseValue is! RangeType &&
               baseValue is! List &&
               baseValue is! Map) {
-            return _setError(_errors.operatorDoesNotExistError([
-              baseValue,
-              '<@',
-            ]));
+            return _setError(
+              _errors.operatorDoesNotExistError(baseValue, '<@'),
+            );
           }
           return null;
         },
@@ -312,15 +310,13 @@ class FilterBuilder {
         value: range,
         allowedTypeFunc: (baseValue, castValue) {
           if (baseValue is! RangeType) {
-            return _setError(_errors.operatorDoesNotExistError([
-              baseValue,
-              '-|-',
-            ]));
+            return _setError(
+              _errors.operatorDoesNotExistError(baseValue, '-|-'),
+            );
           }
 
           if (castValue is! RangeType) {
-            return _setError(
-                _errors.malformedLiteralError([castValue, 'range']));
+            return _setError(_errors.malformedLiteralError(castValue, 'range'));
           }
           return null;
         },
@@ -332,10 +328,9 @@ class FilterBuilder {
         value: value,
         allowedTypeFunc: (baseValue, castValue) {
           if (baseValue is! RangeType && baseValue is! List) {
-            return _setError(_errors.operatorDoesNotExistError([
-              baseValue,
-              '&&',
-            ]));
+            return _setError(
+              _errors.operatorDoesNotExistError(baseValue, '&&'),
+            );
           }
           return null;
         },
@@ -352,17 +347,16 @@ class FilterBuilder {
           if (baseValue is! RangeType) {
             if (baseValue is int) {
               return _setError(
-                  _errors.invalidArgumentError([baseValue, 'WHERE']));
+                _errors.invalidArgumentError(baseValue, 'WHERE'),
+              );
             }
-            return _setError(_errors.operatorDoesNotExistError([
-              baseValue,
-              '<<',
-            ]));
+            return _setError(
+              _errors.operatorDoesNotExistError(baseValue, '<<'),
+            );
           }
 
           if (castValue is! RangeType) {
-            return _setError(
-                _errors.malformedLiteralError([castValue, 'range']));
+            return _setError(_errors.malformedLiteralError(castValue, 'range'));
           }
           return null;
         },
@@ -376,17 +370,16 @@ class FilterBuilder {
           if (baseValue is! RangeType) {
             if (baseValue is int) {
               return _setError(
-                  _errors.invalidArgumentError([baseValue, 'WHERE']));
+                _errors.invalidArgumentError(baseValue, 'WHERE'),
+              );
             }
-            return _setError(_errors.operatorDoesNotExistError([
-              baseValue,
-              '>>',
-            ]));
+            return _setError(
+              _errors.operatorDoesNotExistError(baseValue, '>>'),
+            );
           }
 
           if (castValue is! RangeType) {
-            return _setError(
-                _errors.malformedLiteralError([castValue, 'range']));
+            return _setError(_errors.malformedLiteralError(castValue, 'range'));
           }
           return null;
         },
@@ -399,15 +392,13 @@ class FilterBuilder {
         value: range,
         allowedTypeFunc: (baseValue, castValue) {
           if (baseValue is! RangeType) {
-            return _setError(_errors.operatorDoesNotExistError([
-              baseValue,
-              '&>',
-            ]));
+            return _setError(
+              _errors.operatorDoesNotExistError(baseValue, '&>'),
+            );
           }
 
           if (castValue is! RangeType) {
-            return _setError(
-                _errors.malformedLiteralError([castValue, 'range']));
+            return _setError(_errors.malformedLiteralError(castValue, 'range'));
           }
           return null;
         },
@@ -420,15 +411,13 @@ class FilterBuilder {
         value: range,
         allowedTypeFunc: (baseValue, castValue) {
           if (baseValue is! RangeType) {
-            return _setError(_errors.operatorDoesNotExistError([
-              baseValue,
-              '&<',
-            ]));
+            return _setError(
+              _errors.operatorDoesNotExistError(baseValue, '&<'),
+            );
           }
 
           if (castValue is! RangeType) {
-            return _setError(
-                _errors.malformedLiteralError([castValue, 'range']));
+            return _setError(_errors.malformedLiteralError(castValue, 'range'));
           }
           return null;
         },
@@ -519,24 +508,24 @@ class FilterBuilder {
 
             if (baseValue is RangeType) {
               return _setError(
-                _errors.malformedLiteralError([castValue, 'range']),
+                _errors.malformedLiteralError(castValue, 'range'),
               );
             }
 
             if (baseValue is List) {
               if (castValue is! List) {
                 return _setError(
-                  _errors.malformedLiteralError([castValue, 'array']),
+                  _errors.malformedLiteralError(castValue, 'array'),
                 );
               } else {
                 return _setError(
-                  _errors.invalidInputSyntaxError([baseValue, castValue, true]),
+                  _errors.invalidInputSyntaxError(baseValue, castValue, true),
                 );
               }
             }
 
             return _setError(
-              _errors.invalidInputSyntaxError([baseValue, castValue, false]),
+              _errors.invalidInputSyntaxError(baseValue, castValue, false),
             );
           }
 
@@ -580,19 +569,17 @@ class FilterBuilder {
           final castValue = castResult.castValue;
 
           if (baseValue is List) {
-            return _setError(_errors.notScalarValueError([baseValue]));
+            return _setError(_errors.notScalarValueError(baseValue));
           }
 
           if (castValue is! List) {
-            return _setError(_errors.malformedLiteralError([value, 'array']));
+            return _setError(_errors.malformedLiteralError(value, 'array'));
           }
 
           if (!castResult.wasSucessful) {
-            return _setError(_errors.invalidInputSyntaxError([
-              baseValue,
-              castValue,
-              false,
-            ]));
+            return _setError(
+              _errors.invalidInputSyntaxError(baseValue, castValue, false),
+            );
           }
 
           if (modifier == FilterModifier.any) {
@@ -624,34 +611,6 @@ class FilterBuilder {
         errors: _errorStack,
       );
 
-  FilterBuilder _singleSpecificTypeFilter({
-    required String column,
-    required Object? value,
-    required bool Function(dynamic baseValue, dynamic castValue) operationFunc,
-    bool? Function(dynamic baseValue, dynamic castValue)? allowedTypeFunc,
-  }) =>
-      FilterBuilder(
-        _data.where((element) {
-          final castResult = _typeCaster.cast(
-            element[column],
-            value,
-          );
-
-          final baseValue = castResult.baseValue;
-          final castValue = castResult.castValue;
-
-          if (allowedTypeFunc != null) {
-            final result = allowedTypeFunc(baseValue, castValue);
-            if (result != null) {
-              return result;
-            }
-          }
-
-          return operationFunc(baseValue, castValue);
-        }).toList(),
-        errors: _errorStack,
-      );
-
   FilterBuilder _patternMatchingFilter({
     required String column,
     required Object pattern,
@@ -664,7 +623,8 @@ class FilterBuilder {
 
           if (baseValue is! String) {
             return _setError(
-                _errors.operatorDoesNotExistError([baseValue, '~~']));
+              _errors.operatorDoesNotExistError(baseValue, '~~'),
+            );
           }
 
           if (modifier != null) {
@@ -673,7 +633,8 @@ class FilterBuilder {
                 : pattern;
             if (parsedPattern is! List) {
               return _setError(
-                  _errors.malformedLiteralError([parsedPattern, 'array']));
+                _errors.malformedLiteralError(parsedPattern, 'array'),
+              );
             }
 
             final patternStringList =
@@ -826,4 +787,17 @@ class FilterError {
   @override
   String toString() =>
       'message: $message, code: $code, details: $details, hint: $hint';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FilterError &&
+          runtimeType == other.runtimeType &&
+          message == other.message &&
+          code == other.code &&
+          details == other.details &&
+          hint == other.hint;
+
+  @override
+  int get hashCode => Object.hashAll([message, code, details, hint]);
 }
