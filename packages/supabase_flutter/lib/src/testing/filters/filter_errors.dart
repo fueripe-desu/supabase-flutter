@@ -1,8 +1,11 @@
 import 'package:supabase_flutter/src/testing/filters/filter_builder.dart';
+import 'package:supabase_flutter/src/testing/postgrest/supabase_test_postgrest.dart';
 import 'package:supabase_flutter/src/testing/range_type/range_type.dart';
 import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
 
 class FilterBuilderErrors {
+  final PostrestSyntaxParser _parser = PostrestSyntaxParser([]);
+
   FilterError malformedLiteralError(dynamic castValue, String literalName) {
     final castValueString =
         castValue is List ? _handleList(castValue) : castValue.toString();
@@ -28,9 +31,10 @@ class FilterBuilderErrors {
     );
   }
 
-  FilterError notScalarValueError(dynamic baseValue) => FilterError(
+  // Only thrown when the base value is list
+  FilterError notScalarValueError(List<dynamic>? baseValue) => FilterError(
         message:
-            'could not find array type for data type ${_getTypeString(baseValue.toString())}[]',
+            'could not find array type for data type ${_getTypeString(baseValue)}[]',
         code: '42704',
         details: 'Bad Request',
         hint: null,
@@ -42,7 +46,7 @@ class FilterBuilderErrors {
   ) =>
       FilterError(
         message:
-            'operator does not exist: ${_getTypeString(baseValue.toString())}${baseValue is List ? '[]' : ''} $operatorString unknown',
+            'operator does not exist: ${_getTypeString(baseValue)}${baseValue is List ? '[]' : ''} $operatorString unknown',
         code: '42883',
         details: 'Not Found',
         hint:
@@ -52,7 +56,7 @@ class FilterBuilderErrors {
   FilterError invalidArgumentError(dynamic baseValue, String keywordString) =>
       FilterError(
         message:
-            'argument of $keywordString must be type boolean, not type ${_getTypeString(baseValue.toString())}',
+            'argument of $keywordString must be type boolean, not type ${_getTypeString(baseValue)}${baseValue is List ? '[]' : ''}',
         code: '42804',
         details: 'Bad Request',
         hint: null,
@@ -72,21 +76,23 @@ class FilterBuilderErrors {
     dynamic castValue,
     bool grabOnlyFirstElement,
   ) {
+    final dynamic processedCast =
+        castValue is String ? _parser.parseValue(castValue) : castValue;
     late final String valueString;
 
-    if (castValue is List) {
-      if (castValue.isNotEmpty && grabOnlyFirstElement == true) {
-        valueString = castValue.first.toString();
+    if (processedCast is List) {
+      if (processedCast.isNotEmpty && grabOnlyFirstElement == true) {
+        valueString = processedCast.first.toString();
       } else {
-        valueString = _toPostgresList(castValue.toString());
+        valueString = _toPostgresList(processedCast.toString());
       }
     } else {
-      valueString = castValue.toString();
+      valueString = processedCast.toString();
     }
 
     return FilterError(
       message:
-          'invalid input syntax for type ${_getTypeString(baseValue.toString())}: "$valueString"',
+          'invalid input syntax for type ${_getTypeString(baseValue)}${baseValue is List ? '[]' : ''}: "$valueString"',
       code: '22P02',
       details: 'Bad Request',
       hint: null,
@@ -94,7 +100,8 @@ class FilterBuilderErrors {
   }
 
   FilterError datetimeOutOfRange(dynamic castType) => FilterError(
-        message: 'date/time field value out of range: "$castType"',
+        message:
+            'date/time field value out of range: "${castType is List ? _handleList(castType) : castType.toString()}"',
         code: '22008',
         details: 'Bad Request',
         hint: 'Perhaps you need a different "datestyle" setting',
