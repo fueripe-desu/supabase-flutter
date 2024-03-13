@@ -500,7 +500,10 @@ class FilterBuilder {
   }) =>
       FilterBuilder(
         _data.where((element) {
-          final castResult = _typeCaster.cast(element[column], value);
+          final row = element[column];
+          final valueCopy = value is List ? [...value] : value;
+          final columnCopy = row is List ? [...row] : row;
+          final castResult = _typeCaster.cast(columnCopy, valueCopy);
           final baseValue = castResult.baseValue;
           final castValue = castResult.castValue;
 
@@ -572,9 +575,12 @@ class FilterBuilder {
   }) =>
       FilterBuilder(
         _data.where((element) {
+          final row = element[column];
+          final valueCopy = value is List ? [...value] : value;
+          final columnCopy = row is List ? [...row] : row;
           final castResult = _typeCaster.cast(
-            element[column],
-            value,
+            columnCopy,
+            valueCopy,
             baseAsArrayCaster: true,
           );
 
