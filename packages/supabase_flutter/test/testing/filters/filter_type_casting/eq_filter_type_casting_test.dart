@@ -1250,7 +1250,7 @@ void main() {
       expect(
         filter(
           22,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1261,7 +1261,7 @@ void main() {
       expect(
         filter(
           22.5,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1276,7 +1276,7 @@ void main() {
       expect(
         filter(
           'invalid',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1287,7 +1287,7 @@ void main() {
       expect(
         filter(
           true,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1298,7 +1298,7 @@ void main() {
       expect(
         filter(
           DateTime(2022, 1, 1),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1309,7 +1309,7 @@ void main() {
       expect(
         filter(
           '2022-01-01',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1328,7 +1328,7 @@ void main() {
       expect(
         filter(
           {'value': 10},
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1339,7 +1339,7 @@ void main() {
       expect(
         filter(
           '{"value": 10}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1350,7 +1350,7 @@ void main() {
       expect(
         filter(
           [1, 2, 3, 4],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1361,7 +1361,7 @@ void main() {
       expect(
         filter(
           '{1, 2, 3, 4}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1372,7 +1372,7 @@ void main() {
       expect(
         filter(
           [1.5, 2.5, 3.5, 4.5],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1383,7 +1383,7 @@ void main() {
       expect(
         filter(
           '{1.5, 2.5, 3.5, 4.5}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1394,7 +1394,7 @@ void main() {
       expect(
         filter(
           ['1', '2', '3', '4'],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1405,7 +1405,7 @@ void main() {
       expect(
         filter(
           '{"1", "2", "3", "4"}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1416,7 +1416,7 @@ void main() {
       expect(
         filter(
           [true, false, true, false],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1427,7 +1427,7 @@ void main() {
       expect(
         filter(
           '{true, false, true, false}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1438,7 +1438,7 @@ void main() {
       expect(
         filter(
           [DateTime(2022, 1, 1), DateTime(2022, 12, 31), DateTime(2023, 1, 1)],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1449,7 +1449,7 @@ void main() {
       expect(
         filter(
           ['2022-01-01', '2022-12-31', '2023-01-01'],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1460,7 +1460,7 @@ void main() {
       expect(
         filter(
           '{"2022-01-01", "2022-12-31", "2023-01-01"}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1471,7 +1471,7 @@ void main() {
       expect(
         filter(
           ['[10,20]', '[30,40]', '[200,400]'],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1482,7 +1482,7 @@ void main() {
       expect(
         filter(
           '{"[10,20]", "[30,40]", "[200,400]"}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1497,7 +1497,7 @@ void main() {
             RangeType.createRange(range: '[30,40]'),
             RangeType.createRange(range: '[200,400]'),
           ],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1512,7 +1512,7 @@ void main() {
             {'value': 20},
             {'value': 30},
           ],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1523,7 +1523,7 @@ void main() {
       expect(
         filter(
           ['{"value": 10}', '{"value": 20}', '{"value": 30}'],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1534,7 +1534,7 @@ void main() {
       expect(
         filter(
           '{{"value": 10}, {"value": 20}, {"value": 30}}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -1716,7 +1716,7 @@ void main() {
       expect(
         filter(
           22,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -1727,7 +1727,7 @@ void main() {
       expect(
         filter(
           22.5,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -1742,7 +1742,7 @@ void main() {
       expect(
         filter(
           'invalid',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -1753,7 +1753,7 @@ void main() {
       expect(
         filter(
           true,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -1764,7 +1764,7 @@ void main() {
       expect(
         filter(
           DateTime(2022, 1, 1),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -1775,7 +1775,7 @@ void main() {
       expect(
         filter(
           '2022-01-01',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -1786,7 +1786,7 @@ void main() {
       expect(
         filter(
           '[10,20]',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -1797,7 +1797,7 @@ void main() {
       expect(
         filter(
           RangeType.createRange(range: '[10,20]'),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -1808,7 +1808,7 @@ void main() {
       expect(
         filter(
           {'value': 10},
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -1819,7 +1819,7 @@ void main() {
       expect(
         filter(
           '{"value": 10}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2014,7 +2014,7 @@ void main() {
       expect(
         filter(
           22,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2025,7 +2025,7 @@ void main() {
       expect(
         filter(
           22.5,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2040,7 +2040,7 @@ void main() {
       expect(
         filter(
           'invalid',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2051,7 +2051,7 @@ void main() {
       expect(
         filter(
           true,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2062,7 +2062,7 @@ void main() {
       expect(
         filter(
           DateTime(2022, 1, 1),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2073,7 +2073,7 @@ void main() {
       expect(
         filter(
           '2022-01-01',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2084,7 +2084,7 @@ void main() {
       expect(
         filter(
           '[10,20]',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2095,7 +2095,7 @@ void main() {
       expect(
         filter(
           RangeType.createRange(range: '[10,20]'),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2106,7 +2106,7 @@ void main() {
       expect(
         filter(
           {'value': 10},
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2117,7 +2117,7 @@ void main() {
       expect(
         filter(
           '{"value": 10}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2305,7 +2305,7 @@ void main() {
       expect(
         filter(
           22,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2316,7 +2316,7 @@ void main() {
       expect(
         filter(
           22.5,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2331,7 +2331,7 @@ void main() {
       expect(
         filter(
           'invalid',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2342,7 +2342,7 @@ void main() {
       expect(
         filter(
           true,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2353,7 +2353,7 @@ void main() {
       expect(
         filter(
           DateTime(2022, 1, 1),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2364,7 +2364,7 @@ void main() {
       expect(
         filter(
           '2022-01-01',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2375,7 +2375,7 @@ void main() {
       expect(
         filter(
           '[10,20]',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2386,7 +2386,7 @@ void main() {
       expect(
         filter(
           RangeType.createRange(range: '[10,20]'),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2397,7 +2397,7 @@ void main() {
       expect(
         filter(
           {'value': 10},
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2408,7 +2408,7 @@ void main() {
       expect(
         filter(
           '{"value": 10}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2531,7 +2531,7 @@ void main() {
       expect(
         filter(
           22,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2542,7 +2542,7 @@ void main() {
       expect(
         filter(
           22.5,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2557,7 +2557,7 @@ void main() {
       expect(
         filter(
           'invalid',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2568,7 +2568,7 @@ void main() {
       expect(
         filter(
           true,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2579,7 +2579,7 @@ void main() {
       expect(
         filter(
           DateTime(2022, 1, 1),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2590,7 +2590,7 @@ void main() {
       expect(
         filter(
           '2022-01-01',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2601,7 +2601,7 @@ void main() {
       expect(
         filter(
           '[10,20]',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2612,7 +2612,7 @@ void main() {
       expect(
         filter(
           RangeType.createRange(range: '[10,20]'),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2623,7 +2623,7 @@ void main() {
       expect(
         filter(
           {'value': 10},
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2634,7 +2634,7 @@ void main() {
       expect(
         filter(
           '{"value": 10}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2847,7 +2847,7 @@ void main() {
       expect(
         filter(
           22,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2858,7 +2858,7 @@ void main() {
       expect(
         filter(
           22.5,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2873,7 +2873,7 @@ void main() {
       expect(
         filter(
           'invalid',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2884,7 +2884,7 @@ void main() {
       expect(
         filter(
           true,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2895,7 +2895,7 @@ void main() {
       expect(
         filter(
           DateTime(2022, 1, 1),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2906,7 +2906,7 @@ void main() {
       expect(
         filter(
           '2022-01-01',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2917,7 +2917,7 @@ void main() {
       expect(
         filter(
           '[10,20]',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2928,7 +2928,7 @@ void main() {
       expect(
         filter(
           RangeType.createRange(range: '[10,20]'),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2939,7 +2939,7 @@ void main() {
       expect(
         filter(
           {'value': 10},
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -2950,7 +2950,7 @@ void main() {
       expect(
         filter(
           '{"value": 10}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3163,7 +3163,7 @@ void main() {
       expect(
         filter(
           22,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3174,7 +3174,7 @@ void main() {
       expect(
         filter(
           22.5,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3189,7 +3189,7 @@ void main() {
       expect(
         filter(
           'invalid',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3200,7 +3200,7 @@ void main() {
       expect(
         filter(
           true,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3211,7 +3211,7 @@ void main() {
       expect(
         filter(
           DateTime(2022, 1, 1),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3222,7 +3222,7 @@ void main() {
       expect(
         filter(
           '2022-01-01',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3233,7 +3233,7 @@ void main() {
       expect(
         filter(
           '[10,20]',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3244,7 +3244,7 @@ void main() {
       expect(
         filter(
           RangeType.createRange(range: '[10,20]'),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3255,7 +3255,7 @@ void main() {
       expect(
         filter(
           {'value': 10},
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3266,7 +3266,7 @@ void main() {
       expect(
         filter(
           '{"value": 10}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3277,7 +3277,7 @@ void main() {
       expect(
         filter(
           [1, 2, 3, 4],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3288,7 +3288,7 @@ void main() {
       expect(
         filter(
           '{1, 2, 3, 4}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3299,7 +3299,7 @@ void main() {
       expect(
         filter(
           [1.5, 2.5, 3.5, 4.5],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3310,7 +3310,7 @@ void main() {
       expect(
         filter(
           '{1.5, 2.5, 3.5, 4.5}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3321,7 +3321,7 @@ void main() {
       expect(
         filter(
           ['1', '2', '3', '4'],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3332,7 +3332,7 @@ void main() {
       expect(
         filter(
           '{"1", "2", "3", "4"}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3343,7 +3343,7 @@ void main() {
       expect(
         filter(
           [true, false, true, false],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3354,7 +3354,7 @@ void main() {
       expect(
         filter(
           '{true, false, true, false}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3365,7 +3365,7 @@ void main() {
       expect(
         filter(
           [DateTime(2022, 1, 1), DateTime(2022, 12, 31), DateTime(2023, 1, 1)],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3376,7 +3376,7 @@ void main() {
       expect(
         filter(
           ['2022-01-01', '2022-12-31', '2023-01-01'],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3387,7 +3387,7 @@ void main() {
       expect(
         filter(
           '{"2022-01-01", "2022-12-31", "2023-01-01"}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3421,7 +3421,7 @@ void main() {
             {'value': 20},
             {'value': 30},
           ],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3432,7 +3432,7 @@ void main() {
       expect(
         filter(
           ['{"value": 10}', '{"value": 20}', '{"value": 30}'],
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3443,7 +3443,7 @@ void main() {
       expect(
         filter(
           '{{"value": 10}, {"value": 20}, {"value": 30}}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'range',
         ),
         false,
@@ -3475,7 +3475,7 @@ void main() {
       expect(
         filter(
           22,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3486,7 +3486,7 @@ void main() {
       expect(
         filter(
           22.5,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3501,7 +3501,7 @@ void main() {
       expect(
         filter(
           'invalid',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3512,7 +3512,7 @@ void main() {
       expect(
         filter(
           true,
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3523,7 +3523,7 @@ void main() {
       expect(
         filter(
           DateTime(2022, 1, 1),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3534,7 +3534,7 @@ void main() {
       expect(
         filter(
           '2022-01-01',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3545,7 +3545,7 @@ void main() {
       expect(
         filter(
           '[10,20]',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3556,7 +3556,7 @@ void main() {
       expect(
         filter(
           RangeType.createRange(range: '[10,20]'),
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3567,7 +3567,7 @@ void main() {
       expect(
         filter(
           {'value': 10},
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,
@@ -3578,7 +3578,7 @@ void main() {
       expect(
         filter(
           '{"value": 10}',
-          type: FilterErrorTypes.malformedArrayLiteral,
+          type: FilterErrorTypes.malformedLiteral,
           additionalArg: 'array',
         ),
         false,

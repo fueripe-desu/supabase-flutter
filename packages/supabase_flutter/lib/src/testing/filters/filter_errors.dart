@@ -3,7 +3,7 @@ import 'package:supabase_flutter/src/testing/postgrest/supabase_test_postgrest.d
 import 'package:supabase_flutter/src/testing/range_type/range_type.dart';
 
 enum FilterErrorTypes {
-  malformedArrayLiteral,
+  malformedLiteral,
   notScalarValue,
   operatorDoesNotExist,
   invalidArgument,
@@ -153,7 +153,7 @@ class FilterBuilderErrors {
     required dynamic additionalArg,
   }) {
     switch (error) {
-      case FilterErrorTypes.malformedArrayLiteral:
+      case FilterErrorTypes.malformedLiteral:
         return malformedLiteralError(castValue, additionalArg);
       case FilterErrorTypes.notScalarValue:
         return notScalarValueError(baseValue);
