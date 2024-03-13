@@ -47,6 +47,19 @@ class FilterBuilder {
           if (baseValue is DateTime && castValue is int) {
             return _setError(_errors.datetimeOutOfRange(castValue));
           }
+
+          if (baseValue is List && castValue is List) {
+            if (baseValue.isNotEmpty && castValue.isNotEmpty) {
+              final firstBase = baseValue.first;
+              final firstCast = castValue.first;
+
+              if (firstBase is RangeType && firstCast is! RangeType) {
+                return _setError(
+                  _errors.malformedLiteralError(castValue, 'range'),
+                );
+              }
+            }
+          }
           return null;
         },
       );
