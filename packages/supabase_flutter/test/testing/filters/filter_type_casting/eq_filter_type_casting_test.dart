@@ -25,10 +25,8 @@ void main() {
       required additionalArg,
     }) {
       final result = FilterBuilder([
-        {
-          'value': baseValue is List ? [...baseValue] : baseValue
-        }
-      ]).eq('value', castValue is List ? [...castValue] : castValue).execute();
+        {'value': baseValue}
+      ]).eq('value', castValue).execute();
       if (logFilterErrors) {
         print(result.error.toString());
       }
@@ -37,8 +35,8 @@ void main() {
       final expectedError = errorType != null
           ? FilterBuilderErrors().executeDynamically(
               error: errorType,
-              baseValue: baseValue is List ? [...baseValue] : baseValue,
-              castValue: castValue is List ? [...castValue] : castValue,
+              baseValue: baseValue,
+              castValue: castValue,
               additionalArg: additionalArg,
             )
           : null;
