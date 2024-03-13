@@ -205,7 +205,8 @@ class FilterBuilderErrors {
       list.map((e) => '"${e as String}"').toList();
 
   String _getTypeString(dynamic value) {
-    final dynamic type = _getListFirstElement(value);
+    final dynamic first = _getListFirstElement(value);
+    final dynamic type = _parser.parseValue(first.toString());
 
     if (type is int) {
       return 'int';
