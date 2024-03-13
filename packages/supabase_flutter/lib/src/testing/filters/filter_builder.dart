@@ -96,6 +96,14 @@ class FilterBuilder {
         column: column,
         value: value,
         modifier: FilterModifier.all,
+        customErrorCallback: (baseValue, castValue) {
+          if (baseValue is RangeType) {
+            return _setError(_errors.malformedLiteralError(value, 'range'));
+          }
+          return _setError(
+            _errors.invalidInputSyntaxError(baseValue, castValue, true),
+          );
+        },
         listFunc: (baseList, castList) => _deepEq(castList, baseList),
         mapFunc: (baseMap, castMap) => _mapEq(castMap, baseMap),
         baseFunc: (baseValue, castValue) => baseValue == castValue,
@@ -569,6 +577,7 @@ class FilterBuilder {
     required Object? value,
     required FilterModifier modifier,
     required bool Function(dynamic baseValue, dynamic castValue) baseFunc,
+    bool? Function(dynamic baseValue, dynamic castValue)? customErrorCallback,
     bool Function(List baseList, List castList)? listFunc,
     bool Function(Map baseMap, Map castMap)? mapFunc,
     bool Function(RangeType baseRange, RangeType castRange)? rangeFunc,
@@ -592,13 +601,18 @@ class FilterBuilder {
           }
 
           if (castValue is! List) {
-            return _setError(_errors.malformedLiteralError(value, 'array'));
+            return _setError(
+              _errors.malformedLiteralError(castValue, 'array'),
+            );
           }
 
           if (!castResult.wasSucessful) {
-            return _setError(
-              _errors.invalidInputSyntaxError(baseValue, castValue, false),
-            );
+            if (customErrorCallback != null) {
+              final result = customErrorCallback(baseValue, castValue);
+              if (result != null) {
+                return result;
+              }
+            }
           }
 
           if (modifier == FilterModifier.any) {
