@@ -1,14 +1,43 @@
 import 'package:supabase_flutter/src/testing/filters/filter_builder.dart';
 import 'package:supabase_flutter/src/testing/postgrest/supabase_test_postgrest.dart';
 import 'package:supabase_flutter/src/testing/range_type/range_type.dart';
-import 'package:supabase_flutter/src/testing/supabase_test_extensions.dart';
+
+enum FilterErrorTypes {
+  malformedArrayLiteral,
+  notScalarValue,
+  operatorDoesNotExist,
+  invalidArgument,
+  failedToParserIsFilter,
+  invalidInputSyntax,
+  datetimeOutOfRange,
+}
 
 class FilterBuilderErrors {
   final PostrestSyntaxParser _parser = PostrestSyntaxParser([]);
 
   FilterError malformedLiteralError(dynamic castValue, String literalName) {
-    final castValueString =
-        castValue is List ? _handleList(castValue) : castValue.toString();
+    final parsedCastValue =
+        castValue is String ? _parser.parseValue(castValue) : castValue;
+
+    late final String castValueString;
+
+    if (literalName == 'range' &&
+        parsedCastValue is List &&
+        parsedCastValue.isNotEmpty) {
+      final parsedElements = parsedCastValue.map((e) {
+        if (e is String) {
+          return _parser.parseValue(e).toString();
+        } else {
+          return e.toString();
+        }
+      }).toList();
+
+      castValueString = parsedElements.first;
+    } else {
+      castValueString = parsedCastValue is List
+          ? _handleList(parsedCastValue)
+          : parsedCastValue.toString();
+    }
 
     late final String details;
 
@@ -81,10 +110,17 @@ class FilterBuilderErrors {
     late final String valueString;
 
     if (processedCast is List) {
-      if (processedCast.isNotEmpty && grabOnlyFirstElement == true) {
-        valueString = processedCast.first.toString();
+      final parsedElements = processedCast.map((e) {
+        if (e is String) {
+          return _parser.parseValue(e).toString();
+        } else {
+          return e.toString();
+        }
+      }).toList();
+      if (parsedElements.isNotEmpty && grabOnlyFirstElement == true) {
+        valueString = parsedElements.first.toString();
       } else {
-        valueString = _toPostgresList(processedCast.toString());
+        valueString = _toPostgresList(parsedElements);
       }
     } else {
       valueString = processedCast.toString();
@@ -99,28 +135,70 @@ class FilterBuilderErrors {
     );
   }
 
-  FilterError datetimeOutOfRange(dynamic castType) => FilterError(
+  FilterError datetimeOutOfRange(dynamic castValue) => FilterError(
         message:
-            'date/time field value out of range: "${castType is List ? _handleList(castType) : castType.toString()}"',
+            'date/time field value out of range: "${castValue is List ? _handleList(castValue) : castValue.toString()}"',
         code: '22008',
         details: 'Bad Request',
         hint: 'Perhaps you need a different "datestyle" setting',
       );
 
-  String _handleList(List list) {
-    if (_getListFirstElement(list) is String) {
-      return _toPostgresList(_addQuotesToAllStringElements(list).toString());
-    } else {
-      return _toPostgresList(list.toString());
+  // This function is used mainly to facilitate tests, but it
+  // also can be used internally to be able to execute errors
+  // with less boiler plate but a higher runtime error chance.
+  FilterError executeDynamically({
+    required FilterErrorTypes error,
+    required dynamic baseValue,
+    required dynamic castValue,
+    required dynamic additionalArg,
+  }) {
+    switch (error) {
+      case FilterErrorTypes.malformedArrayLiteral:
+        return malformedLiteralError(castValue, additionalArg);
+      case FilterErrorTypes.notScalarValue:
+        return notScalarValueError(baseValue);
+      case FilterErrorTypes.operatorDoesNotExist:
+        return operatorDoesNotExistError(baseValue, additionalArg);
+      case FilterErrorTypes.invalidArgument:
+        return invalidArgumentError(baseValue, additionalArg);
+      case FilterErrorTypes.failedToParserIsFilter:
+        return failedToParseIsFilterError(castValue);
+      case FilterErrorTypes.invalidInputSyntax:
+        return invalidInputSyntaxError(
+          baseValue,
+          castValue,
+          additionalArg ?? false,
+        );
+      case FilterErrorTypes.datetimeOutOfRange:
+        return datetimeOutOfRange(castValue);
     }
   }
 
-  String _toPostgresList(String listString) {
-    final elements = listString.substring(
-      listString.firstIndex! + 1,
-      listString.lastIndex,
-    );
+  String _handleList(List list) {
+    if (_getListFirstElement(list) is String) {
+      return _toPostgresList(_addQuotesToAllStringElements(list));
+    } else {
+      return _toPostgresList(list);
+    }
+  }
+
+  String _toPostgresList(List list) {
+    final listString = list.map((e) {
+      final parsed = _parser.parseValue(e.toString());
+      final addQuotes = parsed is String && !_isRange(parsed);
+      return addQuotes ? '"$parsed"' : parsed.toString();
+    }).toList();
+    final elements = listString.join(", ");
     return '{$elements}';
+  }
+
+  bool _isRange(String range) {
+    try {
+      RangeType.createRange(range: range);
+      return true;
+    } catch (err) {
+      return false;
+    }
   }
 
   List<String> _addQuotesToAllStringElements(List list) =>
