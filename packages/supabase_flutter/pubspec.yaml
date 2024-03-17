@@ -25,6 +25,7 @@ dependencies:
   shared_preferences: ^2.0.0
   collection: ^1.17.1
   stemmer: ^2.2.0
+  decimal: ^2.3.3
 
 dev_dependencies:
   dart_jsonwebtoken: ^2.4.1
