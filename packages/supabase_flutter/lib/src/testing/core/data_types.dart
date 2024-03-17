@@ -80,9 +80,7 @@ abstract class FloatDataType extends DataType {
     }
 
     _value = Decimal.parse(rawValueString);
-    maxValue = ('9' * digitsBefore) +
-        (rawValueString.contains('.') ? '.' : '') +
-        ('9' * digitsAfter);
+    maxValue = _calculateMaxValue();
     minValue = '-$maxValue';
   }
 
@@ -104,6 +102,16 @@ abstract class FloatDataType extends DataType {
   bool get isUnconstrained => precision == null && scale == null;
   String get value => _value.toString();
 
+  String _calculateMaxValue() {
+    final beforeString = '9' * digitsBefore;
+    final afterString = '9' * digitsAfter;
+    final hasPoint = rawValueString.contains('.');
+    final isNegative = scale != null && scale! < 0;
+    final pointString = hasPoint && !isNegative ? '.' : '';
+
+    return beforeString + pointString + afterString;
+  }
+
   Decimal _roundToScale(String value, int scale) {
     final factor = Decimal.parse('10').pow(-scale).toDecimal();
     final valueDecimal = Decimal.parse(value);
@@ -120,8 +128,13 @@ abstract class FloatDataType extends DataType {
     if (precision != null && scale != null) {
       // If neither precision nor scale are null, then digits before
       // and after are calculated normally
-      digitsBefore = (precision as int) - (scale as int);
-      digitsAfter = (precision as int) - digitsBefore;
+      if (scale! < 0) {
+        digitsBefore = precision!;
+        digitsAfter = 0;
+      } else {
+        digitsBefore = (precision as int) - (scale as int);
+        digitsAfter = (precision as int) - digitsBefore;
+      }
     } else if (precision != null && scale == null) {
       // If only scale is null, then digitsAfter is 0 because it
       // treats the number as having no fractional point
