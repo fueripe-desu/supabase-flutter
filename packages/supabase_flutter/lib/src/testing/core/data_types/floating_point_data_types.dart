@@ -48,6 +48,8 @@ abstract class FloatingPointDataType<T extends FloatingPointDataType<T>>
 
   T truncate() => this.createInstance(value.truncateToDouble());
 
+  bool closeTo(DataType other, double delta);
+
   @override
   int compareTo(Object other) {
     if (other is IntegerDataType) {
@@ -340,7 +342,20 @@ abstract class FloatingPointDataType<T extends FloatingPointDataType<T>>
     ) operationFunc,
   }) {
     if (other is IntegerDataType) {
-      return operationFunc(toNumeric(), other.toNumeric());
+      final result = operationFunc(toNumeric(), other.toNumeric());
+
+      final resultPrecision = DataType.getPrecision(result);
+      final otherPrecision = DataType.getPrecision(other);
+      final maxPrecision = m.max(resultPrecision, otherPrecision);
+
+      if (resultPrecision == maxPrecision) {
+        return result;
+      } else {
+        if (result is! IntegerDataType) {
+          return result;
+        }
+        return other.createInstance(result.value);
+      }
     } else if (other is FloatingPointDataType) {
       return operationFunc(toNumeric(), other.toNumeric());
     } else if (other is ArbitraryPrecisionDataType) {
@@ -420,6 +435,15 @@ class Real extends FloatingPointDataType<Real> {
   @override
   bool identicalTo(DataType other) => other is Real && value == other.value;
 
+  @override
+  bool closeTo(DataType other, double delta) {
+    if (other is! Real) {
+      return false;
+    }
+
+    return (value - other.value).abs() <= delta;
+  }
+
   static final zero = Real(0);
   static final max = Real(Real.maxValue);
   static final min = Real(Real.minValue);
@@ -466,6 +490,15 @@ class DoublePrecision extends FloatingPointDataType<DoublePrecision> {
   @override
   bool identicalTo(DataType other) =>
       other is DoublePrecision && value == other.value;
+
+  @override
+  bool closeTo(DataType other, double delta) {
+    if (other is! DoublePrecision) {
+      return false;
+    }
+
+    return (value - other.value).abs() <= delta;
+  }
 
   static final zero = DoublePrecision(0);
   static final max = DoublePrecision(DoublePrecision.maxValue);
