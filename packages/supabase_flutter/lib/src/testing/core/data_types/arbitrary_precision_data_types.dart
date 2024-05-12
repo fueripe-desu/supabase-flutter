@@ -966,13 +966,17 @@ abstract class ArbitraryPrecisionDataType<
     } else {
       // If any of the scales are negative, then the new scale is
       // always zero.
-      if (a.scale < 0 || b.scale < 0) {
+      final hasADec = a.hasDecimalPoint;
+      final hasBDec = b.hasDecimalPoint;
+      if ((!hasADec && !hasBDec) && (a.scale < 0 || b.scale < 0)) {
         newScale = 0;
       } else {
         // We still need to calculate the scale like this to ensure
         // the final scale is calculated correctly when scales are
         // negative
-        newScale = a.scale + b.scale;
+        final newAScale = a.scale.isNegative ? 0 : a.scale;
+        final newBScale = b.scale.isNegative ? 0 : b.scale;
+        newScale = newAScale + newBScale;
       }
     }
 

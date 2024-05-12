@@ -73,42 +73,25 @@ extension PrimitiveDouble on double {
     }
 
     final valueString = toString();
-    final unconstrained = Numeric(value: valueString).toString();
+    final unconstrained = Numeric(value: valueString);
+    final withoutSign = unconstrained.abs().toString();
+    final withSign = unconstrained.toString();
 
-    if (unconstrained.contains('.')) {
-      final splitted = unconstrained.split('.');
+    if (withoutSign.contains('.')) {
+      final splitted = withoutSign.split('.');
       final scale = splitted[1].length;
       final precision = splitted[0].length + scale;
-      return Numeric(value: unconstrained, precision: precision, scale: scale);
+      return Numeric(value: withSign, precision: precision, scale: scale);
     }
 
     return Numeric(
-      value: unconstrained,
-      precision: unconstrained.length + 1,
+      value: withSign,
+      precision: withoutSign.length + 1,
       scale: 1,
     );
   }
 
-  Decimal toDecimal() {
-    if (isInfinite) {
-      throw ArgumentError('Cannot cast infinite double primitives to Decimal.');
-    }
-
-    final unconstrained = Decimal(value: toString()).toString();
-
-    if (unconstrained.contains('.')) {
-      final splitted = unconstrained.split('.');
-      final scale = splitted[1].length;
-      final precision = splitted[0].length + scale;
-      return Decimal(value: unconstrained, precision: precision, scale: scale);
-    }
-
-    return Decimal(
-      value: unconstrained,
-      precision: unconstrained.length,
-      scale: 0,
-    );
-  }
+  Decimal toDecimal() => toNumeric().toDecimal();
 
   // Character
   Char toChar() {
