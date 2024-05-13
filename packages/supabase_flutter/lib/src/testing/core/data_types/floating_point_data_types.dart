@@ -34,15 +34,42 @@ abstract class FloatingPointDataType<T extends FloatingPointDataType<T>>
 
   T ceil() => this.createInstance(value.ceilToDouble());
 
-  T clamp(T lowerLimit, T upperLimit) => this.createInstance(
-        value.clamp(lowerLimit.value, upperLimit.value).toDouble(),
+  T clamp(double lowerLimit, double upperLimit) {
+    if (lowerLimit.isInfinite || lowerLimit.isNaN) {
+      throw ArgumentError('Lower limit must be finite.');
+    }
+
+    if (upperLimit.isInfinite || upperLimit.isNaN) {
+      throw ArgumentError('Upper limit must be finite.');
+    }
+
+    if (lowerLimit > upperLimit) {
+      throw ArgumentError(
+        'Upper limit must be greater than or equal to lower limit.',
       );
+    }
+
+    return this.createInstance(value.clamp(lowerLimit, upperLimit).toDouble());
+  }
 
   T floor() => this.createInstance(value.floorToDouble());
 
-  T pow(int exponent) => this.createInstance(m.pow(value, exponent).toDouble());
+  T pow(int exponent) {
+    if (exponent.isInfinite || exponent.isNaN) {
+      throw ArgumentError('Exponent must be finite.');
+    }
 
-  T remainder(T other) => this.createInstance(value.remainder(other.value));
+    final result = toNumeric().pow(exponent).toMostPreciseFloat();
+
+    if (result is Numeric) {
+      throw RangeError('Exponentiation result out of range.');
+    }
+
+    return this.createInstance(m.pow(value, exponent).toDouble());
+  }
+
+  T remainder(FloatingPointDataType other) =>
+      this.createInstance(value.remainder(other.value));
 
   T round() => this.createInstance(value.roundToDouble());
 
@@ -67,6 +94,9 @@ abstract class FloatingPointDataType<T extends FloatingPointDataType<T>>
     } else if (other is int) {
       return value.compareTo(other);
     } else if (other is double) {
+      if (other.isNaN || other.isInfinite) {
+        throw ArgumentError('Second operand must be finite.');
+      }
       return value.compareTo(other);
     } else if (other is String) {
       return value.toString().compareTo(other);
