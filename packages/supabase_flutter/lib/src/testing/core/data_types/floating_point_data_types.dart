@@ -467,6 +467,14 @@ class Real extends FloatingPointDataType<Real> {
 
   @override
   bool closeTo(DataType other, double delta) {
+    if (delta.isNaN || delta.isInfinite) {
+      throw ArgumentError('Delta must be finite.');
+    }
+
+    if (delta.isNegative) {
+      throw ArgumentError('Delta must be non-negative.');
+    }
+
     if (other is! Real) {
       return false;
     }
@@ -523,6 +531,14 @@ class DoublePrecision extends FloatingPointDataType<DoublePrecision> {
 
   @override
   bool closeTo(DataType other, double delta) {
+    if (delta.isNaN || delta.isInfinite) {
+      throw ArgumentError('Delta must be finite.');
+    }
+
+    if (delta.isNegative) {
+      throw ArgumentError('Delta must be non-negative.');
+    }
+
     if (other is! DoublePrecision) {
       return false;
     }
