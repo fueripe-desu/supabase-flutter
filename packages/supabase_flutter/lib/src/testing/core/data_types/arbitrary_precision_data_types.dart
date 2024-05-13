@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:decimal/decimal.dart' as d;
+import 'package:meta/meta.dart';
 import 'package:supabase_flutter/src/testing/core/data_types/character_data_types.dart';
 import 'package:supabase_flutter/src/testing/core/data_types/data_types.dart';
 import 'package:supabase_flutter/src/testing/core/data_types/floating_point_data_types.dart';
@@ -901,17 +902,27 @@ abstract class ArbitraryPrecisionDataType<
 
     late final int newScale;
     late final int newPrecision;
+    late final String integerPart;
 
     if (withoutSign.contains('.')) {
+      integerPart = withoutSign.split('.')[0];
       newScale = _countScale(withoutSign);
     } else {
-      newScale = max(a.scale ?? 0, b.scale ?? 0);
+      integerPart = withoutSign;
+
+      if (a.scale < 0 && b.scale < 0) {
+        newScale = 0;
+      } else {
+        newScale = max(a.scale, b.scale);
+      }
     }
 
-    if (a.isFractional && b.isFractional) {
+    final isResultFractional = integerPart.length == 1 && integerPart[0] == '0';
+
+    if (a.isFractional && b.isFractional && isResultFractional) {
       newPrecision = newScale;
     } else if (newScale > 0) {
-      newPrecision = withoutSign.split('.')[0].length + newScale;
+      newPrecision = integerPart.length + newScale;
     } else {
       newPrecision = withoutSign.length;
     }
