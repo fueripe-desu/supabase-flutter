@@ -2173,20 +2173,26 @@ void main() {
 
   group('general errors', () {
     test('should throw ArgumentError if value is NaN', () {
-      final value1 = DoublePrecision(0);
+      final value1 = Real(0);
       const value2 = double.nan;
       expect(() => value1 < value2, throwsArgumentError);
     });
 
     test('should throw ArgumentError if value is infinity', () {
-      final value1 = DoublePrecision(0);
+      final value1 = Real(0);
       const value2 = double.infinity;
       expect(() => value1 < value2, throwsArgumentError);
     });
 
     test('should throw ArgumentError if value is negative infinity', () {
-      final value1 = DoublePrecision(0);
+      final value1 = Real(0);
       const value2 = double.negativeInfinity;
+      expect(() => value1 < value2, throwsArgumentError);
+    });
+
+    test('should throw ArgumentError if value is unsupported', () {
+      final value1 = Real(0);
+      final value2 = DateTime(2022);
       expect(() => value1 < value2, throwsArgumentError);
     });
   });

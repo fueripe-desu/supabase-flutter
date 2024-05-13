@@ -2184,5 +2184,11 @@ void main() {
       const value2 = double.negativeInfinity;
       expect(() => value1 >= value2, throwsArgumentError);
     });
+
+    test('should throw ArgumentError if value is unsupported', () {
+      final value1 = DoublePrecision(0);
+      final value2 = DateTime(2022);
+      expect(() => value1 >= value2, throwsArgumentError);
+    });
   });
 }

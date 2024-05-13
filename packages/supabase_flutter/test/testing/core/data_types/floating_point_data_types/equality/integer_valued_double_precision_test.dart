@@ -1499,19 +1499,29 @@ void main() {
     test('should return false if value is NaN', () {
       final value1 = DoublePrecision(0);
       const value2 = double.nan;
-      expect(value1 == value2, false);
+      final operation = value1 == value2;
+      expect(operation, false);
     });
 
     test('should return false if value is infinity', () {
       final value1 = DoublePrecision(0);
       const value2 = double.infinity;
-      expect(value1 == value2, false);
+      final operation = value1 == value2;
+      expect(operation, false);
     });
 
     test('should return false if value is negative infinity', () {
       final value1 = DoublePrecision(0);
       const value2 = double.negativeInfinity;
-      expect(value1 == value2, false);
+      final operation = value1 == value2;
+      expect(operation, false);
+    });
+
+    test('should return false if value is unsupported', () {
+      final value1 = DoublePrecision(0);
+      final value2 = DateTime(2022);
+      final operation = value1 == value2;
+      expect(operation, false);
     });
   });
 }

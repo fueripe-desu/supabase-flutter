@@ -2174,10 +2174,33 @@ void main() {
     });
   });
 
-  test('should return false when comparing to an unsupported type', () {
-    final value1 = DoublePrecision(1);
-    final value2 = DateTime(2022);
-    final operation = value1 == value2;
-    expect(operation, false);
+  group('general errors', () {
+    test('should return false if value is NaN', () {
+      final value1 = DoublePrecision(0);
+      const value2 = double.nan;
+      final operation = value1 == value2;
+      expect(operation, false);
+    });
+
+    test('should return false if value is infinity', () {
+      final value1 = DoublePrecision(0);
+      const value2 = double.infinity;
+      final operation = value1 == value2;
+      expect(operation, false);
+    });
+
+    test('should return false if value is negative infinity', () {
+      final value1 = DoublePrecision(0);
+      const value2 = double.negativeInfinity;
+      final operation = value1 == value2;
+      expect(operation, false);
+    });
+
+    test('should return false if value is unsupported', () {
+      final value1 = DoublePrecision(0);
+      final value2 = DateTime(2022);
+      final operation = value1 == value2;
+      expect(operation, false);
+    });
   });
 }
