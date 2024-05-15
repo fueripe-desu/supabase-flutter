@@ -1021,11 +1021,21 @@ abstract class ArbitraryPrecisionDataType<
     // If the value has a minus sign it must be removed
     // so it won't count as the string's length
     final withoutSign = _removeSign(plainString);
-    final newScale = 20;
+    const newScale = 20;
+
+    late final String integerPart;
+
+    if (withoutSign.contains('.')) {
+      integerPart = withoutSign.split('.')[0];
+    } else {
+      integerPart = withoutSign;
+    }
+
+    final isResultFractional = integerPart.length == 1 && integerPart[0] == '0';
 
     late final int newPrecision;
 
-    if (a.isFractional && b.isFractional) {
+    if (a.isFractional && b.isFractional && isResultFractional) {
       newPrecision = newScale;
     } else if (newScale > 0) {
       if (withoutSign.contains('.')) {
