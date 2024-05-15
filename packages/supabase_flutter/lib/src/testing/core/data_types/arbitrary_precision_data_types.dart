@@ -114,7 +114,7 @@ abstract class ArbitraryPrecisionDataType<
   // Getters
   bool get isFractional => !isUnconstrained && precision == scale;
   bool get isNegative => this < 0;
-  bool get hasDecimalPoint => _value.toString().contains('.');
+  bool get hasDecimalPoint => this.scale > 0;
   int get sign => compareTo(0);
   String get value => toString();
 
@@ -946,7 +946,11 @@ abstract class ArbitraryPrecisionDataType<
     if (withoutSign.contains('.')) {
       newScale = _countScale(withoutSign);
     } else {
-      newScale = max(a.scale ?? 0, b.scale ?? 0);
+      if (a.scale < 0 && b.scale < 0) {
+        newScale = 0;
+      } else {
+        newScale = max(a.scale, b.scale);
+      }
     }
 
     if (a.isFractional && b.isFractional) {
@@ -972,23 +976,19 @@ abstract class ArbitraryPrecisionDataType<
 
     late final int newScale;
 
-    if (a.isUnconstrained || b.isUnconstrained) {
-      newScale = _countScale(withoutSign);
+    // If any of the scales are negative, then the new scale is
+    // always zero.
+    final hasADec = a.hasDecimalPoint;
+    final hasBDec = b.hasDecimalPoint;
+    if ((!hasADec && !hasBDec) && (a.scale < 0 || b.scale < 0)) {
+      newScale = 0;
     } else {
-      // If any of the scales are negative, then the new scale is
-      // always zero.
-      final hasADec = a.hasDecimalPoint;
-      final hasBDec = b.hasDecimalPoint;
-      if ((!hasADec && !hasBDec) && (a.scale < 0 || b.scale < 0)) {
-        newScale = 0;
-      } else {
-        // We still need to calculate the scale like this to ensure
-        // the final scale is calculated correctly when scales are
-        // negative
-        final newAScale = a.scale.isNegative ? 0 : a.scale;
-        final newBScale = b.scale.isNegative ? 0 : b.scale;
-        newScale = newAScale + newBScale;
-      }
+      // We still need to calculate the scale like this to ensure
+      // the final scale is calculated correctly when scales are
+      // negative
+      final newAScale = a.scale.isNegative ? 0 : a.scale;
+      final newBScale = b.scale.isNegative ? 0 : b.scale;
+      newScale = newAScale + newBScale;
     }
 
     late final int newPrecision;
