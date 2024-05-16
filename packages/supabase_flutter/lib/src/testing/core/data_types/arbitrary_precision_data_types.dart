@@ -1099,7 +1099,18 @@ abstract class ArbitraryPrecisionDataType<
     // If the value has a minus sign it must be removed
     // so it won't count as the string's length
     final withoutSign = _removeSign(plainString);
-    final newScale = _countScale(withoutSign);
+
+    late final int newScale;
+
+    if (withoutSign.contains('.')) {
+      newScale = _countScale(withoutSign);
+    } else {
+      if (a.hasDecimalPoint || b.hasDecimalPoint) {
+        newScale = 1;
+      } else {
+        newScale = 0;
+      }
+    }
 
     late final int newPrecision;
 
