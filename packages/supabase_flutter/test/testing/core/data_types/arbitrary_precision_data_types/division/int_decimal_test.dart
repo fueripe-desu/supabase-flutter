@@ -538,7 +538,7 @@ void main() {
 
     test('should correctly divide fractional Numeric', () {
       final value1 = Decimal(value: '-30', precision: 2, scale: 0);
-      final value2 = Numeric(value: '-0.3', precision: 2, scale: 1);
+      final value2 = Numeric(value: '-0.3', precision: 1, scale: 1);
       final expected = Decimal(value: '100', precision: 23, scale: 20);
       final operation = value1 / value2;
       expect(operation.identicalTo(expected), true);
@@ -589,7 +589,7 @@ void main() {
 
     test('should correctly divide fractional Decimal', () {
       final value1 = Decimal(value: '-30', precision: 2, scale: 0);
-      final value2 = Decimal(value: '-0.3', precision: 2, scale: 1);
+      final value2 = Decimal(value: '-0.3', precision: 1, scale: 1);
       final expected = Decimal(value: '100', precision: 23, scale: 20);
       final operation = value1 / value2;
       expect(operation.identicalTo(expected), true);
@@ -761,7 +761,7 @@ void main() {
 
     test('should correctly divide fractional Numeric', () {
       final value1 = Decimal(value: '30', precision: 2, scale: 0);
-      final value2 = Numeric(value: '-0.3', precision: 2, scale: 1);
+      final value2 = Numeric(value: '-0.3', precision: 1, scale: 1);
       final expected = Decimal(value: '-100', precision: 23, scale: 20);
       final operation = value1 / value2;
       expect(operation.identicalTo(expected), true);
@@ -812,7 +812,7 @@ void main() {
 
     test('should correctly divide fractional Decimal', () {
       final value1 = Decimal(value: '30', precision: 2, scale: 0);
-      final value2 = Decimal(value: '-0.3', precision: 2, scale: 1);
+      final value2 = Decimal(value: '-0.3', precision: 1, scale: 1);
       final expected = Decimal(value: '-100', precision: 23, scale: 20);
       final operation = value1 / value2;
       expect(operation.identicalTo(expected), true);
@@ -2322,7 +2322,7 @@ void main() {
 
     test('should return zero if dividing by fractional Numeric', () {
       final value1 = Decimal(value: '0', precision: 1, scale: 0);
-      final value2 = Numeric(value: '-0.3', precision: 2, scale: 1);
+      final value2 = Numeric(value: '-0.3', precision: 1, scale: 1);
       final expected = Decimal(value: '0', precision: 21, scale: 20);
       final operation = value1 / value2;
       expect(operation.identicalTo(expected), true);
@@ -2362,7 +2362,7 @@ void main() {
 
     test('should return zero if dividing by fractional Decimal', () {
       final value1 = Decimal(value: '0', precision: 1, scale: 0);
-      final value2 = Decimal(value: '-0.3', precision: 2, scale: 1);
+      final value2 = Decimal(value: '-0.3', precision: 1, scale: 1);
       final expected = Decimal(value: '0', precision: 21, scale: 20);
       final operation = value1 / value2;
       expect(operation.identicalTo(expected), true);

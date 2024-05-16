@@ -541,7 +541,7 @@ void main() {
 
     test('should correctly divide fractional Numeric', () {
       final value1 = BigSerial(30);
-      final value2 = Numeric(value: '-0.3', precision: 2, scale: 1);
+      final value2 = Numeric(value: '-0.3', precision: 1, scale: 1);
       final expected = Numeric(value: '-100', precision: 23, scale: 20);
       final operation = value1 / value2;
       expect(operation.identicalTo(expected), true);
@@ -592,7 +592,7 @@ void main() {
 
     test('should correctly divide fractional Decimal', () {
       final value1 = BigSerial(30);
-      final value2 = Decimal(value: '-0.3', precision: 2, scale: 1);
+      final value2 = Decimal(value: '-0.3', precision: 1, scale: 1);
       final expected = Decimal(value: '-100', precision: 23, scale: 20);
       final operation = value1 / value2;
       expect(operation.identicalTo(expected), true);

@@ -526,7 +526,7 @@ void main() {
 
     test('should correctly perform modulo with fractional Numeric', () {
       final value1 = DoublePrecision(-30);
-      final value2 = Numeric(value: '-0.7', precision: 2, scale: 1);
+      final value2 = Numeric(value: '-0.7', precision: 1, scale: 1);
       final expected = Numeric(value: '-0.6', precision: 2, scale: 1);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -579,7 +579,7 @@ void main() {
 
     test('should correctly perform modulo with fractional Decimal', () {
       final value1 = DoublePrecision(-30);
-      final value2 = Decimal(value: '-0.7', precision: 2, scale: 1);
+      final value2 = Decimal(value: '-0.7', precision: 1, scale: 1);
       final expected = Decimal(value: '-0.6', precision: 2, scale: 1);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -745,7 +745,7 @@ void main() {
 
     test('should correctly perform modulo with fractional Numeric', () {
       final value1 = DoublePrecision(30);
-      final value2 = Numeric(value: '-0.7', precision: 2, scale: 1);
+      final value2 = Numeric(value: '-0.7', precision: 1, scale: 1);
       final expected = Numeric(value: '0.6', precision: 2, scale: 1);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -798,7 +798,7 @@ void main() {
 
     test('should correctly perform modulo with fractional Decimal', () {
       final value1 = DoublePrecision(30);
-      final value2 = Decimal(value: '-0.7', precision: 2, scale: 1);
+      final value2 = Decimal(value: '-0.7', precision: 1, scale: 1);
       final expected = Decimal(value: '0.6', precision: 2, scale: 1);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -991,7 +991,7 @@ void main() {
 
     test('should correctly perform modulo with fractional Numeric', () {
       final value1 = DoublePrecision(-30);
-      final value2 = Numeric(value: '0.7', precision: 2, scale: 1);
+      final value2 = Numeric(value: '0.7', precision: 1, scale: 1);
       final expected = Numeric(value: '-0.6', precision: 2, scale: 1);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -1044,7 +1044,7 @@ void main() {
 
     test('should correctly perform modulo with fractional Decimal', () {
       final value1 = DoublePrecision(-30);
-      final value2 = Decimal(value: '0.7', precision: 2, scale: 1);
+      final value2 = Decimal(value: '0.7', precision: 1, scale: 1);
       final expected = Decimal(value: '-0.6', precision: 2, scale: 1);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -2284,7 +2284,7 @@ void main() {
 
     test('should return zero if performing modulo by fractional Numeric', () {
       final value1 = DoublePrecision(0);
-      final value2 = Numeric(value: '-0.7', precision: 2, scale: 1);
+      final value2 = Numeric(value: '-0.7', precision: 1, scale: 1);
       final expected = Numeric(value: '0', precision: 1, scale: 0);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -2327,7 +2327,7 @@ void main() {
 
     test('should return zero if performing modulo by fractional Decimal', () {
       final value1 = DoublePrecision(0);
-      final value2 = Decimal(value: '-0.7', precision: 2, scale: 1);
+      final value2 = Decimal(value: '-0.7', precision: 1, scale: 1);
       final expected = Decimal(value: '0', precision: 1, scale: 0);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -2933,7 +2933,8 @@ void main() {
 // - 1 is used as the {value} in most operations instead of 0, due to the
 //   minimum {value} of [Serial types], which is 1.
   group('type casting', () {
-    test('should return DoublePrecision as result when performing modulo by BigInteger',
+    test(
+        'should return DoublePrecision as result when performing modulo by BigInteger',
         () {
       final value1 = DoublePrecision(1);
       final value2 = BigInteger(1);
@@ -2950,7 +2951,9 @@ void main() {
       expect(operation, isA<DoublePrecision>());
     });
 
-    test('should return DoublePrecision as result when performing modulo by Integer', () {
+    test(
+        'should return DoublePrecision as result when performing modulo by Integer',
+        () {
       final value1 = DoublePrecision(1);
       final value2 = Integer(1);
       final operation = value1 % value2;
@@ -2966,7 +2969,8 @@ void main() {
       expect(operation, isA<DoublePrecision>());
     });
 
-    test('should return DoublePrecision as result when performing modulo by SmallInteger',
+    test(
+        'should return DoublePrecision as result when performing modulo by SmallInteger',
         () {
       final value1 = DoublePrecision(1);
       final value2 = SmallInteger(1);
@@ -2983,7 +2987,8 @@ void main() {
       expect(operation, isA<DoublePrecision>());
     });
 
-    test('should return DoublePrecision as result when performing modulo by BigSerial',
+    test(
+        'should return DoublePrecision as result when performing modulo by BigSerial',
         () {
       final value1 = DoublePrecision(1);
       final value2 = BigSerial(1);
@@ -2991,14 +2996,17 @@ void main() {
       expect(operation, isA<DoublePrecision>());
     });
 
-    test('should return DoublePrecision as result when performing modulo by Serial', () {
+    test(
+        'should return DoublePrecision as result when performing modulo by Serial',
+        () {
       final value1 = DoublePrecision(1);
       final value2 = Serial(1);
       final operation = value1 % value2;
       expect(operation, isA<DoublePrecision>());
     });
 
-    test('should return DoublePrecision as result when performing modulo by SmallSerial',
+    test(
+        'should return DoublePrecision as result when performing modulo by SmallSerial',
         () {
       final value1 = DoublePrecision(1);
       final value2 = SmallSerial(1);
@@ -3006,7 +3014,8 @@ void main() {
       expect(operation, isA<DoublePrecision>());
     });
 
-    test('should return DoublePrecision as result when performing modulo by int primitive',
+    test(
+        'should return DoublePrecision as result when performing modulo by int primitive',
         () {
       final value1 = DoublePrecision(1);
       const value2 = 1;
@@ -3041,14 +3050,17 @@ void main() {
       expect(operation, isA<DoublePrecision>());
     });
 
-    test('should return DoublePrecision as result when performing modulo by Real', () {
+    test(
+        'should return DoublePrecision as result when performing modulo by Real',
+        () {
       final value1 = DoublePrecision(1);
       final value2 = Real(1);
       final operation = value1 % value2;
       expect(operation, isA<DoublePrecision>());
     });
 
-    test('should return DoublePrecision as result when performing modulo by negative Real',
+    test(
+        'should return DoublePrecision as result when performing modulo by negative Real',
         () {
       final value1 = DoublePrecision(1);
       final value2 = Real(-1);

@@ -526,7 +526,7 @@ void main() {
 
     test('should correctly perform modulo with fractional Numeric', () {
       final value1 = Real(-30.5);
-      final value2 = Numeric(value: '-0.7', precision: 2, scale: 1);
+      final value2 = Numeric(value: '-0.7', precision: 1, scale: 1);
       final expected = Numeric(value: '-0.4', precision: 2, scale: 1);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -579,7 +579,7 @@ void main() {
 
     test('should correctly perform modulo with fractional Decimal', () {
       final value1 = Real(-30.5);
-      final value2 = Decimal(value: '-0.7', precision: 2, scale: 1);
+      final value2 = Decimal(value: '-0.7', precision: 1, scale: 1);
       final expected = Decimal(value: '-0.4', precision: 2, scale: 1);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -745,7 +745,7 @@ void main() {
 
     test('should correctly perform modulo with fractional Numeric', () {
       final value1 = Real(30.5);
-      final value2 = Numeric(value: '-0.7', precision: 2, scale: 1);
+      final value2 = Numeric(value: '-0.7', precision: 1, scale: 1);
       final expected = Numeric(value: '0.4', precision: 2, scale: 1);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -798,7 +798,7 @@ void main() {
 
     test('should correctly perform modulo with fractional Decimal', () {
       final value1 = Real(30.5);
-      final value2 = Decimal(value: '-0.7', precision: 2, scale: 1);
+      final value2 = Decimal(value: '-0.7', precision: 1, scale: 1);
       final expected = Decimal(value: '0.4', precision: 2, scale: 1);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -991,7 +991,7 @@ void main() {
 
     test('should correctly perform modulo with fractional Numeric', () {
       final value1 = Real(-30.5);
-      final value2 = Numeric(value: '0.7', precision: 2, scale: 1);
+      final value2 = Numeric(value: '0.7', precision: 1, scale: 1);
       final expected = Numeric(value: '-0.4', precision: 2, scale: 1);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
@@ -1044,7 +1044,7 @@ void main() {
 
     test('should correctly perform modulo with fractional Decimal', () {
       final value1 = Real(-30.5);
-      final value2 = Decimal(value: '0.7', precision: 2, scale: 1);
+      final value2 = Decimal(value: '0.7', precision: 1, scale: 1);
       final expected = Decimal(value: '-0.4', precision: 2, scale: 1);
       final operation = value1 % value2;
       expect(operation.identicalTo(expected), true);
