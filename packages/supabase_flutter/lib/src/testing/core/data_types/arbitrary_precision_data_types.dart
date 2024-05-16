@@ -338,7 +338,17 @@ abstract class ArbitraryPrecisionDataType<
           otherValue,
         );
 
-        return this.createInstance(newPrecision, newScale, newValue);
+        final integerCast = Numeric(
+          value: newValue,
+          precision: newPrecision,
+          scale: newScale,
+        ).toMostPreciseInt();
+
+        if (integerCast is Numeric) {
+          throw RangeError('Integer division result out of range.');
+        }
+
+        return integerCast;
       },
     );
   }
