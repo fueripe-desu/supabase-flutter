@@ -2189,4 +2189,92 @@ void main() {
       expect(operation, isA<Decimal>());
     });
   });
+
+  group('fractional promotion (positive + positive)', () {
+    test(
+        'should promote to float if result exceeds representable fractional part (Numeric)',
+        () {
+      final value1 = Decimal(value: '0.8', precision: 1, scale: 1);
+      final value2 = Numeric(value: '0.2', precision: 1, scale: 1);
+      final expected = Decimal(value: '4.0', precision: 21, scale: 20);
+      final operation = value1 / value2;
+      expect(operation.identicalTo(expected), true);
+    });
+
+    test(
+        'should promote to float if result exceeds representable fractional part (Decimal)',
+        () {
+      final value1 = Decimal(value: '0.8', precision: 1, scale: 1);
+      final value2 = Decimal(value: '0.2', precision: 1, scale: 1);
+      final expected = Decimal(value: '4.0', precision: 21, scale: 20);
+      final operation = value1 / value2;
+      expect(operation.identicalTo(expected), true);
+    });
+  });
+
+  group('fractional promotion (positive + negative)', () {
+    test(
+        'should promote to float if result exceeds representable fractional part (Numeric)',
+        () {
+      final value1 = Decimal(value: '0.8', precision: 1, scale: 1);
+      final value2 = Numeric(value: '-0.2', precision: 1, scale: 1);
+      final expected = Decimal(value: '-4.0', precision: 21, scale: 20);
+      final operation = value1 / value2;
+      expect(operation.identicalTo(expected), true);
+    });
+
+    test(
+        'should promote to float if result exceeds representable fractional part (Decimal)',
+        () {
+      final value1 = Decimal(value: '0.8', precision: 1, scale: 1);
+      final value2 = Decimal(value: '-0.2', precision: 1, scale: 1);
+      final expected = Decimal(value: '-4.0', precision: 21, scale: 20);
+      final operation = value1 / value2;
+      expect(operation.identicalTo(expected), true);
+    });
+  });
+
+  group('fractional promotion (negative + positive)', () {
+    test(
+        'should promote to float if result exceeds representable fractional part (Numeric)',
+        () {
+      final value1 = Decimal(value: '-0.8', precision: 1, scale: 1);
+      final value2 = Numeric(value: '0.2', precision: 1, scale: 1);
+      final expected = Decimal(value: '-4.0', precision: 21, scale: 20);
+      final operation = value1 / value2;
+      expect(operation.identicalTo(expected), true);
+    });
+
+    test(
+        'should promote to float if result exceeds representable fractional part (Decimal)',
+        () {
+      final value1 = Decimal(value: '-0.8', precision: 1, scale: 1);
+      final value2 = Decimal(value: '0.2', precision: 1, scale: 1);
+      final expected = Decimal(value: '-4.0', precision: 21, scale: 20);
+      final operation = value1 / value2;
+      expect(operation.identicalTo(expected), true);
+    });
+  });
+
+  group('fractional promotion (negative + negative)', () {
+    test(
+        'should promote to float if result exceeds representable fractional part (Numeric)',
+        () {
+      final value1 = Decimal(value: '-0.8', precision: 1, scale: 1);
+      final value2 = Numeric(value: '-0.2', precision: 1, scale: 1);
+      final expected = Decimal(value: '4.0', precision: 21, scale: 20);
+      final operation = value1 / value2;
+      expect(operation.identicalTo(expected), true);
+    });
+
+    test(
+        'should promote to float if result exceeds representable fractional part (Decimal)',
+        () {
+      final value1 = Decimal(value: '-0.8', precision: 1, scale: 1);
+      final value2 = Decimal(value: '-0.2', precision: 1, scale: 1);
+      final expected = Decimal(value: '4.0', precision: 21, scale: 20);
+      final operation = value1 / value2;
+      expect(operation.identicalTo(expected), true);
+    });
+  });
 }

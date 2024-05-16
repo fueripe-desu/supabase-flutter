@@ -2452,7 +2452,7 @@ void main() {
     });
   });
 
-  group('fractional promotion', () {
+  group('fractional promotion (positive + positive)', () {
     test(
         'should promote to float if result exceeds representable fractional part (Numeric)',
         () {
@@ -2469,6 +2469,28 @@ void main() {
       final value1 = Numeric(value: '0.3', precision: 1, scale: 1);
       final value2 = Decimal(value: '0.9', precision: 1, scale: 1);
       final expected = Numeric(value: '1.2', precision: 2, scale: 1);
+      final operation = value1 + value2;
+      expect(operation.identicalTo(expected), true);
+    });
+  });
+
+  group('fractional promotion (negative + negative)', () {
+    test(
+        'should promote to float if result exceeds representable fractional part (Numeric)',
+        () {
+      final value1 = Numeric(value: '-0.3', precision: 1, scale: 1);
+      final value2 = Numeric(value: '-0.9', precision: 1, scale: 1);
+      final expected = Numeric(value: '-1.2', precision: 2, scale: 1);
+      final operation = value1 + value2;
+      expect(operation.identicalTo(expected), true);
+    });
+
+    test(
+        'should promote to float if result exceeds representable fractional part (Decimal)',
+        () {
+      final value1 = Numeric(value: '-0.3', precision: 1, scale: 1);
+      final value2 = Decimal(value: '-0.9', precision: 1, scale: 1);
+      final expected = Numeric(value: '-1.2', precision: 2, scale: 1);
       final operation = value1 + value2;
       expect(operation.identicalTo(expected), true);
     });
