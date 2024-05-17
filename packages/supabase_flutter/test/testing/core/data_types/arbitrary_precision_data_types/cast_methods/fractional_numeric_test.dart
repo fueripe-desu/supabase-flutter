@@ -355,4 +355,22 @@ void main() {
       expect(operation.identicalTo(expected), true);
     });
   });
+
+  group('toMostPreciseInt() method', () {
+    test('should return an Integer if it is in range', () {
+      final value = Numeric(value: '0.3', precision: 1, scale: 1);
+      final expected = SmallInteger(0);
+      final operation = value.toMostPreciseInt();
+      expect(operation.identicalTo(expected), true);
+    });
+  });
+
+  group('toMostPreciseFloat() method', () {
+    test('should return a Real if it is in range', () {
+      final value = Numeric(value: '0.14', precision: 2, scale: 2);
+      final expected = Real(0.14);
+      final operation = value.toMostPreciseFloat();
+      expect(operation.identicalTo(expected), true);
+    });
+  });
 }

@@ -609,4 +609,60 @@ void main() {
       expect(operation.identicalTo(expected), true);
     });
   });
+
+  group('toMostPreciseInt() method', () {
+    test('should return an Integer if it is in range', () {
+      final value = Numeric(value: '20.3', precision: 3, scale: 1);
+      final expected = SmallInteger(20);
+      final operation = value.toMostPreciseInt();
+      expect(operation.identicalTo(expected), true);
+    });
+
+    test('should return an BigInteger if it is in range', () {
+      final value = Numeric(value: '2147483647123.4', precision: 14, scale: 1);
+      final expected = BigInteger(2147483647123);
+      final operation = value.toMostPreciseInt();
+      expect(operation.identicalTo(expected), true);
+    });
+
+    test('should return a Numeric if it is out of range of all integer types',
+        () {
+      final value = Numeric(
+        value: '9223372036854775806123.3',
+        precision: 23,
+        scale: 1,
+      );
+      final expected = Numeric(
+        value: '9223372036854775806123',
+        precision: 22,
+        scale: 0,
+      );
+      final operation = value.toMostPreciseInt();
+      expect(operation.identicalTo(expected), true);
+    });
+  });
+
+  group('toMostPreciseFloat() method', () {
+    test('should return a Real if it is in range', () {
+      final value = Numeric(value: '20.5', precision: 3, scale: 1);
+      final expected = Real(20.5);
+      final operation = value.toMostPreciseFloat();
+      expect(operation.identicalTo(expected), true);
+    });
+
+    test('should return an DoublePrecision if it is in range', () {
+      final value = Numeric(value: '3.40282347e+50', precision: 51, scale: 0);
+      final expected = DoublePrecision(3.40282347e+50);
+      final operation = value.toMostPreciseFloat();
+      expect(operation.identicalTo(expected), true);
+    });
+
+    test('should return a Numeric if it is out of range of all integer types',
+        () {
+      final value = Numeric(value: '3.40282347e+400', precision: 401, scale: 0);
+      final expected = Numeric(value: '3.40282347e+400');
+      final operation = value.toMostPreciseFloat();
+      expect(operation.identicalTo(expected), true);
+    });
+  });
 }
