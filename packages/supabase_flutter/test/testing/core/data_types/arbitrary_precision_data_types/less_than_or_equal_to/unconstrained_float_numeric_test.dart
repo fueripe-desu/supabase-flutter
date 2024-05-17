@@ -2166,6 +2166,44 @@ void main() {
     });
   });
 
+  group('zero cases', () {
+    test(
+        'should return true when comparing positive zero to negative Decimal zero',
+        () {
+      final value1 = Numeric(value: '0.0');
+      final value2 = Decimal(value: '-0.0');
+      final operation = value1 <= value2;
+      expect(operation, true);
+    });
+
+    test(
+        'should return true when comparing positive zero to negative Numeric zero',
+        () {
+      final value1 = Numeric(value: '0.0');
+      final value2 = Numeric(value: '-0.0');
+      final operation = value1 <= value2;
+      expect(operation, true);
+    });
+
+    test(
+        'should return true when comparing negative zero to positive Decimal zero',
+        () {
+      final value1 = Numeric(value: '-0.0');
+      final value2 = Decimal(value: '0.0');
+      final operation = value1 <= value2;
+      expect(operation, true);
+    });
+
+    test(
+        'should return true when comparing negative zero to positive Numeric zero',
+        () {
+      final value1 = Numeric(value: '-0.0');
+      final value2 = Numeric(value: '0.0');
+      final operation = value1 <= value2;
+      expect(operation, true);
+    });
+  });
+
   group('general errors', () {
     test('should throw ArgumentError if value is NaN', () {
       final value1 = Numeric(value: '0');
