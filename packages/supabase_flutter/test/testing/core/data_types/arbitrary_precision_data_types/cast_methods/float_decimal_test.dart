@@ -3,7 +3,6 @@ import 'package:supabase_flutter/src/testing/core/data_types/arbitrary_precision
 import 'package:supabase_flutter/src/testing/core/data_types/character_data_types.dart';
 import 'package:supabase_flutter/src/testing/core/data_types/floating_point_data_types.dart';
 import 'package:supabase_flutter/src/testing/core/data_types/integer_data_types.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   group('toString() method', () {
