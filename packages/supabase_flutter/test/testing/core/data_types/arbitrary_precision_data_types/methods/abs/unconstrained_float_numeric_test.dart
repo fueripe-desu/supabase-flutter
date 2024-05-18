@@ -4,14 +4,14 @@ import 'package:supabase_flutter/src/testing/core/data_types/arbitrary_precision
 void main() {
   test('should return its positive counterpart if value is negative', () {
     final value = Numeric(value: '-3.14');
-    final expected = Numeric(value: '3.14', precision: 3, scale: 1);
+    final expected = Numeric(value: '3.14', precision: 3, scale: 2);
     final operation = value.abs();
     expect(operation.identicalTo(expected), true);
   });
 
   test('should return itself if value is already positive', () {
     final value = Numeric(value: '3.14');
-    final expected = Numeric(value: '3.14', precision: 3, scale: 1);
+    final expected = Numeric(value: '3.14', precision: 3, scale: 2);
     final operation = value.abs();
     expect(operation.identicalTo(expected), true);
   });
