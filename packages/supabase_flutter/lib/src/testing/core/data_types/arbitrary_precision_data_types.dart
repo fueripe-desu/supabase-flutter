@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:decimal/decimal.dart' as d;
-import 'package:meta/meta.dart';
 import 'package:supabase_flutter/src/testing/core/data_types/character_data_types.dart';
 import 'package:supabase_flutter/src/testing/core/data_types/data_types.dart';
 import 'package:supabase_flutter/src/testing/core/data_types/floating_point_data_types.dart';
@@ -122,41 +121,150 @@ abstract class ArbitraryPrecisionDataType<
 
   T abs() {
     if (isNegative) {
-      return this.createInstance(precision, scale, value.substring(1));
+      return this.createInstance(
+        precision,
+        scale < 0 ? 0 : scale,
+        value.substring(1),
+      );
     }
 
-    return this.createInstance(precision, scale, value);
+    return this.createInstance(precision, scale < 0 ? 0 : scale, value);
   }
 
   T ceil({int ceilScale = 0}) {
+    final treatedScale = scale < 0 ? 0 : scale;
+    final newCeilScale = ceilScale < 0 ? 0 : ceilScale;
     final rounded = _value.ceil(scale: ceilScale);
     final plainString = rounded.toString();
-    final (newPrecision, newScale) =
-        _getPrecisionAndScaleFromString(plainString);
+
+    if (precision == treatedScale) {
+      late final String newValue;
+
+      if (plainString.contains('.')) {
+        newValue = _removeSign(plainString);
+      } else {
+        newValue = _removeSign('$plainString.0');
+      }
+
+      final splitted = newValue.split('.');
+      final integerPart = splitted[0];
+      final isResultFractional =
+          integerPart.length == 1 && integerPart[0] == '0';
+
+      if (!isResultFractional) {
+        final newPrecision = integerPart.length + treatedScale;
+        return this.createInstance(
+          newPrecision,
+          treatedScale,
+          plainString,
+        );
+      }
+
+      if (newCeilScale != 0) {
+        return this.createInstance(
+          newCeilScale,
+          newCeilScale,
+          plainString,
+        );
+      }
+    }
+
+    if (treatedScale == 0 && newCeilScale != 0) {
+      final newScale = newCeilScale;
+      final newPrecision = precision + newScale;
+      return this.createInstance(
+        newPrecision,
+        newScale,
+        plainString,
+      );
+    }
 
     return this.createInstance(
-      newPrecision,
-      newScale,
+      newCeilScale != 0 ? precision - newCeilScale : precision,
+      newCeilScale != 0 ? newCeilScale : treatedScale,
       plainString,
     );
   }
 
-  T clamp(T lowerLimit, T upperLimit) {
+  T clamp(
+    ArbitraryPrecisionDataType lowerLimit,
+    ArbitraryPrecisionDataType upperLimit,
+  ) {
+    if (lowerLimit > upperLimit) {
+      throw ArgumentError(
+        'Lower limit cannot be greater than the upper limit.',
+      );
+    }
+
     final lowerDec = d.Decimal.parse(lowerLimit.value);
     final upperDec = d.Decimal.parse(upperLimit.value);
     final clamped = _value.clamp(lowerDec, upperDec);
-    return this.createInstance(precision, scale, clamped.toString());
+
+    late final int newScale;
+    late final int newPrecision;
+
+    if (_value != clamped) {
+      final lowerScale = lowerLimit.scale < 0 ? 0 : lowerLimit.scale;
+      final upperScale = upperLimit.scale < 0 ? 0 : upperLimit.scale;
+      final highestBoundScale = max(lowerScale, upperScale);
+      final highestBoundPrecision = max(
+        lowerLimit.precision,
+        upperLimit.precision,
+      );
+
+      newScale = max(highestBoundScale, scale < 0 ? 0 : scale);
+      newPrecision = max(highestBoundPrecision, precision);
+    } else {
+      newScale = scale < 0 ? 0 : scale;
+      newPrecision = precision;
+    }
+
+    return this.createInstance(newPrecision, newScale, clamped.toString());
   }
 
   T floor({int floorScale = 0}) {
+    final treatedScale = scale < 0 ? 0 : scale;
+    final newFloorScale = floorScale < 0 ? 0 : floorScale;
     final rounded = _value.floor(scale: floorScale);
     final plainString = rounded.toString();
-    final (newPrecision, newScale) =
-        _getPrecisionAndScaleFromString(plainString);
+
+    if (precision == treatedScale) {
+      late final String newValue;
+
+      if (plainString.contains('.')) {
+        newValue = _removeSign(plainString);
+      } else {
+        newValue = _removeSign('$plainString.0');
+      }
+
+      final splitted = newValue.split('.');
+      final integerPart = splitted[0];
+      final isResultFractional =
+          integerPart.length == 1 && integerPart[0] == '0';
+
+      if (!isResultFractional) {
+        final newPrecision = integerPart.length + treatedScale;
+        return this.createInstance(
+          newPrecision,
+          treatedScale,
+          plainString,
+        );
+      }
+    }
+
+    if (treatedScale == 0 && newFloorScale != 0) {
+      final newScale = newFloorScale;
+      final newPrecision = precision + newScale;
+      return this.createInstance(
+        newPrecision,
+        newScale,
+        plainString,
+      );
+    }
 
     return this.createInstance(
-      newPrecision,
-      newScale,
+      newFloorScale != 0 ? precision - newFloorScale : precision,
+      newFloorScale != 0 ? newFloorScale : treatedScale,
       plainString,
     );
   }
@@ -170,7 +278,15 @@ abstract class ArbitraryPrecisionDataType<
 
     final result = _value.pow(exponent);
     final castDec = result.toDecimal(scaleOnInfinitePrecision: scale);
-    final plainString = castDec.toString();
+    final castNum = Numeric(value: castDec.toString());
+    late final String plainString;
+
+    if (castNum.scale == 0 && scale > 0) {
+      plainString = '${castDec.toString()}.0';
+    } else {
+      plainString = castDec.toString();
+    }
+
     final (newPrecision, newScale) =
         _getPrecisionAndScaleFromString(plainString);
 
@@ -181,17 +297,51 @@ abstract class ArbitraryPrecisionDataType<
     );
   }
 
-  T remainder(T other) => (this % other) as T;
+  T remainder(ArbitraryPrecisionDataType other) => (this % other) as T;
 
   T round({int roundScale = 0}) {
+    final treatedScale = scale < 0 ? 0 : scale;
+    final newRoundScale = roundScale < 0 ? 0 : roundScale;
     final rounded = _value.round(scale: roundScale);
     final plainString = rounded.toString();
-    final (newPrecision, newScale) =
-        _getPrecisionAndScaleFromString(plainString);
+
+    if (precision == treatedScale) {
+      late final String newValue;
+
+      if (plainString.contains('.')) {
+        newValue = _removeSign(plainString);
+      } else {
+        newValue = _removeSign('$plainString.0');
+      }
+
+      final splitted = newValue.split('.');
+      final integerPart = splitted[0];
+      final isResultFractional =
+          integerPart.length == 1 && integerPart[0] == '0';
+
+      if (!isResultFractional) {
+        final newPrecision = integerPart.length + treatedScale;
+        return this.createInstance(
+          newPrecision,
+          treatedScale,
+          plainString,
+        );
+      }
+    }
+
+    if (treatedScale == 0 && newRoundScale != 0) {
+      final newScale = newRoundScale;
+      final newPrecision = precision + newScale;
+      return this.createInstance(
+        newPrecision,
+        newScale,
+        plainString,
+      );
+    }
 
     return this.createInstance(
-      newPrecision,
-      newScale,
+      newRoundScale != 0 ? precision - newRoundScale : precision,
+      newRoundScale != 0 ? newRoundScale : treatedScale,
       plainString,
     );
   }
@@ -497,7 +647,15 @@ abstract class ArbitraryPrecisionDataType<
   }
 
   @override
-  double toPrimitiveDouble() => double.parse(_value.toString());
+  double toPrimitiveDouble() {
+    final result = double.parse(_value.toString());
+
+    if (result.isInfinite || result.isNaN) {
+      throw RangeError('Double primitive out of range.');
+    }
+
+    return result;
+  }
 
   // Integer
   @override
@@ -526,7 +684,7 @@ abstract class ArbitraryPrecisionDataType<
     } else if (isWithinBigIntegerRange()) {
       return toBigInteger();
     } else {
-      return toNumeric();
+      return toNumeric().truncate();
     }
   }
 
@@ -549,12 +707,42 @@ abstract class ArbitraryPrecisionDataType<
 
   // Arbitrary precision
   @override
-  Numeric toNumeric() =>
-      Numeric(value: value, precision: precision, scale: scale);
+  Numeric toNumeric() {
+    final newValue = toString();
+    final withoutSign = _removeSign(newValue);
+
+    if (precision == scale) {
+      return Numeric(
+        value: newValue,
+        precision: precision,
+        scale: scale,
+      );
+    }
+
+    late final int newScale;
+    late final int newPrecision;
+
+    if (withoutSign.contains('.')) {
+      final splitted = withoutSign.split('.');
+      newScale = _countScale(withoutSign);
+      newPrecision = splitted[0].length + newScale;
+    } else {
+      newScale = 0;
+      newPrecision = withoutSign.length;
+    }
+
+    return Numeric(value: newValue, precision: newPrecision, scale: newScale);
+  }
 
   @override
-  Decimal toDecimal() =>
-      Decimal(value: value, precision: precision, scale: scale);
+  Decimal toDecimal() {
+    final numeric = toNumeric();
+    return Decimal(
+      value: numeric.value,
+      precision: numeric.precision,
+      scale: numeric.scale,
+    );
+  }
 
   // Character
   @override
@@ -568,19 +756,16 @@ abstract class ArbitraryPrecisionDataType<
 
   // Range methods
   bool isWithinSmallIntegerRange() =>
-      _value >= d.Decimal.fromInt(SmallInteger.minValue) &&
-      _value <= d.Decimal.fromInt(SmallInteger.maxValue) &&
-      (!hasDecimalPoint);
+      _value.truncate() >= d.Decimal.fromInt(SmallInteger.minValue) &&
+      _value.truncate() <= d.Decimal.fromInt(SmallInteger.maxValue);
 
   bool isWithinIntegerRange() =>
-      _value >= d.Decimal.fromInt(Integer.minValue) &&
-      _value <= d.Decimal.fromInt(Integer.maxValue) &&
-      (!hasDecimalPoint);
+      _value.truncate() >= d.Decimal.fromInt(Integer.minValue) &&
+      _value.truncate() <= d.Decimal.fromInt(Integer.maxValue);
 
   bool isWithinBigIntegerRange() =>
-      _value >= d.Decimal.fromInt(BigInteger.minValue) &&
-      _value <= d.Decimal.fromInt(BigInteger.maxValue) &&
-      (!hasDecimalPoint);
+      _value.truncate() >= d.Decimal.fromInt(BigInteger.minValue) &&
+      _value.truncate() <= d.Decimal.fromInt(BigInteger.maxValue);
 
   bool isWithinRealRange() =>
       _value >= d.Decimal.parse(Real.minValue.toString()) &&
@@ -665,7 +850,7 @@ abstract class ArbitraryPrecisionDataType<
         decimalLen = splitted[1].length;
         pointString = '.';
       } else {
-        integerLen = rawValueString.length;
+        integerLen = _removeSign(rawValueString).length;
         decimalLen = 0;
         pointString = '';
       }
@@ -679,8 +864,12 @@ abstract class ArbitraryPrecisionDataType<
     final beforeString = '9' * digitsBefore;
     final afterString = '9' * digitsAfter;
     final hasPoint = rawValueString.contains('.');
-    final isNegative = scale != null && scale! < 0;
+    final isNegative = scale < 0;
     final pointString = hasPoint && !isNegative ? '.' : '';
+
+    if (beforeString == '') {
+      return '0$pointString$afterString';
+    }
 
     return beforeString + pointString + afterString;
   }
@@ -819,8 +1008,8 @@ abstract class ArbitraryPrecisionDataType<
     } else {
       before = withoutSign;
 
-      if (!isUnconstrained && scale != null && scale! > 0) {
-        after = '0' * scale!;
+      if (!isUnconstrained && scale > 0) {
+        after = '0' * scale;
       } else {
         after = null;
       }
@@ -952,10 +1141,13 @@ abstract class ArbitraryPrecisionDataType<
 
     late final int newScale;
     late final int newPrecision;
+    late final String integerPart;
 
     if (withoutSign.contains('.')) {
+      integerPart = withoutSign.split('.')[0];
       newScale = _countScale(withoutSign);
     } else {
+      integerPart = withoutSign;
       if (a.scale < 0 && b.scale < 0) {
         newScale = 0;
       } else {
@@ -963,7 +1155,9 @@ abstract class ArbitraryPrecisionDataType<
       }
     }
 
-    if (a.isFractional && b.isFractional) {
+    final isResultFractional = integerPart.length == 1 && integerPart[0] == '0';
+
+    if (a.isFractional && b.isFractional && isResultFractional) {
       newPrecision = newScale;
     } else if (newScale > 0) {
       newPrecision = withoutSign.split('.')[0].length + newScale;
@@ -1184,7 +1378,7 @@ class Numeric extends ArbitraryPrecisionDataType<Numeric> {
       other is Numeric &&
       _value == d.Decimal.parse(other.value) &&
       precision == other.precision &&
-      scale == other.scale &&
+      (scale < 0 ? 0 : scale) == (other.scale < 0 ? 0 : other.scale) &&
       isNegative == other.isNegative;
 
   @override
@@ -1232,7 +1426,7 @@ class Decimal extends ArbitraryPrecisionDataType<Decimal> {
       other is Decimal &&
       _value == d.Decimal.parse(other.value) &&
       precision == other.precision &&
-      scale == other.scale &&
+      (scale < 0 ? 0 : scale) == (other.scale < 0 ? 0 : other.scale) &&
       isNegative == other.isNegative;
 
   @override
