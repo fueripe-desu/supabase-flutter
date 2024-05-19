@@ -24,13 +24,27 @@ extension PrimitiveInteger on int {
 
   // Arbitrary precision
   Numeric toNumeric() {
-    final cast = toString();
-    return Numeric(value: cast, precision: cast.length, scale: 0);
+    late final int precision;
+
+    if (isNegative) {
+      precision = toString().substring(1).length;
+    } else {
+      precision = toString().length;
+    }
+
+    return Numeric(value: toString(), precision: precision, scale: 0);
   }
 
   Decimal toDecimal() {
-    final cast = toString();
-    return Decimal(value: cast, precision: cast.length, scale: 0);
+    late final int precision;
+
+    if (isNegative) {
+      precision = toString().substring(1).length;
+    } else {
+      precision = toString().length;
+    }
+
+    return Decimal(value: toString(), precision: precision, scale: 0);
   }
 
   // Character
@@ -145,36 +159,22 @@ extension PrimitiveString on String {
 
   // Arbitrary precision
   Numeric toNumeric() {
-    final unconstrained = Numeric(value: this).toString();
-
-    if (unconstrained.contains('.')) {
-      final splitted = unconstrained.split('.');
-      final scale = splitted[1].length;
-      final precision = splitted[0].length + scale;
-      return Numeric(value: unconstrained, precision: precision, scale: scale);
-    }
+    final unconstrained = Numeric(value: this);
 
     return Numeric(
-      value: unconstrained,
-      precision: unconstrained.length,
-      scale: 0,
+      value: unconstrained.toString(),
+      precision: unconstrained.precision,
+      scale: unconstrained.scale,
     );
   }
 
   Decimal toDecimal() {
-    final unconstrained = Decimal(value: this).toString();
-
-    if (unconstrained.contains('.')) {
-      final splitted = unconstrained.split('.');
-      final scale = splitted[1].length;
-      final precision = splitted[0].length + scale;
-      return Decimal(value: unconstrained, precision: precision, scale: scale);
-    }
+    final unconstrained = Decimal(value: this);
 
     return Decimal(
-      value: unconstrained,
-      precision: unconstrained.length,
-      scale: 0,
+      value: unconstrained.toString(),
+      precision: unconstrained.precision,
+      scale: unconstrained.scale,
     );
   }
 
