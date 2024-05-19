@@ -94,7 +94,7 @@ abstract class DataType implements Comparable<Object> {
       return 7;
     } else if (dataType is DoublePrecision) {
       return 8;
-    } else if (dataType is Numeric) {
+    } else if (dataType is Numeric || dataType is Decimal) {
       return 9;
     } else {
       return 0;
