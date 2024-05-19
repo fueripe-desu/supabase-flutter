@@ -45,20 +45,10 @@ abstract class CharacterDataType<T extends CharacterDataType<T>>
   int? get _maxLength;
   bool get _shouldPad;
   bool get _shouldTruncate;
+  String get _className;
 
   @override
-  String toString() => value;
-
-  @override
-  bool operator ==(Object other) {
-    if (other is CharacterDataType) {
-      return value == other.value;
-    }
-    return false;
-  }
-
-  @override
-  int get hashCode => Object.hashAll([length, value]);
+  int compareTo(Object other) => value.compareTo(other.toString());
 
   // Unary operators
   @override
@@ -160,23 +150,56 @@ abstract class CharacterDataType<T extends CharacterDataType<T>>
         'Character data types are immutable, therefore index assignment is fobidden.',
       );
 
+  // Equality and hashcode
   @override
-  int compareTo(Object other) => value.compareTo(other.toString());
+  bool operator ==(Object other) => compareTo(other) == 0;
+
+  @override
+  int get hashCode => Object.hashAll([length, value]);
 
   bool isNumber() => RegExp(r'^-?\d+$').hasMatch(value);
-  bool isFractional() => double.tryParse(value) != null;
+  bool isFractional() => !isNumber() && double.tryParse(value) != null;
   bool isNumerical() => isNumber() || isFractional();
-  bool isAlphabetic() => RegExp(r'^[a-zA-Z]+$').hasMatch(value);
-  bool isAlphanumeric() => RegExp(r'^[a-zA-Z0-9]+$').hasMatch(value);
+  bool isAlphabetic() => RegExp(r'^[a-zA-Z ]+$').hasMatch(value);
+  bool isSpecial() => RegExp(r'^[^A-Za-z0-9 ]+$').hasMatch(value);
+  bool isAlphanumeric() => RegExp(r'^[a-zA-Z0-9 ]+$').hasMatch(value);
+  bool isAlphanumericStrict() =>
+      !isAlphabetic() &&
+      !isNumerical() &&
+      RegExp(r'^[a-zA-Z0-9 ]+$').hasMatch(value);
+
+  bool hasNumbers() => RegExp(r'-?\d+').hasMatch(value);
+  bool hasSpecialChars() => RegExp(r'[^A-Za-z0-9 ]+').hasMatch(value);
+  bool hasSpaces() => RegExp(r' +').hasMatch(value);
+  bool hasChars() => RegExp(r'[a-zA-Z ]+').hasMatch(value);
 
   // Cast methods
 
   // Primitives
   @override
-  int toPrimitiveInt() => int.parse(value);
+  String toString() => value;
 
   @override
-  double toPrimitiveDouble() => double.parse(value);
+  int toPrimitiveInt() {
+    if (!isNumber()) {
+      throw ArgumentError(
+        'Cannot cast non-integer $_className type to primitive int.',
+      );
+    }
+
+    return int.parse(value);
+  }
+
+  @override
+  double toPrimitiveDouble() {
+    if (!isNumerical()) {
+      throw ArgumentError(
+        'Cannot cast non-numerical $_className type to primitive double.',
+      );
+    }
+
+    return double.parse(value);
+  }
 
   // Integer
   @override
@@ -231,16 +254,15 @@ class Character extends CharacterDataType<Character> {
   bool get _shouldPad => true;
   @override
   bool get _shouldTruncate => true;
+  @override
+  String get _className => 'Character';
 
   @override
   bool identicalTo(DataType other) =>
       other is Character && value == other.value && length == other.length;
 
   @override
-  String toDetailedString() {
-    // TODO: implement toDetailedString
-    throw UnimplementedError();
-  }
+  String toDetailedString() => 'Value: \'$value\', Length: $length';
 }
 
 class CharacterVarying extends CharacterDataType<CharacterVarying> {
@@ -252,16 +274,15 @@ class CharacterVarying extends CharacterDataType<CharacterVarying> {
   bool get _shouldPad => false;
   @override
   bool get _shouldTruncate => false;
+  @override
+  String get _className => 'Character Varying';
 
   @override
   bool identicalTo(DataType other) =>
       other is VarChar && value == other.value && length == other.length;
 
   @override
-  String toDetailedString() {
-    // TODO: implement toDetailedString
-    throw UnimplementedError();
-  }
+  String toDetailedString() => 'Value: \'$value\', Length: $length';
 }
 
 class Text extends CharacterDataType<Text> {
@@ -273,13 +294,12 @@ class Text extends CharacterDataType<Text> {
   bool get _shouldPad => false;
   @override
   bool get _shouldTruncate => false;
+  @override
+  String get _className => 'Text';
 
   @override
   bool identicalTo(DataType other) => other is Text && value == other.value;
 
   @override
-  String toDetailedString() {
-    // TODO: implement toDetailedString
-    throw UnimplementedError();
-  }
+  String toDetailedString() => 'Value: \'$value\'';
 }
