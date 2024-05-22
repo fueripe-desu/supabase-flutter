@@ -192,6 +192,8 @@ class MoneyBuilder {
 }
 
 class Currency {
+  final String fullCurrencyName;
+  final String currencyName;
   final String symbol;
   final String groupSeparator;
   final String? decimalSeparator;
@@ -200,6 +202,8 @@ class Currency {
   final int minorUnitsInMajor;
 
   Currency({
+    required this.fullCurrencyName,
+    required this.currencyName,
     required this.symbol,
     required this.minorUnitsInMajor,
     required this.groupSeparator,
@@ -207,6 +211,12 @@ class Currency {
     required this.placeSymbolBefore,
     this.decimalSeparator,
   }) {
+    if (currencyName.length != 3) {
+      throw ArgumentError(
+        'Currency name must have length equal to 3.',
+      );
+    }
+
     if (decimalSeparator != null && decimalSeparator!.length > 1) {
       throw ArgumentError(
         'Decimal separator cannot have length greater than 1.',
@@ -242,7 +252,9 @@ class Currency {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! Currency) return false;
-    return symbol == other.symbol &&
+    return fullCurrencyName == other.fullCurrencyName &&
+        currencyName == other.currencyName &&
+        symbol == other.symbol &&
         groupSeparator == other.groupSeparator &&
         decimalSeparator == other.decimalSeparator &&
         scalePrecision == other.scalePrecision &&
@@ -253,6 +265,8 @@ class Currency {
   @override
   int get hashCode {
     return Object.hash(
+      fullCurrencyName,
+      currencyName,
       symbol,
       groupSeparator,
       decimalSeparator,
@@ -263,6 +277,8 @@ class Currency {
   }
 
   Currency copyWith({
+    String? fullCurrencyName,
+    String? currencyName,
     String? symbol,
     String? groupSeparator,
     String? decimalSeparator,
@@ -271,6 +287,8 @@ class Currency {
     int? minorUnitsInMajor,
   }) {
     return Currency(
+      fullCurrencyName: fullCurrencyName ?? this.fullCurrencyName,
+      currencyName: currencyName ?? this.currencyName,
       symbol: symbol ?? this.symbol,
       groupSeparator: groupSeparator ?? this.groupSeparator,
       decimalSeparator: decimalSeparator ?? this.decimalSeparator,
