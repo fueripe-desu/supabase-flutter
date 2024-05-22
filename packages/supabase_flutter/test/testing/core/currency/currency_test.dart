@@ -1,18 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/src/testing/core/currency/currencies.dart';
 import 'package:supabase_flutter/src/testing/core/currency/currency.dart';
 import 'package:supabase_flutter/src/testing/core/data_types/arbitrary_precision_data_types.dart';
 
 void main() {
-  final dollar = Currency(
-    symbol: r'$',
-    decimalSeparator: '.',
-    groupSeparator: ',',
-    scalePrecision: 2,
-    minorUnitsInMajor: 100,
-    placeSymbolBefore: true,
-  );
+  final dollar = Currencies.usd;
 
   group('currency', () {
+    test(
+        'should throw an ArgumentError when currency name has length different from 3',
+        () {
+      expect(() => dollar.copyWith(currencyName: 'US'), throwsArgumentError);
+    });
+
     test(
         'should throw an ArgumentError when the decimal separator has a length greater than 1',
         () {
@@ -67,22 +67,8 @@ void main() {
         return result.identicalTo(expected);
       };
 
-      brl = Currency(
-        symbol: r'R$',
-        minorUnitsInMajor: 100,
-        groupSeparator: '.',
-        decimalSeparator: ',',
-        scalePrecision: 2,
-        placeSymbolBefore: true,
-      );
-
-      bif = Currency(
-        symbol: 'FBu',
-        minorUnitsInMajor: 100,
-        groupSeparator: ',',
-        scalePrecision: 0,
-        placeSymbolBefore: false,
-      );
+      brl = Currencies.usd;
+      bif = Currencies.bif;
     });
 
     test('should return true if a valid string is given', () {
