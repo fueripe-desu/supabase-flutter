@@ -238,6 +238,30 @@ class Currency {
     }
   }
 
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! Currency) return false;
+    return symbol == other.symbol &&
+        groupSeparator == other.groupSeparator &&
+        decimalSeparator == other.decimalSeparator &&
+        scalePrecision == other.scalePrecision &&
+        placeSymbolBefore == other.placeSymbolBefore &&
+        minorUnitsInMajor == other.minorUnitsInMajor;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      symbol,
+      groupSeparator,
+      decimalSeparator,
+      scalePrecision,
+      placeSymbolBefore,
+      minorUnitsInMajor,
+    );
+  }
+
   Currency copyWith({
     String? symbol,
     String? groupSeparator,
