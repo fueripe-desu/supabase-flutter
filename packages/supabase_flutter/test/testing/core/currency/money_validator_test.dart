@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/src/testing/core/currency/currencies.dart';
 import 'package:supabase_flutter/src/testing/core/currency/currency.dart';
 import 'package:supabase_flutter/src/testing/core/currency/money_validator.dart';
 
@@ -9,16 +10,11 @@ const bool logFilterErrors = false;
 void main() {
   late final bool Function(String input, Currency currency) validate;
 
-  final dollar = Currency(
-    symbol: r'$',
-    decimalSeparator: '.',
-    groupSeparator: ',',
-    scalePrecision: 2,
-    minorUnitsInMajor: 100,
-    placeSymbolBefore: true,
-  );
+  final dollar = Currencies.usd;
 
   final fakeCurrency = Currency(
+    fullCurrencyName: 'Fake Currency',
+    currencyName: 'FKD',
     symbol: r'$/.',
     decimalSeparator: '.',
     groupSeparator: ',',
