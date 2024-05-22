@@ -3,6 +3,8 @@ import 'package:supabase_flutter/src/testing/core/currency/currency.dart';
 class Currencies {
   /// Afghan Afghani
   static final afn = Currency(
+    fullCurrencyName: 'Afghan Afghani',
+    currencyName: 'AFN',
     symbol: '؋',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -13,6 +15,8 @@ class Currencies {
 
   /// Albanian Lek
   static final Currency all = Currency(
+    fullCurrencyName: 'Albanian Lek',
+    currencyName: 'ALL',
     symbol: 'L',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -23,6 +27,8 @@ class Currencies {
 
   /// Algerian Dinar
   static final Currency dzd = Currency(
+    fullCurrencyName: 'Algerian Dinar',
+    currencyName: 'DZD',
     symbol: 'د.ج',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -33,6 +39,8 @@ class Currencies {
 
   /// Angolan Kwanza
   static final Currency aoa = Currency(
+    fullCurrencyName: 'Angolan Kwanza',
+    currencyName: 'AOA',
     symbol: 'Kz',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -43,6 +51,8 @@ class Currencies {
 
   /// Argentine Peso
   static final Currency ars = Currency(
+    fullCurrencyName: 'Argentine Peso',
+    currencyName: 'ARS',
     symbol: '\$',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -53,6 +63,8 @@ class Currencies {
 
   /// Armenian Dram
   static final Currency amd = Currency(
+    fullCurrencyName: 'Armenian Dram',
+    currencyName: 'AMD',
     symbol: '֏',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -63,6 +75,8 @@ class Currencies {
 
   /// Aruban Florin
   static final Currency awg = Currency(
+    fullCurrencyName: 'Aruban Florin',
+    currencyName: 'AWG',
     symbol: 'ƒ',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -73,6 +87,8 @@ class Currencies {
 
   /// Australian Dollar
   static final Currency aud = Currency(
+    fullCurrencyName: 'Australian Dollar',
+    currencyName: 'AUD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -83,6 +99,8 @@ class Currencies {
 
   /// Azerbaijani Manat
   static final Currency azn = Currency(
+    fullCurrencyName: 'Azerbaijani Manat',
+    currencyName: 'AZN',
     symbol: '₼',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -93,6 +111,8 @@ class Currencies {
 
   /// Bahamian Dollar
   static final Currency bsd = Currency(
+    fullCurrencyName: 'Bahamian Dollar',
+    currencyName: 'BSD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -103,16 +123,20 @@ class Currencies {
 
   /// Bahraini Dinar
   static final Currency bhd = Currency(
+    fullCurrencyName: 'Bahraini Dinar',
+    currencyName: 'BHD',
     symbol: 'ب.د',
     groupSeparator: ',',
     decimalSeparator: '.',
     scalePrecision: 3,
-    placeSymbolBefore: true,
+    placeSymbolBefore: false,
     minorUnitsInMajor: 1000,
   );
 
   /// Bangladeshi Taka
   static final Currency bdt = Currency(
+    fullCurrencyName: 'Bangladeshi Taka',
+    currencyName: 'BDT',
     symbol: '৳',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -123,6 +147,8 @@ class Currencies {
 
   /// Barbadian Dollar
   static final Currency bbd = Currency(
+    fullCurrencyName: 'Barbadian Dollar',
+    currencyName: 'BBD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -133,6 +159,8 @@ class Currencies {
 
   /// Belarusian Ruble
   static final Currency byn = Currency(
+    fullCurrencyName: 'Belarusian Ruble',
+    currencyName: 'BYN',
     symbol: 'Br',
     groupSeparator: ' ',
     decimalSeparator: ',',
@@ -143,6 +171,8 @@ class Currencies {
 
   /// Belize Dollar
   static final Currency bzd = Currency(
+    fullCurrencyName: 'Belize Dollar',
+    currencyName: 'BZD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -153,6 +183,8 @@ class Currencies {
 
   /// Bermudian Dollar
   static final Currency bmd = Currency(
+    fullCurrencyName: 'Bermudian Dollar',
+    currencyName: 'BMD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -163,6 +195,8 @@ class Currencies {
 
   /// Bhutanese Ngultrum
   static final Currency btn = Currency(
+    fullCurrencyName: 'Bhutanese Ngultrum',
+    currencyName: 'BTN',
     symbol: 'Nu.',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -173,6 +207,8 @@ class Currencies {
 
   /// Bolivian Boliviano
   static final Currency bob = Currency(
+    fullCurrencyName: 'Bolivian Boliviano',
+    currencyName: 'BOB',
     symbol: 'Bs.',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -183,6 +219,8 @@ class Currencies {
 
   /// Bosnia and Herzegovina Convertible Mark
   static final Currency bam = Currency(
+    fullCurrencyName: 'Bosnia and Herzegovina Convertible Mark',
+    currencyName: 'BAM',
     symbol: 'KM',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -193,6 +231,8 @@ class Currencies {
 
   /// Botswana Pula
   static final Currency bwp = Currency(
+    fullCurrencyName: 'Botswana Pula',
+    currencyName: 'BWP',
     symbol: 'P',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -203,6 +243,8 @@ class Currencies {
 
   /// Brazilian Real
   static final Currency brl = Currency(
+    fullCurrencyName: 'Brazilian Real',
+    currencyName: 'BRL',
     symbol: 'R\$',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -213,6 +255,8 @@ class Currencies {
 
   /// British Pound Sterling
   static final Currency gbp = Currency(
+    fullCurrencyName: 'British Pound Sterling',
+    currencyName: 'GBP',
     symbol: '£',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -223,6 +267,8 @@ class Currencies {
 
   /// Brunei Dollar
   static final Currency bnd = Currency(
+    fullCurrencyName: 'Brunei Dollar',
+    currencyName: 'BND',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -233,6 +279,8 @@ class Currencies {
 
   /// Bulgarian Lev
   static final Currency bgn = Currency(
+    fullCurrencyName: 'Bulgarian Lev',
+    currencyName: 'BGN',
     symbol: 'лв',
     groupSeparator: ' ',
     decimalSeparator: ',',
@@ -243,6 +291,8 @@ class Currencies {
 
   /// Burundian Franc
   static final Currency bif = Currency(
+    fullCurrencyName: 'Burundian Franc',
+    currencyName: 'BIF',
     symbol: 'FBu',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -252,6 +302,8 @@ class Currencies {
 
   /// Cambodian Riel
   static final Currency khr = Currency(
+    fullCurrencyName: 'Cambodian Riel',
+    currencyName: 'KHR',
     symbol: '៛',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -262,6 +314,8 @@ class Currencies {
 
   /// Canadian Dollar
   static final Currency cad = Currency(
+    fullCurrencyName: 'Canadian Dollar',
+    currencyName: 'CAD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -272,6 +326,8 @@ class Currencies {
 
   /// Cape Verdean Escudo
   static final Currency cve = Currency(
+    fullCurrencyName: 'Cape Verdean Escudo',
+    currencyName: 'CVE',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -282,6 +338,8 @@ class Currencies {
 
   /// Cayman Islands Dollar
   static final Currency kyd = Currency(
+    fullCurrencyName: 'Cayman Islands Dollar',
+    currencyName: 'KYD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -292,6 +350,8 @@ class Currencies {
 
   /// Central African CFA Franc
   static final Currency xaf = Currency(
+    fullCurrencyName: 'Central African CFA Franc',
+    currencyName: 'XAF',
     symbol: 'FCFA',
     groupSeparator: ' ',
     scalePrecision: 0,
@@ -301,6 +361,8 @@ class Currencies {
 
   /// CFP Franc
   static final Currency xpf = Currency(
+    fullCurrencyName: 'CFP Franc',
+    currencyName: 'XPF',
     symbol: 'XPF',
     groupSeparator: ' ',
     scalePrecision: 0,
@@ -310,6 +372,8 @@ class Currencies {
 
   /// Chilean Peso
   static final Currency clp = Currency(
+    fullCurrencyName: 'Chilean Peso',
+    currencyName: 'CLP',
     symbol: r'$',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -319,6 +383,8 @@ class Currencies {
 
   /// Chinese Renminbi
   static final Currency cny = Currency(
+    fullCurrencyName: 'Chinese Renminbi',
+    currencyName: 'CNY',
     symbol: '¥',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -329,6 +395,8 @@ class Currencies {
 
   /// Colombian Peso
   static final Currency cop = Currency(
+    fullCurrencyName: 'Colombian Peso',
+    currencyName: 'COP',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -339,6 +407,8 @@ class Currencies {
 
   /// Comorian Franc
   static final Currency kmf = Currency(
+    fullCurrencyName: 'Comorian Franc',
+    currencyName: 'KMF',
     symbol: 'CF',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -348,6 +418,8 @@ class Currencies {
 
   /// Congolese Franc
   static final Currency cdf = Currency(
+    fullCurrencyName: 'Congolese Franc',
+    currencyName: 'CDF',
     symbol: 'FC',
     groupSeparator: '.',
     scalePrecision: 0,
@@ -357,6 +429,8 @@ class Currencies {
 
   /// Costa Rican Colón
   static final Currency crc = Currency(
+    fullCurrencyName: 'Costa Rican Colón',
+    currencyName: 'CRC',
     symbol: '₡',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -367,6 +441,8 @@ class Currencies {
 
   /// Cuban Peso
   static final Currency cup = Currency(
+    fullCurrencyName: 'Cuban Peso',
+    currencyName: 'CUP',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -377,6 +453,8 @@ class Currencies {
 
   /// Czech Koruna
   static final Currency czk = Currency(
+    fullCurrencyName: 'Czech Koruna',
+    currencyName: 'CZK',
     symbol: 'Kč',
     groupSeparator: ' ',
     decimalSeparator: '.',
@@ -387,6 +465,8 @@ class Currencies {
 
   /// Danish Krone
   static final Currency dkk = Currency(
+    fullCurrencyName: 'Danish Krone',
+    currencyName: 'DKK',
     symbol: 'kr',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -397,6 +477,8 @@ class Currencies {
 
   /// Djiboutian Franc
   static final Currency djf = Currency(
+    fullCurrencyName: 'Djiboutian Franc',
+    currencyName: 'DJF',
     symbol: 'Fdj',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -406,6 +488,8 @@ class Currencies {
 
   /// Dominican Peso
   static final Currency dop = Currency(
+    fullCurrencyName: 'Dominican Peso',
+    currencyName: 'DOP',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -416,6 +500,8 @@ class Currencies {
 
   /// East Caribbean Dollar
   static final Currency xcd = Currency(
+    fullCurrencyName: 'East Caribbean Dollar',
+    currencyName: 'XCD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -426,6 +512,8 @@ class Currencies {
 
   /// Egyptian Pound
   static final Currency egp = Currency(
+    fullCurrencyName: 'Egyptian Pound',
+    currencyName: 'EGP',
     symbol: '£',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -436,6 +524,8 @@ class Currencies {
 
   /// Eritrean Nakfa
   static final Currency ern = Currency(
+    fullCurrencyName: 'Eritrean Nakfa',
+    currencyName: 'ERN',
     symbol: 'Nfk',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -446,6 +536,8 @@ class Currencies {
 
   /// Ethiopian Birr
   static final Currency etb = Currency(
+    fullCurrencyName: 'Ethiopian Birr',
+    currencyName: 'ETB',
     symbol: 'Br',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -456,6 +548,8 @@ class Currencies {
 
   /// European Union Euro
   static final Currency eur = Currency(
+    fullCurrencyName: 'European Union Euro',
+    currencyName: 'EUR',
     symbol: '€',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -466,6 +560,8 @@ class Currencies {
 
   /// Falkland Islands Pound
   static final Currency fkp = Currency(
+    fullCurrencyName: 'Falkland Islands Pound',
+    currencyName: 'FKP',
     symbol: '£',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -476,6 +572,8 @@ class Currencies {
 
   /// Fijian Dollar
   static final Currency fjd = Currency(
+    fullCurrencyName: 'Fijian Dollar',
+    currencyName: 'FJD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -486,6 +584,8 @@ class Currencies {
 
   /// Gambian Dalasi
   static final Currency gmd = Currency(
+    fullCurrencyName: 'Gambian Dalasi',
+    currencyName: 'GMD',
     symbol: 'D',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -496,6 +596,8 @@ class Currencies {
 
   /// Georgian Lari
   static final Currency gel = Currency(
+    fullCurrencyName: 'Georgian Lari',
+    currencyName: 'GEL',
     symbol: '₾',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -506,6 +608,8 @@ class Currencies {
 
   /// Ghana Cedi
   static final Currency ghs = Currency(
+    fullCurrencyName: 'Ghana Cedi',
+    currencyName: 'GHS',
     symbol: '₵',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -516,6 +620,8 @@ class Currencies {
 
   /// Gibraltar Pound
   static final Currency gip = Currency(
+    fullCurrencyName: 'Gibraltar Pound',
+    currencyName: 'GIP',
     symbol: '£',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -526,6 +632,8 @@ class Currencies {
 
   /// Guatemalan Quetzal
   static final Currency gtq = Currency(
+    fullCurrencyName: 'Guatemalan Quetzal',
+    currencyName: 'GTQ',
     symbol: 'Q',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -536,6 +644,8 @@ class Currencies {
 
   /// Guinean Franc
   static final Currency gnf = Currency(
+    fullCurrencyName: 'Guinean Franc',
+    currencyName: 'GNF',
     symbol: 'FG',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -545,6 +655,8 @@ class Currencies {
 
   /// Guyanese Dollar
   static final Currency gyd = Currency(
+    fullCurrencyName: 'Guyanese Dollar',
+    currencyName: 'GYD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -555,6 +667,8 @@ class Currencies {
 
   /// Haitian Gourde
   static final Currency htg = Currency(
+    fullCurrencyName: 'Haitian Gourde',
+    currencyName: 'HTG',
     symbol: 'G',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -565,6 +679,8 @@ class Currencies {
 
   /// Honduran Lempira
   static final Currency hnl = Currency(
+    fullCurrencyName: 'Honduran Lempira',
+    currencyName: 'HNL',
     symbol: 'L',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -575,6 +691,8 @@ class Currencies {
 
   /// Hong Kong Dollar
   static final Currency hkd = Currency(
+    fullCurrencyName: 'Hong Kong Dollar',
+    currencyName: 'HKD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -585,6 +703,8 @@ class Currencies {
 
   /// Hungarian Forint
   static final Currency huf = Currency(
+    fullCurrencyName: 'Hungarian Forint',
+    currencyName: 'HUF',
     symbol: 'Ft',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -594,6 +714,8 @@ class Currencies {
 
   /// Icelandic Krona
   static final Currency isk = Currency(
+    fullCurrencyName: 'Icelandic Krona',
+    currencyName: 'ISK',
     symbol: 'kr',
     groupSeparator: '.',
     scalePrecision: 0,
@@ -603,6 +725,8 @@ class Currencies {
 
   /// Indian Rupee
   static final Currency inr = Currency(
+    fullCurrencyName: 'Indian Rupee',
+    currencyName: 'INR',
     symbol: '₹',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -613,6 +737,8 @@ class Currencies {
 
   /// Indonesian Rupiah
   static final Currency idr = Currency(
+    fullCurrencyName: 'Indonesian Rupiah',
+    currencyName: 'IDR',
     symbol: 'Rp',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -623,6 +749,8 @@ class Currencies {
 
   /// Iranian Rial
   static final Currency irr = Currency(
+    fullCurrencyName: 'Iranian Rial',
+    currencyName: 'IRR',
     symbol: '﷼',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -633,6 +761,8 @@ class Currencies {
 
   /// Iraqi Dinar
   static final Currency iqd = Currency(
+    fullCurrencyName: 'Iraqi Dinar',
+    currencyName: 'IQD',
     symbol: 'ع.د',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -643,6 +773,8 @@ class Currencies {
 
   /// Israeli New Shekel
   static final Currency ils = Currency(
+    fullCurrencyName: 'Israeli New Shekel',
+    currencyName: 'ILS',
     symbol: '₪',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -653,6 +785,8 @@ class Currencies {
 
   /// Jamaican Dollar
   static final Currency jmd = Currency(
+    fullCurrencyName: 'Jamaican Dollar',
+    currencyName: 'JMD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -663,6 +797,8 @@ class Currencies {
 
   /// Japanese Yen
   static final Currency jpy = Currency(
+    fullCurrencyName: 'Japanese Yen',
+    currencyName: 'JPY',
     symbol: '¥',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -672,6 +808,8 @@ class Currencies {
 
   /// Jordanian Dinar
   static final Currency jod = Currency(
+    fullCurrencyName: 'Jordanian Dinar',
+    currencyName: 'JOD',
     symbol: 'د.ا',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -682,6 +820,8 @@ class Currencies {
 
   /// Kazakhstani Tenge
   static final Currency kzt = Currency(
+    fullCurrencyName: 'Kazakhstani Tenge',
+    currencyName: 'KZT',
     symbol: '₸',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -692,6 +832,8 @@ class Currencies {
 
   /// Kenyan Shilling
   static final Currency kes = Currency(
+    fullCurrencyName: 'Kenyan Shilling',
+    currencyName: 'KES',
     symbol: 'Ksh',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -702,6 +844,8 @@ class Currencies {
 
   /// Kuwaiti Dinar
   static final Currency kwd = Currency(
+    fullCurrencyName: 'Kuwaiti Dinar',
+    currencyName: 'KWD',
     symbol: 'د.ك',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -712,6 +856,8 @@ class Currencies {
 
   /// Kyrgyzstani Som
   static final Currency kgs = Currency(
+    fullCurrencyName: 'Kyrgyzstani Som',
+    currencyName: 'KGS',
     symbol: 'сом',
     groupSeparator: ' ',
     decimalSeparator: '.',
@@ -722,6 +868,8 @@ class Currencies {
 
   /// Lao Kip
   static final Currency lak = Currency(
+    fullCurrencyName: 'Lao Kip',
+    currencyName: 'LAK',
     symbol: '₭',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -732,6 +880,8 @@ class Currencies {
 
   /// Lebanese Pound
   static final Currency lbp = Currency(
+    fullCurrencyName: 'Lebanese Pound',
+    currencyName: 'LBP',
     symbol: 'ل.ل',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -742,6 +892,8 @@ class Currencies {
 
   /// Lesotho Loti
   static final Currency lsl = Currency(
+    fullCurrencyName: 'Lesotho Loti',
+    currencyName: 'LSL',
     symbol: 'L',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -752,6 +904,8 @@ class Currencies {
 
   /// Liberian Dollar
   static final Currency lrd = Currency(
+    fullCurrencyName: 'Liberian Dollar',
+    currencyName: 'LRD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -762,6 +916,8 @@ class Currencies {
 
   /// Libyan Dinar
   static final Currency lyd = Currency(
+    fullCurrencyName: 'Libyan Dinar',
+    currencyName: 'LYD',
     symbol: 'ل.د',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -772,6 +928,8 @@ class Currencies {
 
   /// Macanese Pataca
   static final Currency mop = Currency(
+    fullCurrencyName: 'Macanese Pataca',
+    currencyName: 'MOP',
     symbol: 'MOP\$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -782,6 +940,8 @@ class Currencies {
 
   /// Macedonian Denar
   static final Currency mkd = Currency(
+    fullCurrencyName: 'Macedonian Denar',
+    currencyName: 'MKD',
     symbol: 'ден',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -792,6 +952,8 @@ class Currencies {
 
   /// Malagasy Ariary
   static final Currency mga = Currency(
+    fullCurrencyName: 'Malagasy Ariary',
+    currencyName: 'MGA',
     symbol: 'Ar',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -802,6 +964,8 @@ class Currencies {
 
   /// Malawian Kwacha
   static final Currency mwk = Currency(
+    fullCurrencyName: 'Malawian Kwacha',
+    currencyName: 'MWK',
     symbol: 'MK',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -812,6 +976,8 @@ class Currencies {
 
   /// Malaysian Ringgit
   static final Currency myr = Currency(
+    fullCurrencyName: 'Malaysian Ringgit',
+    currencyName: 'MYR',
     symbol: 'RM',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -822,6 +988,8 @@ class Currencies {
 
   /// Maldivian Rufiyaa
   static final Currency mvr = Currency(
+    fullCurrencyName: 'Maldivian Rufiyaa',
+    currencyName: 'MVR',
     symbol: 'ރ.',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -832,6 +1000,8 @@ class Currencies {
 
   /// Mauritanian Ouguiya
   static final Currency mru = Currency(
+    fullCurrencyName: 'Mauritanian Ouguiya',
+    currencyName: 'MRU',
     symbol: 'UM',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -842,6 +1012,8 @@ class Currencies {
 
   /// Mauritian Rupee
   static final Currency mur = Currency(
+    fullCurrencyName: 'Mauritian Rupee',
+    currencyName: 'MUR',
     symbol: '₨',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -852,6 +1024,8 @@ class Currencies {
 
   /// Mexican Peso
   static final Currency mxn = Currency(
+    fullCurrencyName: 'Mexican Peso',
+    currencyName: 'MXN',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -862,6 +1036,8 @@ class Currencies {
 
   /// Moldovan Leu
   static final Currency mdl = Currency(
+    fullCurrencyName: 'Moldovan Leu',
+    currencyName: 'MDL',
     symbol: 'L',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -872,6 +1048,8 @@ class Currencies {
 
   /// Mongolian Tugrik
   static final Currency mnt = Currency(
+    fullCurrencyName: 'Mongolian Tugrik',
+    currencyName: 'MNT',
     symbol: '₮',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -882,6 +1060,8 @@ class Currencies {
 
   /// Moroccan Dirham
   static final Currency mad = Currency(
+    fullCurrencyName: 'Moroccan Dirham',
+    currencyName: 'MAD',
     symbol: 'د.م.',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -892,6 +1072,8 @@ class Currencies {
 
   /// Mozambican Metical
   static final Currency mzn = Currency(
+    fullCurrencyName: 'Mozambican Metical',
+    currencyName: 'MZN',
     symbol: 'MT',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -902,6 +1084,8 @@ class Currencies {
 
   /// Myanmar Kyat
   static final Currency mmk = Currency(
+    fullCurrencyName: 'Myanmar Kyat',
+    currencyName: 'MMK',
     symbol: 'Ks',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -912,6 +1096,8 @@ class Currencies {
 
   /// Namibian Dollar
   static final Currency nad = Currency(
+    fullCurrencyName: 'Namibian Dollar',
+    currencyName: 'NAD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -922,6 +1108,8 @@ class Currencies {
 
   /// Nepalese Rupee
   static final Currency npr = Currency(
+    fullCurrencyName: 'Nepalese Rupee',
+    currencyName: 'NPR',
     symbol: 'रू',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -932,6 +1120,8 @@ class Currencies {
 
   /// Netherlands Antillean Guilder
   static final Currency ang = Currency(
+    fullCurrencyName: 'Netherlands Antillean Guilder',
+    currencyName: 'ANG',
     symbol: 'ƒ',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -942,6 +1132,8 @@ class Currencies {
 
   /// New Taiwan Dollar
   static final Currency twd = Currency(
+    fullCurrencyName: 'New Taiwan Dollar',
+    currencyName: 'TWD',
     symbol: r'NT$',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -951,6 +1143,8 @@ class Currencies {
 
   /// New Zealand Dollar
   static final Currency nzd = Currency(
+    fullCurrencyName: 'New Zealand Dollar',
+    currencyName: 'NZD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -961,6 +1155,8 @@ class Currencies {
 
   /// Nicaraguan Córdoba
   static final Currency nio = Currency(
+    fullCurrencyName: 'Nicaraguan Córdoba',
+    currencyName: 'NIO',
     symbol: r'C$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -971,6 +1167,8 @@ class Currencies {
 
   /// Nigerian Naira
   static final Currency ngn = Currency(
+    fullCurrencyName: 'Nigerian Naira',
+    currencyName: 'NGN',
     symbol: '₦',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -981,6 +1179,8 @@ class Currencies {
 
   /// North Korean Won
   static final Currency kpw = Currency(
+    fullCurrencyName: 'North Korean Won',
+    currencyName: 'KPW',
     symbol: '₩',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -991,6 +1191,8 @@ class Currencies {
 
   /// Norwegian Krone
   static final Currency nok = Currency(
+    fullCurrencyName: 'Norwegian Krone',
+    currencyName: 'NOK',
     symbol: 'kr',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -1001,6 +1203,8 @@ class Currencies {
 
   /// Omani Rial
   static final Currency omr = Currency(
+    fullCurrencyName: 'Omani Rial',
+    currencyName: 'OMR',
     symbol: 'ر.ع.',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1011,6 +1215,8 @@ class Currencies {
 
   /// Pakistani Rupee
   static final Currency pkr = Currency(
+    fullCurrencyName: 'Pakistani Rupee',
+    currencyName: 'PKR',
     symbol: '₨',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1021,6 +1227,8 @@ class Currencies {
 
   /// Panamanian Balboa
   static final Currency pab = Currency(
+    fullCurrencyName: 'Panamanian Balboa',
+    currencyName: 'PAB',
     symbol: 'B/.',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1031,6 +1239,8 @@ class Currencies {
 
   /// Papua New Guinean Kina
   static final Currency pgk = Currency(
+    fullCurrencyName: 'Papua New Guinean Kina',
+    currencyName: 'PGK',
     symbol: 'K',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1041,6 +1251,8 @@ class Currencies {
 
   /// Paraguayan Guarani
   static final Currency pyg = Currency(
+    fullCurrencyName: 'Paraguayan Guarani',
+    currencyName: 'PYG',
     symbol: '₲',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -1050,6 +1262,8 @@ class Currencies {
 
   /// Peruvian Sol
   static final Currency pen = Currency(
+    fullCurrencyName: 'Peruvian Sol',
+    currencyName: 'PEN',
     symbol: 'S/.',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1060,6 +1274,8 @@ class Currencies {
 
   /// Philippine Peso
   static final Currency php = Currency(
+    fullCurrencyName: 'Philippine Peso',
+    currencyName: 'PHP',
     symbol: '₱',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1070,6 +1286,8 @@ class Currencies {
 
   /// Polish Zloty
   static final Currency pln = Currency(
+    fullCurrencyName: 'Polish Zloty',
+    currencyName: 'PLN',
     symbol: 'zł',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -1080,6 +1298,8 @@ class Currencies {
 
   /// Qatari Riyal
   static final Currency qar = Currency(
+    fullCurrencyName: 'Qatari Riyal',
+    currencyName: 'QAR',
     symbol: 'ر.ق',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1090,6 +1310,8 @@ class Currencies {
 
   /// Romanian Leu
   static final Currency ron = Currency(
+    fullCurrencyName: 'Romanian Leu',
+    currencyName: 'RON',
     symbol: 'lei',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -1100,6 +1322,8 @@ class Currencies {
 
   /// Russian Ruble
   static final Currency rub = Currency(
+    fullCurrencyName: 'Russian Ruble',
+    currencyName: 'RUB',
     symbol: '₽',
     groupSeparator: ' ',
     decimalSeparator: ',',
@@ -1110,6 +1334,8 @@ class Currencies {
 
   /// Rwandan Franc
   static final Currency rwf = Currency(
+    fullCurrencyName: 'Rwandan Franc',
+    currencyName: 'RWF',
     symbol: 'RF',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -1119,6 +1345,8 @@ class Currencies {
 
   /// Saint Helena Pound
   static final Currency shp = Currency(
+    fullCurrencyName: 'Saint Helena Pound',
+    currencyName: 'SHP',
     symbol: '£',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1129,6 +1357,8 @@ class Currencies {
 
   /// Samoan Tala
   static final Currency wst = Currency(
+    fullCurrencyName: 'Samoan Tala',
+    currencyName: 'WST',
     symbol: r'WS$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1139,6 +1369,8 @@ class Currencies {
 
   /// São Tomé and Príncipe Dobra
   static final Currency stn = Currency(
+    fullCurrencyName: 'São Tomé and Príncipe Dobra',
+    currencyName: 'STN',
     symbol: 'Db',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1149,6 +1381,8 @@ class Currencies {
 
   /// Saudi Riyal
   static final Currency sar = Currency(
+    fullCurrencyName: 'Saudi Riyal',
+    currencyName: 'SAR',
     symbol: 'ر.س',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1159,6 +1393,8 @@ class Currencies {
 
   /// Serbian Dinar
   static final Currency rsd = Currency(
+    fullCurrencyName: 'Serbian Dinar',
+    currencyName: 'RSD',
     symbol: 'дин.',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -1169,6 +1405,8 @@ class Currencies {
 
   /// Seychellois Rupee
   static final Currency scr = Currency(
+    fullCurrencyName: 'Seychellois Rupee',
+    currencyName: 'SCR',
     symbol: '₨',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1179,6 +1417,8 @@ class Currencies {
 
   /// Sierra Leonean Leone
   static final Currency sle = Currency(
+    fullCurrencyName: 'Sierra Leonean Leone',
+    currencyName: 'SLE',
     symbol: 'Le',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1189,6 +1429,8 @@ class Currencies {
 
   /// Singapore Dollar
   static final Currency sgd = Currency(
+    fullCurrencyName: 'Singapore Dollar',
+    currencyName: 'SGD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1199,6 +1441,8 @@ class Currencies {
 
   /// Solomon Islands Dollar
   static final Currency sbd = Currency(
+    fullCurrencyName: 'Solomon Islands Dollar',
+    currencyName: 'SBD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1209,6 +1453,8 @@ class Currencies {
 
   /// Somali Shilling
   static final Currency sos = Currency(
+    fullCurrencyName: 'Somali Shilling',
+    currencyName: 'SOS',
     symbol: 'S',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1219,6 +1465,8 @@ class Currencies {
 
   /// South African Rand
   static final Currency zar = Currency(
+    fullCurrencyName: 'South African Rand',
+    currencyName: 'ZAR',
     symbol: 'R',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1229,6 +1477,8 @@ class Currencies {
 
   /// South Korean Won
   static final Currency krw = Currency(
+    fullCurrencyName: 'South Korean Won',
+    currencyName: 'KRW',
     symbol: '₩',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -1238,6 +1488,8 @@ class Currencies {
 
   /// South Sudanese Pound
   static final Currency ssp = Currency(
+    fullCurrencyName: 'South Sudanese Pound',
+    currencyName: 'SSP',
     symbol: '£',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1248,6 +1500,8 @@ class Currencies {
 
   /// Sri Lankan Rupee
   static final Currency lkr = Currency(
+    fullCurrencyName: 'Sri Lankan Rupee',
+    currencyName: 'LKR',
     symbol: 'රු',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1258,6 +1512,8 @@ class Currencies {
 
   /// Sudanese Pound
   static final Currency sdg = Currency(
+    fullCurrencyName: 'Sudanese Pound',
+    currencyName: 'SDG',
     symbol: '£',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1268,6 +1524,8 @@ class Currencies {
 
   /// Surinamese Dollar
   static final Currency srd = Currency(
+    fullCurrencyName: 'Surinamese Dollar',
+    currencyName: 'SRD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1278,6 +1536,8 @@ class Currencies {
 
   /// Swazi Lilangeni
   static final Currency szl = Currency(
+    fullCurrencyName: 'Swazi Lilangeni',
+    currencyName: 'SZL',
     symbol: 'E',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1288,6 +1548,8 @@ class Currencies {
 
   /// Swedish Krona
   static final Currency sek = Currency(
+    fullCurrencyName: 'Swedish Krona',
+    currencyName: 'SEK',
     symbol: 'kr',
     groupSeparator: ' ',
     decimalSeparator: ',',
@@ -1298,6 +1560,8 @@ class Currencies {
 
   /// Swiss Franc
   static final Currency chf = Currency(
+    fullCurrencyName: 'Swiss Franc',
+    currencyName: 'CHF',
     symbol: 'Fr',
     groupSeparator: ",",
     decimalSeparator: '.',
@@ -1308,6 +1572,8 @@ class Currencies {
 
   /// Syrian Pound
   static final Currency syp = Currency(
+    fullCurrencyName: 'Syrian Pound',
+    currencyName: 'SYP',
     symbol: '£',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1318,6 +1584,8 @@ class Currencies {
 
   /// Tajikistani Somoni
   static final Currency tjs = Currency(
+    fullCurrencyName: 'Tajikistani Somoni',
+    currencyName: 'TJS',
     symbol: 'ЅM',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1328,6 +1596,8 @@ class Currencies {
 
   /// Tanzanian Shilling
   static final Currency tzs = Currency(
+    fullCurrencyName: 'Tanzanian Shilling',
+    currencyName: 'TZS',
     symbol: 'Sh',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1338,6 +1608,8 @@ class Currencies {
 
   /// Thai Baht
   static final Currency thb = Currency(
+    fullCurrencyName: 'Thai Baht',
+    currencyName: 'THB',
     symbol: '฿',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1348,6 +1620,8 @@ class Currencies {
 
   /// Tongan Paʻanga
   static final Currency top = Currency(
+    fullCurrencyName: 'Tongan Paʻanga',
+    currencyName: 'TOP',
     symbol: r'T$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1358,6 +1632,8 @@ class Currencies {
 
   /// Trinidad and Tobago Dollar
   static final Currency ttd = Currency(
+    fullCurrencyName: 'Trinidad and Tobago Dollar',
+    currencyName: 'TTD',
     symbol: r'TT$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1368,6 +1644,8 @@ class Currencies {
 
   /// Tunisian Dinar
   static final Currency tnd = Currency(
+    fullCurrencyName: 'Tunisian Dinar',
+    currencyName: 'TND',
     symbol: 'د.ت',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1378,6 +1656,8 @@ class Currencies {
 
   /// Turkish Lira
   static final Currency try_ = Currency(
+    fullCurrencyName: 'Turkish Lira',
+    currencyName: 'TRY',
     symbol: '₺',
     groupSeparator: '.',
     decimalSeparator: ',',
@@ -1388,6 +1668,8 @@ class Currencies {
 
   /// Turkmenistani Manat
   static final Currency tmt = Currency(
+    fullCurrencyName: 'Turkmenistani Manat',
+    currencyName: 'TMT',
     symbol: 'm',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1398,6 +1680,8 @@ class Currencies {
 
   /// Ugandan Shilling
   static final Currency ugx = Currency(
+    fullCurrencyName: 'Ugandan Shilling',
+    currencyName: 'UGX',
     symbol: 'USh',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -1407,6 +1691,8 @@ class Currencies {
 
   /// Ukrainian Hryvnia
   static final Currency uah = Currency(
+    fullCurrencyName: 'Ukrainian Hryvnia',
+    currencyName: 'UAH',
     symbol: '₴',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1417,6 +1703,8 @@ class Currencies {
 
   /// United Arab Emirates Dirham
   static final Currency aed = Currency(
+    fullCurrencyName: 'United Arab Emirates Dirham',
+    currencyName: 'AED',
     symbol: 'د.إ',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1427,6 +1715,8 @@ class Currencies {
 
   /// United States Dollar
   static final Currency usd = Currency(
+    fullCurrencyName: 'United States Dollar',
+    currencyName: 'USD',
     symbol: r'$',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1437,6 +1727,8 @@ class Currencies {
 
   /// Uruguayan Peso
   static final Currency uyu = Currency(
+    fullCurrencyName: 'Uruguayan Peso',
+    currencyName: 'UYU',
     symbol: r'$U',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1447,6 +1739,8 @@ class Currencies {
 
   /// Uzbekistani Som
   static final Currency uzs = Currency(
+    fullCurrencyName: 'Uzbekistani Som',
+    currencyName: 'UZS',
     symbol: 'soʻm',
     groupSeparator: ' ',
     decimalSeparator: '.',
@@ -1457,6 +1751,8 @@ class Currencies {
 
   /// Vanuatu Vatu
   static final Currency vuv = Currency(
+    fullCurrencyName: 'Vanuatu Vatu',
+    currencyName: 'VUV',
     symbol: 'VT',
     groupSeparator: ',',
     scalePrecision: 0,
@@ -1466,6 +1762,8 @@ class Currencies {
 
   /// Venezuelan Bolívar
   static final Currency ves = Currency(
+    fullCurrencyName: 'Venezuelan Bolívar',
+    currencyName: 'VES',
     symbol: 'Bs.',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1476,6 +1774,8 @@ class Currencies {
 
   /// Vietnamese Dong
   static final Currency vnd = Currency(
+    fullCurrencyName: 'Vietnamese Dong',
+    currencyName: 'VND',
     symbol: '₫',
     groupSeparator: '.',
     scalePrecision: 0,
@@ -1485,6 +1785,8 @@ class Currencies {
 
   /// West African CFA Franc
   static final Currency xof = Currency(
+    fullCurrencyName: 'West African CFA Franc',
+    currencyName: 'XOF',
     symbol: 'CFA',
     groupSeparator: ' ',
     scalePrecision: 0,
@@ -1494,6 +1796,8 @@ class Currencies {
 
   /// Yemeni Rial
   static final Currency yer = Currency(
+    fullCurrencyName: 'Yemeni Rial',
+    currencyName: 'YER',
     symbol: '﷼',
     groupSeparator: ',',
     decimalSeparator: '.',
@@ -1504,6 +1808,8 @@ class Currencies {
 
   /// Zambian Kwacha
   static final Currency zmw = Currency(
+    fullCurrencyName: 'Zambian Kwacha',
+    currencyName: 'ZMW',
     symbol: 'ZK',
     groupSeparator: ',',
     decimalSeparator: '.',
